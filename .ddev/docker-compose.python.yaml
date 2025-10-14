@@ -1,0 +1,15 @@
+services:
+  python:
+    image: python:3.11
+    container_name: ddev-${DDEV_SITENAME}-python
+    volumes:
+      - "../:/app"
+    working_dir: /app
+    command: tail -f /dev/null
+    labels:
+      com.ddev.site-name: ${DDEV_SITENAME}
+      com.ddev.approot: $DDEV_APPROOT
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
