@@ -1,7 +1,0 @@
-#!/bin/bash
-
-## Description: Run pip3 commands
-## Usage: ddev pip [command] [arguments]
-## Example: "ddev pip install requests" or "ddev pip list"
-
-pip3 "$@"

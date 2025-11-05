@@ -18,22 +18,41 @@ This project uses DDEV for development environment management.
    ddev start
    ```
 
-2. **Install Python dependencies:**
-   ```bash
-   ddev pip install -r requirements.txt
-   ```
+### Configuration
 
-3. **Run the application:**
+1. **Environment Variables:**
+   
+   Copy the `.env` file and update it with your Google Analytics credentials:
+   
    ```bash
-   ddev exec python3 main.py
+   cp .env.example .env  # If you have an example file
    ```
+   
+   Or create `.env` with the following variables:
+   
+   ```env
+   # Google Analytics 4 Configuration
+   GA4_PROPERTY_ID=your_property_id_here
+   GA4_KEY_PATH=/path/to/your/service-account-key.json
+   ```
+   
+   **Note:** The `.env` file is gitignored for security. Never commit actual credentials to the repository.
+
+2. **Google Analytics Setup:**
+   
+   - Create a Google Cloud Project
+   - Enable the Google Analytics Data API
+   - Create a Service Account and download the JSON key
+   - Add the Service Account as a viewer to your GA4 property
+   - Update the `GA4_KEY_PATH` in your `.env` file
 
 ## Development
 
 ### Available Commands
 
 - `ddev exec python3 <script>` - Run Python scripts
-- `ddev pip <command>` - Manage Python packages
+- `ddev exec pip3 install --break-system-packages <package>` - Install Python packages
+- `ddev exec pip3 list` - List installed packages
 - `ddev exec -s python python <script>` - Run scripts in the dedicated Python service
 
 ### Project Structure
