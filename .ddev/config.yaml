@@ -1,7 +1,6 @@
 name: google-stats
-type: php
+type: generic
 docroot: ""
-php_version: "8.3"
 webserver_type: nginx-fpm
 xdebug_enabled: false
 additional_hostnames: []
@@ -10,9 +9,11 @@ database:
     type: mariadb
     version: "10.11"
 use_dns_when_possible: true
-composer_version: "2"
-web_environment: []
+web_environment: 
+    - GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json
+ 
 corepack_enable: false
+
 
 # Key features of DDEV's config.yaml:
 

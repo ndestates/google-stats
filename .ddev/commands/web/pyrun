@@ -1,7 +1,0 @@
-#!/bin/bash
-
-## Description: Run Python scripts and commands
-## Usage: ddev pyrun [script.py] [arguments]
-## Example: "ddev pyrun --version" or "ddev pyrun script.py"
-
-python3 "$@"
