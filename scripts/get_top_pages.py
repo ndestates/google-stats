@@ -11,29 +11,24 @@ from google.analytics.data_v1beta.types import (
     Filter,
     FilterExpression,
 )
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get configuration from environment variables
-PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
-KEY_PATH = os.getenv("GA4_KEY_PATH")
+from src.config import REPORTS_DIR, GA4_PROPERTY_ID, GA4_KEY_PATH
+from src.pdf_generator import create_channel_report_pdf
 
 def get_top_pages_with_sources():
     # Set environment variable for authentication
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = KEY_PATH
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
 
     # Verify key file exists
-    if not os.path.exists(KEY_PATH):
-        raise FileNotFoundError(f"Service account key not found at {KEY_PATH}. Please check the path and permissions.")
+    if not os.path.exists(GA4_KEY_PATH):
+        raise FileNotFoundError(f"Service account key not found at {GA4_KEY_PATH}. Please check the path and permissions.")
 
     client = BetaAnalyticsDataClient()
 
     # Test basic connectivity first
     print("🔗 Testing basic API connectivity...")
     test_request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         metrics=[Metric(name="totalUsers")],
         date_ranges=[DateRange(start_date="7daysAgo", end_date="yesterday")],
     )
@@ -86,7 +81,7 @@ def get_top_pages_with_sources():
         print("-" * 50)
 
         request = RunReportRequest(
-            property=f"properties/{PROPERTY_ID}",
+            property=f"properties/{GA4_PROPERTY_ID}",
             dimensions=approach["dimensions"],
             metrics=[Metric(name=approach["metric"])],
             date_ranges=[DateRange(start_date=approach["date_range"][0], end_date=approach["date_range"][1])],
@@ -181,7 +176,7 @@ def show_channel_fallback():
     client = BetaAnalyticsDataClient()
 
     request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         dimensions=[Dimension(name="sessionDefaultChannelGrouping")],
         metrics=[Metric(name="activeUsers")],
         date_ranges=[DateRange(start_date="30daysAgo", end_date="yesterday")],
@@ -212,6 +207,32 @@ def show_channel_fallback():
             channel_csv = "channel_report_30daysAgo_to_yesterday.csv"
             channel_df.to_csv(channel_csv, index=False)
             print(f"📄 Exported channel data to {channel_csv}")
+
+            # Prepare data for PDF generation
+            pdf_channel_data = {}
+            total_users = 0
+            total_sessions = 0  # We don't have sessions data in this query, so we'll use users as proxy
+
+            for row in response.rows:
+                channel_name = row.dimension_values[0].value
+                users = int(row.metric_values[0].value)
+                pdf_channel_data[channel_name] = {
+                    'users': users,
+                    'sessions': users,  # Using users as sessions proxy
+                    'bounce_rate': 0.0,  # Not available in this query
+                    'avg_session_duration': 0.0  # Not available in this query
+                }
+                total_users += users
+                total_sessions += users
+
+            # Generate PDF report
+            pdf_filename = create_channel_report_pdf(
+                pdf_channel_data,
+                "30daysAgo_to_yesterday",
+                total_users,
+                total_sessions
+            )
+            print(f"📄 PDF report exported to {pdf_filename}")
         else:
             print("No data available at all.")
     except Exception as error:

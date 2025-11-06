@@ -9,24 +9,19 @@ from google.analytics.data_v1beta.types import (
     RunReportRequest,
     OrderBy,
 )
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get configuration from environment variables
-PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
-KEY_PATH = os.getenv("GA4_KEY_PATH")
+from src.config import REPORTS_DIR, GA4_PROPERTY_ID, GA4_KEY_PATH
+from src.pdf_generator import create_google_ads_report_pdf
 
 def get_google_ads_performance():
     """Analyze Google Ads performance by campaign, ad, and time of day"""
 
     # Set environment variable for authentication
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = KEY_PATH
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
 
     # Verify key file exists
-    if not os.path.exists(KEY_PATH):
-        raise FileNotFoundError(f"Service account key not found at {KEY_PATH}. Please check the path and permissions.")
+    if not os.path.exists(GA4_KEY_PATH):
+        raise FileNotFoundError(f"GA4 service account key not found at {GA4_KEY_PATH}. Please check the path and permissions.")
 
     client = BetaAnalyticsDataClient()
 
@@ -40,7 +35,7 @@ def get_google_ads_performance():
     # Test Google Ads data availability
     print("🔍 Checking Google Ads data availability...")
     test_request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         dimensions=[Dimension(name="googleAdsCampaignName")],
         metrics=[Metric(name="totalUsers")],
         date_ranges=[DateRange(start_date=str(start_date), end_date=str(end_date))],
@@ -67,7 +62,7 @@ def get_google_ads_performance():
     print("-" * 50)
 
     campaign_request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         dimensions=[
             Dimension(name="googleAdsCampaignName"),
             Dimension(name="googleAdsCampaignId"),
@@ -135,6 +130,15 @@ def get_google_ads_performance():
             campaign_df.to_csv(campaign_csv, index=False)
             print(f"\n📄 Detailed campaign data exported to: {campaign_csv}")
 
+            # Prepare campaign data for PDF
+            pdf_campaign_data = {}
+            for campaign_key, totals in campaign_totals.items():
+                pdf_campaign_data[campaign_key] = {
+                    'users': totals['users'],
+                    'sessions': totals['sessions'],
+                    'conversions': totals['engaged']  # Using engaged sessions as proxy for conversions
+                }
+
     except Exception as e:
         print(f"❌ Error getting campaign data: {e}")
 
@@ -143,7 +147,7 @@ def get_google_ads_performance():
     print("-" * 50)
 
     time_request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         dimensions=[
             Dimension(name="hour"),
             Dimension(name="googleAdsCampaignName")
@@ -212,6 +216,23 @@ def get_google_ads_performance():
             time_df.to_csv(time_csv, index=False)
             print(f"\n📄 Hourly performance data exported to: {time_csv}")
 
+            # Prepare hourly data for PDF
+            pdf_hourly_data = {}
+            for hour, data in hourly_totals.items():
+                pdf_hourly_data[hour] = {
+                    'users': data['users'],
+                    'sessions': data['sessions']
+                }
+
+            # Generate PDF report
+            date_range = f"{start_date}_to_{end_date}"
+            pdf_filename = create_google_ads_report_pdf(
+                pdf_campaign_data,
+                pdf_hourly_data,
+                date_range
+            )
+            print(f"📄 PDF report exported to: {pdf_filename}")
+
     except Exception as e:
         print(f"❌ Error getting time data: {e}")
 
@@ -220,7 +241,7 @@ def get_google_ads_performance():
     print("-" * 50)
 
     network_request = RunReportRequest(
-        property=f"properties/{PROPERTY_ID}",
+        property=f"properties/{GA4_PROPERTY_ID}",
         dimensions=[
             Dimension(name="googleAdsAdNetworkType"),
             Dimension(name="googleAdsCampaignName")
