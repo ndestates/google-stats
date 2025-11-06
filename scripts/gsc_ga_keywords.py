@@ -4,6 +4,8 @@ Combines GSC keyword data with GA4 page performance metrics
 """
 
 import os
+import sys
+import argparse
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
@@ -217,28 +219,28 @@ def get_top_keywords_report(days: int = 30):
     return generate_keywords_insights_report(start_date, end_date)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Google Search Console + Google Analytics Keywords Insights')
+    parser.add_argument('--days', type=int, choices=[7, 30], default=30,
+                       help='Number of days for report (7 or 30, default: 30)')
+    parser.add_argument('--start-date', type=str,
+                       help='Start date in YYYY-MM-DD format (for custom range)')
+    parser.add_argument('--end-date', type=str,
+                       help='End date in YYYY-MM-DD format (for custom range)')
+
+    args = parser.parse_args()
+
     print("🔍 Google Search Console + Google Analytics Keywords Insights")
     print("=" * 60)
 
-    print("Choose report type:")
-    print("1. Last 30 days keywords insights")
-    print("2. Last 7 days keywords insights")
-    print("3. Custom date range keywords insights")
-
-    choice = input("Enter choice (1, 2, or 3): ").strip()
-
-    if choice == "1":
-        get_top_keywords_report(30)
-    elif choice == "2":
-        get_top_keywords_report(7)
-    elif choice == "3":
-        start_date = input("Enter start date (YYYY-MM-DD): ").strip()
-        end_date = input("Enter end date (YYYY-MM-DD): ").strip()
-        if start_date and end_date:
-            generate_keywords_insights_report(start_date, end_date)
-        else:
-            print("Invalid dates provided. Using last 30 days.")
-            get_top_keywords_report(30)
+    # Check if custom date range is provided
+    if args.start_date and args.end_date:
+        print(f"Running custom date range report: {args.start_date} to {args.end_date}")
+        generate_keywords_insights_report(args.start_date, args.end_date)
     else:
-        print("Invalid choice. Running 30-day report by default.")
-        get_top_keywords_report(30)
+        # Use days parameter for standard reports
+        if args.days == 7:
+            print("Running 7-day keywords insights report")
+            get_top_keywords_report(7)
+        else:  # default to 30 days
+            print("Running 30-day keywords insights report")
+            get_top_keywords_report(30)

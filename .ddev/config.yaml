@@ -1,6 +1,6 @@
 name: google-stats
-type: generic
-docroot: ""
+type: php
+docroot: web
 webserver_type: nginx-fpm
 xdebug_enabled: false
 additional_hostnames: []

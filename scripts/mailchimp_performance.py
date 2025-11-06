@@ -1,4 +1,6 @@
 import os
+import sys
+import argparse
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
@@ -604,26 +606,26 @@ def get_filtered_email_report_monthly(source_filter="mailchimp"):
         print(f"📄 PDF report exported to: {pdf_filename}")
 
 if __name__ == "__main__":
-    print("Choose email source report type:")
-    print("1. Yesterday's Mailchimp report")
-    print("2. Monthly Mailchimp report")
-    print("3. Check available email sources")
-    print("4. Custom source filter (yesterday)")
-    choice = input("Enter choice (1, 2, 3, or 4): ").strip()
+    parser = argparse.ArgumentParser(description='Mailchimp Campaign Performance Analysis')
+    parser.add_argument('--report-type', type=str, choices=['yesterday', 'monthly', 'sources', 'custom'],
+                       default='yesterday', help='Type of report to generate (default: yesterday)')
+    parser.add_argument('--source-filter', type=str, default='mailchimp',
+                       help='Source filter term for custom reports (default: mailchimp)')
 
-    if choice == "1":
-        get_filtered_email_report_yesterday("mailchimp")
-    elif choice == "2":
-        get_filtered_email_report_monthly("mailchimp")
-    elif choice == "3":
+    args = parser.parse_args()
+
+    print("📧 Mailchimp Campaign Performance Analysis")
+    print("=" * 50)
+
+    if args.report_type == 'yesterday':
+        print("Running yesterday's Mailchimp report")
+        get_filtered_email_report_yesterday(args.source_filter)
+    elif args.report_type == 'monthly':
+        print("Running monthly Mailchimp report")
+        get_filtered_email_report_monthly(args.source_filter)
+    elif args.report_type == 'sources':
+        print("Checking available email sources")
         get_email_sources_report()
-    elif choice == "4":
-        source_filter = input("Enter source filter term (e.g., 'mailchimp', 'email', 'newsletter'): ").strip()
-        if source_filter:
-            get_filtered_email_report_yesterday(source_filter)
-        else:
-            print("No filter provided. Using 'mailchimp' by default.")
-            get_filtered_email_report_yesterday("mailchimp")
-    else:
-        print("Invalid choice. Running yesterday's Mailchimp report by default.")
-        get_filtered_email_report_yesterday("mailchimp")
+    elif args.report_type == 'custom':
+        print(f"Running custom source filter report for '{args.source_filter}'")
+        get_filtered_email_report_yesterday(args.source_filter)

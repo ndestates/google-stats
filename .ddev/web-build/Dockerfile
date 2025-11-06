@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
 # Create a symlink for python command (optional)
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
+# Install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+
 # Set Python environment variables
 ENV PYTHONPATH=/var/www/html
 ENV PYTHONDONTWRITEBYTECODE=1

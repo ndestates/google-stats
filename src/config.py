@@ -37,9 +37,9 @@ def validate_gsc_config():
         raise ValueError("GSC_KEY_PATH environment variable is not set. Please check your .env file.")
     # Don't raise error if key file doesn't exist - let the script handle it gracefully
 
-def get_ga4_client():
-    """Get authenticated GA4 client"""
-    from google.analytics.data_v1beta import BetaAnalyticsDataClient
+def get_ga4_admin_client():
+    """Get authenticated GA4 Admin API client"""
+    from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
 
     # Set environment variable for authentication
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
@@ -47,7 +47,7 @@ def get_ga4_client():
     # Validate configuration
     validate_config()
 
-    return BetaAnalyticsDataClient()
+    return AnalyticsAdminServiceClient()
 
 def get_gsc_client():
     """Get authenticated Google Search Console client"""
