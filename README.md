@@ -1,53 +1,149 @@
-# Google Stats
+# Google Analytics Platform
 
-A Python application for processing and analyzing Google Analytics 4 data.
+A comprehensive analytics platform for Google Analytics 4, Google Ads, Mailchimp, and Google Search Console data analysis.
 
-## Project Structure
+## 🚀 Features
+
+### Analytics Tools
+- **Hourly Traffic Analysis** - Time-of-day traffic patterns with engagement metrics
+- **Page Traffic Analysis** - Individual page performance with source attribution
+- **Top Pages Report** - Best performing content identification
+- **Keywords Analysis** - Combined GSC and GA4 keyword insights
+
+### Marketing Tools
+- **Google Ads Performance** - Campaign effectiveness and ROI tracking
+- **Mailchimp Performance** - Email marketing analytics
+- **Audience Management** - GA4 audience creation and management
+
+## 📊 Key Capabilities
+
+- **Real-time Analysis** - Live data processing with immediate results
+- **Comprehensive Metrics** - Users, sessions, engagement, conversions, and more
+- **Multi-channel Attribution** - Source/medium, campaigns, and channel groupings
+- **CSV Export** - Detailed data exports for further analysis
+- **Web Interface** - User-friendly dashboard for all tools
+
+## 🛠️ Quick Start
+
+### Prerequisites
+- DDEV environment
+- Google Analytics 4 property access
+- Google Ads API credentials (optional)
+- Mailchimp API key (optional)
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/ndestates/google-stats.git
+cd google-stats
+
+# Start DDEV
+ddev start
+
+# Access the web interface
+# https://google-stats.ddev.site
+```
+
+### Usage Examples
+
+#### Web Interface
+Visit `https://google-stats.ddev.site` for the complete dashboard with all analytics tools.
+
+#### Command Line
+```bash
+# Hourly traffic analysis
+ddev exec python3 scripts/hourly_traffic_analysis.py /valuations 7
+
+# Page traffic analysis
+ddev exec python3 scripts/page_traffic_analysis.py /valuations 30
+
+# Google Ads performance
+ddev exec python3 scripts/google_ads_performance.py
+
+# Mailchimp reports
+ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday
+```
+
+## 📖 Documentation
+
+Complete documentation is available at:
+- **Web Documentation**: `https://google-stats.ddev.site/documentation.php`
+- **Repository**: See `web/documentation.php` for the full documentation
+
+## 📁 Project Structure
 
 ```
 google-stats/
-├── scripts/                    # Executable analytics scripts
-│   ├── yesterday_report.py     # Daily report (yesterday's data)
-│   ├── all_pages_sources_report.py  # Monthly report (30 days)
-│   ├── get_top_pages.py        # Top pages analysis
-│   └── google_ads_performance.py   # Google Ads performance
-├── src/                        # Shared source code
-│   ├── config.py              # Environment variables & configuration
-│   └── ga4_client.py          # GA4 API client utilities
-├── reports/                   # Generated CSV reports (auto-generated)
-├── config/                    # Configuration templates
-│   └── .env.example           # Environment variables template
-├── requirements.txt           # Python dependencies
-├── main.py                    # Entry point with available scripts
-├── .env                       # Your credentials (gitignored)
-└── .ddev/                     # DDEV configuration
+├── scripts/                 # Python analysis scripts
+│   ├── hourly_traffic_analysis.py
+│   ├── page_traffic_analysis.py
+│   ├── google_ads_performance.py
+│   └── ...
+├── web/                     # Web interface
+│   ├── index.php           # Main dashboard
+│   ├── documentation.php   # Full documentation
+│   └── run_report.php      # Script execution handler
+├── reports/                 # Generated CSV reports
+├── src/                     # Core modules
+│   ├── config.py           # Configuration
+│   ├── ga4_client.py       # GA4 API client
+│   └── ...
+├── config/                  # Configuration files
+└── requirements.txt         # Python dependencies
 ```
 
-## Setup
+## 🔧 Configuration
 
-This project uses DDEV for development environment management.
+### Google Analytics 4
+- Property ID configured in `src/config.py`
+- Service account credentials in `.ddev/keys/`
 
-### Prerequisites
+### Google Ads (Optional)
+- Customer ID and credentials required
+- Configure in respective scripts
 
-- [DDEV](https://ddev.readthedocs.io/en/stable/)
-- Docker
+### Mailchimp (Optional)
+- API key required for email analytics
+- Configure in `scripts/mailchimp_performance.py`
 
-### Getting Started
+## 📊 Sample Output
 
-1. **Start DDEV:**
-   ```bash
-   ddev start
-   ```
+### Hourly Traffic Analysis
+```
+1. Source/Medium: google / cpc
+   Total Users: 1,569 (New: 1,098)
+   Total Sessions: 1,625 (Engaged: 1,625)
+   Best Hour: 18:00 (186 users)
+   Channel Groups: Cross-network, Display
+   Hourly Traffic:
+   Hour | Users | New Users | Sessions | Engaged | Pageviews
+   -----|-------|-----------|----------|----------|-----------
+    18:00 |   162 |       115 |      164 |      164 |         0
+```
 
-### Configuration
+## 🤝 Contributing
 
-1. **Environment Variables:**
-   
-   Copy the config template and update it with your Google Analytics credentials:
-   
-   ```bash
-   cp config/.env.example .env
-   ```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is proprietary software for NDEstates analytics.
+
+## 🆘 Support
+
+For technical support or feature requests:
+- Check the documentation at `web/documentation.php`
+- Contact the development team
+- Review the code comments for implementation details
+
+---
+
+**Built with**: Python 3.11, Google Analytics 4 API, Google Ads API, Mailchimp API, Bootstrap 5
+**Last Updated**: November 7, 2025
    
    Edit `.env` with your actual values:
    ```env
