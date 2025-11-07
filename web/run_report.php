@@ -28,7 +28,14 @@ $allowed_scripts = [
     'google_ads_ad_performance.py',
     'all_pages_sources_report.py',
     'campaign_performance.py',
-    'audience_management.py'
+    'audience_management.py',
+    'conversion_funnel_analysis.py',
+    'bounce_rate_analysis.py',
+    'device_geo_analysis.py',
+    'technical_performance.py',
+    'user_behavior.py',
+    'content_performance.py',
+    'seo_analysis.py'
 ];
 
 if (!in_array($script, $allowed_scripts)) {

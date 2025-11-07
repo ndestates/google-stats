@@ -198,6 +198,151 @@
                         <div class="output" id="output-audience_management"></div>
                     </div>
                 </div>
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Conversion Funnel Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze user conversion paths and goal completion</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="conversion_funnel_analysis.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="conversion_funnel_analysis.py" data-args="contact_form 7">Contact Forms (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="conversion_funnel_analysis.py" data-args="property_inquiry 30">Property Inquiries (30 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-conversion_funnel_analysis">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-conversion_funnel_analysis"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Bounce Rate Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Identify high-bounce pages and optimization opportunities</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="bounce_rate_analysis.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="bounce_rate_analysis.py" data-args="pages 7">Pages Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="bounce_rate_analysis.py" data-args="channels 90">Channels Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-bounce_rate_analysis">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-bounce_rate_analysis"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Device & Geographic Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze performance by device type and geographic location</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="device_geo_analysis.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="device_geo_analysis.py" data-args="device 7">Device Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="device_geo_analysis.py" data-args="geo 90">Geography Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-device_geo_analysis">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-device_geo_analysis"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Technical Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze technical performance and custom events</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="technical_performance.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="technical_performance.py" data-args="load_times 7">Performance Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="technical_performance.py" data-args="errors 90">Events Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-technical_performance">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-technical_performance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>User Behavior Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze user navigation patterns and behavior flows</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="user_behavior.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="user_behavior.py" data-args="flow 7">Flow Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="user_behavior.py" data-args="patterns 90">Patterns Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-user_behavior">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-user_behavior"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Content Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze content engagement and effectiveness</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="content_performance.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="content_performance.py" data-args="engagement 7">Engagement Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="content_performance.py" data-args="effectiveness 90">Effectiveness Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-content_performance">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-content_performance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>SEO Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze search engine optimization performance</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="seo_analysis.py" data-args="all 30">Complete Analysis (30 days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="seo_analysis.py" data-args="organic 7">Organic Only (7 days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="seo_analysis.py" data-args="health 90">Health Only (90 days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-seo_analysis">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running analysis...
+                        </div>
+                        <div class="output" id="output-seo_analysis"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -38,6 +38,13 @@
                             <a class="nav-link" href="#keywords"><i class="fas fa-search"></i> Keywords Analysis</a>
                             <a class="nav-link" href="#top-pages"><i class="fas fa-chart-line"></i> Top Pages Report</a>
                             <a class="nav-link" href="#audience"><i class="fas fa-users"></i> Audience Management</a>
+                            <a class="nav-link" href="#conversion-funnel"><i class="fas fa-filter"></i> Conversion Funnel</a>
+                            <a class="nav-link" href="#bounce-rate"><i class="fas fa-door-open"></i> Bounce Rate Analysis</a>
+                            <a class="nav-link" href="#device-geo"><i class="fas fa-mobile-alt"></i> Device & Geo Analysis</a>
+                            <a class="nav-link" href="#technical-performance"><i class="fas fa-cogs"></i> Technical Performance</a>
+                            <a class="nav-link" href="#user-behavior"><i class="fas fa-route"></i> User Behavior</a>
+                            <a class="nav-link" href="#content-performance"><i class="fas fa-file-alt"></i> Content Performance</a>
+                            <a class="nav-link" href="#seo-analysis"><i class="fas fa-search"></i> SEO Analysis</a>
                             <a class="nav-link" href="#command-line"><i class="fas fa-terminal"></i> Command Line Usage</a>
                             <a class="nav-link" href="#data-export"><i class="fas fa-download"></i> Data Export</a>
                             <a class="nav-link" href="#api-reference"><i class="fas fa-code"></i> API Reference</a>
@@ -69,14 +76,21 @@
                                 <li><strong>Page Traffic Analysis</strong> - Individual page performance</li>
                                 <li><strong>Top Pages Report</strong> - Best performing content</li>
                                 <li><strong>Keywords Analysis</strong> - Search performance insights</li>
+                                <li><strong>Conversion Funnel</strong> - User conversion paths</li>
+                                <li><strong>Bounce Rate Analysis</strong> - Exit page optimization</li>
+                                <li><strong>Device & Geo Analysis</strong> - Platform and location insights</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
-                            <h5><i class="fas fa-bullhorn"></i> Marketing Tools</h5>
+                            <h5><i class="fas fa-bullhorn"></i> Marketing & Technical Tools</h5>
                             <ul>
                                 <li><strong>Google Ads Performance</strong> - Campaign effectiveness</li>
                                 <li><strong>Mailchimp Performance</strong> - Email marketing analytics</li>
                                 <li><strong>Audience Management</strong> - GA4 audience creation</li>
+                                <li><strong>Technical Performance</strong> - Site performance analysis</li>
+                                <li><strong>User Behavior Analysis</strong> - Navigation patterns</li>
+                                <li><strong>Content Performance</strong> - Content engagement metrics</li>
+                                <li><strong>SEO Analysis</strong> - Search optimization insights</li>
                             </ul>
                         </div>
                     </div>
@@ -329,6 +343,258 @@
                             <h5>Command Line</h5>
                             <div class="code-block">
                                 <code>ddev exec python3 scripts/audience_management.py --action create --type basic --name "All Users"</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversion Funnel Analysis -->
+                <div id="conversion-funnel" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-filter"></i> Conversion Funnel Analysis</h3>
+                            <p class="mb-0">Analyze user conversion paths and goal completion rates</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Funnel Analysis</strong> - User journey through conversion steps</li>
+                                <li><strong>Goal Completion</strong> - Track completion rates for key objectives</li>
+                                <li><strong>Drop-off Points</strong> - Identify where users abandon the funnel</li>
+                                <li><strong>Recommendations</strong> - Actionable optimization suggestions</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Conversion Rate</span>
+                                <span class="metric-badge">Funnel Drop-off</span>
+                                <span class="metric-badge">Goal Completions</span>
+                                <span class="metric-badge">Path Efficiency</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the Conversion Funnel Analysis card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/conversion_funnel_analysis.py all 30</code><br>
+                                <code>ddev exec python3 scripts/conversion_funnel_analysis.py funnel 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bounce Rate Analysis -->
+                <div id="bounce-rate" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-door-open"></i> Bounce Rate Analysis</h3>
+                            <p class="mb-0">Identify high-bounce pages and optimization opportunities</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Page Analysis</strong> - Individual page bounce rates</li>
+                                <li><strong>Channel Analysis</strong> - Bounce rates by traffic source</li>
+                                <li><strong>Threshold Alerts</strong> - Pages exceeding bounce rate limits</li>
+                                <li><strong>Optimization Tips</strong> - Specific improvement recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Bounce Rate %</span>
+                                <span class="metric-badge">Exit Rate %</span>
+                                <span class="metric-badge">Session Duration</span>
+                                <span class="metric-badge">Page Engagement</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the Bounce Rate Analysis card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/bounce_rate_analysis.py all 30</code><br>
+                                <code>ddev exec python3 scripts/bounce_rate_analysis.py pages 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device & Geographic Analysis -->
+                <div id="device-geo" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-mobile-alt"></i> Device & Geographic Analysis</h3>
+                            <p class="mb-0">Analyze performance by device type and geographic location</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Device Performance</strong> - Desktop, mobile, tablet metrics</li>
+                                <li><strong>Geographic Insights</strong> - Country and regional performance</li>
+                                <li><strong>Cross-device Comparison</strong> - Performance differences by device</li>
+                                <li><strong>Location-based Optimization</strong> - Geographic targeting recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Device Category</span>
+                                <span class="metric-badge">Country</span>
+                                <span class="metric-badge">Sessions by Device</span>
+                                <span class="metric-badge">Conversion by Location</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the Device & Geographic Analysis card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/device_geo_analysis.py all 30</code><br>
+                                <code>ddev exec python3 scripts/device_geo_analysis.py device 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Performance -->
+                <div id="technical-performance" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-cogs"></i> Technical Performance</h3>
+                            <p class="mb-0">Analyze technical performance and custom events</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Load Performance</strong> - Page load times and engagement</li>
+                                <li><strong>Custom Events</strong> - Track custom event implementation</li>
+                                <li><strong>Error Detection</strong> - Identify JavaScript errors and issues</li>
+                                <li><strong>Performance Optimization</strong> - Technical improvement recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Avg Session Duration</span>
+                                <span class="metric-badge">Engagement Rate</span>
+                                <span class="metric-badge">Bounce Rate</span>
+                                <span class="metric-badge">Event Count</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the Technical Performance card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/technical_performance.py all 30</code><br>
+                                <code>ddev exec python3 scripts/technical_performance.py load_times 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Behavior Analysis -->
+                <div id="user-behavior" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-route"></i> User Behavior Analysis</h3>
+                            <p class="mb-0">Analyze user navigation patterns and behavior flows</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>User Flow</strong> - Page transition patterns</li>
+                                <li><strong>Navigation Paths</strong> - Common user journeys</li>
+                                <li><strong>Behavior Patterns</strong> - Channel-specific behavior analysis</li>
+                                <li><strong>Journey Optimization</strong> - Path improvement recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Page Transitions</span>
+                                <span class="metric-badge">Session Flow</span>
+                                <span class="metric-badge">Path Probability</span>
+                                <span class="metric-badge">Channel Behavior</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the User Behavior Analysis card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/user_behavior.py all 30</code><br>
+                                <code>ddev exec python3 scripts/user_behavior.py flow 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Performance -->
+                <div id="content-performance" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-file-alt"></i> Content Performance</h3>
+                            <p class="mb-0">Analyze content engagement and effectiveness</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Content Engagement</strong> - Page-level engagement metrics</li>
+                                <li><strong>Content Types</strong> - Performance by content category</li>
+                                <li><strong>Content Effectiveness</strong> - Channel-specific content performance</li>
+                                <li><strong>Content Optimization</strong> - Improvement recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Engagement Rate</span>
+                                <span class="metric-badge">Avg Session Duration</span>
+                                <span class="metric-badge">Bounce Rate</span>
+                                <span class="metric-badge">Pageviews</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the Content Performance card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/content_performance.py all 30</code><br>
+                                <code>ddev exec python3 scripts/content_performance.py engagement 7</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEO Analysis -->
+                <div id="seo-analysis" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-search"></i> SEO Analysis</h3>
+                            <p class="mb-0">Analyze search engine optimization performance</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Analysis Types</h5>
+                            <ul>
+                                <li><strong>Organic Traffic</strong> - Organic search performance</li>
+                                <li><strong>Keyword Themes</strong> - Content keyword analysis</li>
+                                <li><strong>SEO Health</strong> - Technical SEO indicators</li>
+                                <li><strong>Search Optimization</strong> - SEO improvement recommendations</li>
+                            </ul>
+
+                            <h5>Key Metrics</h5>
+                            <div>
+                                <span class="metric-badge">Organic Sessions</span>
+                                <span class="metric-badge">Organic Users</span>
+                                <span class="metric-badge">Bounce Rate</span>
+                                <span class="metric-badge">Engagement Rate</span>
+                            </div>
+
+                            <h5>Web Usage</h5>
+                            <p>Select analysis type from the SEO Analysis card options.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/seo_analysis.py all 30</code><br>
+                                <code>ddev exec python3 scripts/seo_analysis.py organic 7</code>
                             </div>
                         </div>
                     </div>
