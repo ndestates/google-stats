@@ -1,4 +1,7 @@
 import os
+import sys
+import json
+import argparse
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
@@ -238,5 +241,54 @@ def show_channel_fallback():
     except Exception as error:
         print(f"Error getting channel data: {error}")
 
+def get_top_pages_json():
+    """Get top pages and output as JSON for web interface"""
+    try:
+        # Set environment variable for authentication
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
+
+        # Verify key file exists
+        if not os.path.exists(GA4_KEY_PATH):
+            print(json.dumps({'error': f'Service account key not found at {GA4_KEY_PATH}'}))
+            return
+
+        client = BetaAnalyticsDataClient()
+
+        # Get top pages from last 30 days
+        request = RunReportRequest(
+            property=f"properties/{GA4_PROPERTY_ID}",
+            dimensions=[Dimension(name="pagePath")],
+            metrics=[Metric(name="totalUsers")],
+            date_ranges=[DateRange(start_date="30daysAgo", end_date="yesterday")],
+            order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="totalUsers"), desc=True)],
+            limit=50,  # Get top 50 pages
+        )
+
+        response = client.run_report(request)
+
+        pages = []
+        for row in response.rows:
+            page_path = row.dimension_values[0].value
+            users = int(row.metric_values[0].value)
+
+            # Skip very low traffic pages and non-page paths
+            if users >= 1 and not page_path.endswith(('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.ttf', '.eot')):
+                pages.append({
+                    'path': page_path,
+                    'users': users
+                })
+
+        print(json.dumps({'pages': pages}))
+
+    except Exception as e:
+        print(json.dumps({'error': str(e)}))
+
 if __name__ == "__main__":
-    get_top_pages_with_sources()
+    parser = argparse.ArgumentParser(description='Get top performing pages report')
+    parser.add_argument('--json', action='store_true', help='Output results as JSON for web interface')
+    args = parser.parse_args()
+
+    if args.json:
+        get_top_pages_json()
+    else:
+        get_top_pages_with_sources()

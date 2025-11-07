@@ -49,6 +49,18 @@ def get_ga4_admin_client():
 
     return AnalyticsAdminServiceClient()
 
+def get_ga4_client():
+    """Get authenticated GA4 Data API client"""
+    from google.analytics.data_v1beta import BetaAnalyticsDataClient
+
+    # Set environment variable for authentication
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
+
+    # Validate configuration
+    validate_config()
+
+    return BetaAnalyticsDataClient()
+
 def get_gsc_client():
     """Get authenticated Google Search Console client"""
     from googleapiclient.discovery import build

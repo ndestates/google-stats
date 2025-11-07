@@ -269,6 +269,13 @@ if __name__ == "__main__":
         print("   python page_traffic_analysis.py https://www.ndestates.com/valuations 7")
         print()
 
+        # Check if running in interactive terminal
+        if not sys.stdin.isatty():
+            print("❌ This script requires command line arguments when run non-interactively.")
+            print("   Usage: python page_traffic_analysis.py <url> [days]")
+            print("   Example: python page_traffic_analysis.py /valuations 30")
+            exit(1)
+
         # Get URL from user
         target_url = input("Enter the page URL to analyze: ").strip()
 

@@ -19,6 +19,7 @@ if (empty($script)) {
 // Validate script name to prevent security issues
 $allowed_scripts = [
     'page_traffic_analysis.py',
+    'hourly_traffic_analysis.py',
     'google_ads_performance.py',
     'mailchimp_performance.py',
     'gsc_ga_keywords.py',
