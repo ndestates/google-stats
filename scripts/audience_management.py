@@ -24,7 +24,7 @@ def get_admin_service():
     )
 
     # Build the service
-    service = build('analyticsadmin', 'v1beta', credentials=credentials)
+    service = build('analyticsadmin', 'v1alpha', credentials=credentials)
     return service
 
 

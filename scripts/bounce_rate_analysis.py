@@ -20,13 +20,13 @@ from google.analytics.data_v1beta.types import OrderBy
 from src.config import REPORTS_DIR
 from src.ga4_client import run_report, create_date_range, get_report_filename
 
-def get_last_30_days_range():
+def get_last_30_days_range() -> tuple[str, str]:
     """Get date range for the last 30 days"""
     end_date = datetime.now() - timedelta(days=1)  # Yesterday
     start_date = end_date - timedelta(days=29)  # 30 days back
     return start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')
 
-def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_date: str = None):
+def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_date: str = None) -> dict:
     """Analyze bounce rates and identify problematic pages"""
 
     if not start_date or not end_date:
@@ -39,15 +39,19 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
     date_range = create_date_range(start_date, end_date)
 
     # Get page-level bounce rate data
-    response = run_report(
-        dimensions=["pagePath", "pageTitle", "sessionDefaultChannelGrouping"],
-        metrics=["screenPageViews", "sessions", "totalUsers", "bounceRate", "averageSessionDuration", "exitRate"],
-        date_ranges=[date_range],
-        order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="bounceRate"), desc=True)
-        ],
-        limit=100
-    )
+    try:
+        response = run_report(
+            dimensions=["pagePath", "pageTitle", "sessionDefaultChannelGrouping"],
+            metrics=["screenPageViews", "sessions", "totalUsers", "bounceRate", "averageSessionDuration", "exitRate"],
+            date_ranges=[date_range],
+            order_bys=[
+                OrderBy(metric=OrderBy.MetricOrderBy(metric_name="bounceRate"), desc=True)
+            ],
+            limit=100
+        )
+    except Exception as e:
+        print(f"❌ Error retrieving report: {str(e)}")
+        return None
 
     if response.row_count == 0:
         print("❌ No page data found for the date range.")
@@ -97,8 +101,8 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
             low_bounce_pages.append(page_data)
 
     # Display summary
-    print("
-📊 BOUNCE RATE SUMMARY:"    print(f"   Total Pages Analyzed: {response.row_count}")
+    print("📊 BOUNCE RATE SUMMARY:")
+    print(f"   Total Pages Analyzed: {response.row_count}")
     print(f"   Total Pageviews: {total_pageviews:,}")
     print(f"   Total Sessions: {total_sessions:,}")
     print(f"   High Bounce Pages (≥{threshold*100:.0f}%): {len(high_bounce_pages)}")
@@ -108,7 +112,8 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
 
     # Display high bounce rate pages
     if high_bounce_pages:
-        print(f"🚨 HIGH BOUNCE RATE PAGES (≥{threshold*100:.0f}%):"        print("   Page Path                    | Title                     | Channel    | Views | Sessions | Bounce | Duration | Exit")
+        print(f"🚨 HIGH BOUNCE RATE PAGES (≥{threshold*100:.0f}%):")
+        print("   Page Path                    | Title                     | Channel    | Views | Sessions | Bounce | Duration | Exit")
         print("   -----------------------------|---------------------------|------------|-------|----------|--------|----------|------")
 
         for page in high_bounce_pages[:15]:  # Show top 15
@@ -116,11 +121,12 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
             title_display = page['page_title'][:25] + "..." if len(page['page_title']) > 25 else page['page_title']
             channel_display = page['channel'][:10]
 
-            print("28")
+            print(f" {path_display:<28} | {title_display:<25} | {channel_display:<12} | {page['pageviews']:<5} | {page['sessions']:<8} | {page['bounce_rate']*100:.1f}% | {page['avg_duration']:.1f}s | {page['exit_rate']*100:.1f}%")
         print()
 
         # Provide recommendations for high bounce pages
-        print("💡 RECOMMENDATIONS FOR HIGH BOUNCE PAGES:"        print("   1. Content Quality:")
+        print("💡 RECOMMENDATIONS FOR HIGH BOUNCE PAGES:")
+        print("   1. Content Quality:")
         print("      • Review page content - is it relevant to user search intent?")
         print("      • Check for broken links, images, or formatting issues")
         print("      • Ensure page load speed is optimal (<3 seconds)")
@@ -150,16 +156,18 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
         channel_bounce_rates[channel]['total_sessions'] += sessions
         channel_bounce_rates[channel]['page_count'] += 1
 
-    print("📈 BOUNCE RATES BY TRAFFIC CHANNEL:"    print("   Channel              | Avg Bounce Rate | Total Sessions | Pages")
+    print("📈 BOUNCE RATES BY TRAFFIC CHANNEL:")
+    print("   Channel              | Avg Bounce Rate | Total Sessions | Pages")
     print("   ---------------------|-----------------|---------------|-------")
 
     for channel, data in sorted(channel_bounce_rates.items(), key=lambda x: x[1]['total_sessions'], reverse=True):
         avg_bounce = data['total_bounce'] / data['total_sessions'] if data['total_sessions'] > 0 else 0
-        print("21")
+        print(f" {channel:<20} | {avg_bounce*100:.1f}% | {data['total_sessions']:<13} | {data['page_count']:<5}")
     print()
 
     # Time-based bounce analysis (if we can get hourly data)
-    print("⏰ BOUNCE RATE PATTERNS:"    print("   💡 Bounce rates often vary by:")
+    print("⏰ BOUNCE RATE PATTERNS:")
+    print("   💡 Bounce rates often vary by:")
     print("      • Time of day (business hours vs off-hours)")
     print("      • Day of week (weekdays vs weekends)")
     print("      • Traffic source quality")
@@ -185,7 +193,9 @@ def analyze_bounce_rates(threshold: float = 0.7, start_date: str = None, end_dat
 
     if csv_data:
         df = pd.DataFrame(csv_data)
-        csv_filename = get_report_filename("bounce_rate_analysis", f"threshold_{int(threshold*100)}_{start_date}_to_{end_date}")
+        csv_filename = os.path.join(REPORTS_DIR, get_report_filename("bounce_rate_analysis", f"threshold_{int(threshold*100)}_{start_date}_to_{end_date}"))
+        if os.path.exists(csv_filename):
+            print(f"⚠️ Warning: Overwriting existing file {csv_filename}")
         df.to_csv(csv_filename, index=False)
         print(f"📄 Detailed data exported to: {csv_filename}")
 
@@ -203,20 +213,38 @@ if __name__ == "__main__":
     print("=" * 40)
 
     if len(sys.argv) >= 2:
-        threshold = float(sys.argv[1])
-        days = int(sys.argv[2]) if len(sys.argv) >= 3 else 30
+        try:
+            threshold_str = sys.argv[1].strip()  # Sanitize input
+            threshold = float(threshold_str)
+            if not 0 <= threshold <= 1:
+                print(f"❌ Error: Threshold must be between 0 and 1, got {threshold}")
+                print("   Example: 0.7 for 70% bounce rate threshold")
+                exit(1)
+        except ValueError:
+            print(f"❌ Error: Invalid threshold value '{sys.argv[1]}'. Threshold must be a number between 0 and 1.")
+            print("   Example: 0.7 for 70% bounce rate threshold")
+            exit(1)
+
+        days = 30  # Default value
+        if len(sys.argv) >= 3:
+            try:
+                days_str = sys.argv[2].strip()  # Sanitize input
+                days = int(days_str)
+                if days <= 0:
+                    print(f"❌ Error: Days must be a positive integer, got {days}")
+                    print("   Example: 30 for last 30 days")
+                    exit(1)
+            except ValueError:
+                print(f"❌ Error: Invalid days value '{sys.argv[2]}'. Days must be a positive integer.")
+                print("   Example: 30 for last 30 days")
+                exit(1)
 
         print(f"Analyzing bounce rates above: {threshold*100:.0f}%")
         print(f"Time period: Last {days} days")
 
-        if days == 7:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=6)
-            analyze_bounce_rates(threshold, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
-        else:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=days-1)
-            analyze_bounce_rates(threshold, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        end_date = datetime.now() - timedelta(days=1)  # Yesterday
+        start_date = end_date - timedelta(days=days - 1)  # Correct for inclusive range
+        analyze_bounce_rates(threshold, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
     else:
         print("Analyze bounce rates and identify pages needing optimization")
         print()
