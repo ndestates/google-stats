@@ -59,6 +59,12 @@ REPORTS = {
         'description': 'Individual Google Ads creative performance analysis',
         'script': 'google_ads_ad_performance.py',
         'icon': '📢'
+    },
+    'social_media_timing': {
+        'name': 'Social Media Timing Analysis',
+        'description': 'Best posting times for social media platforms based on organic traffic',
+        'script': 'social_media_timing.py',
+        'icon': '⏰'
     }
 }
 

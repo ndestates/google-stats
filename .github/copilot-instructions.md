@@ -61,45 +61,31 @@ python3 scripts/yesterday_report.py
 - Web interface (`app.py`) provides UI for script execution
 - PDF reports generated via `src/pdf_generator.py`
 
-## Production Deployment Considerations
+## Testing Workflow
 
-### Containerization Strategy
-- **Future Target**: Docker containers on AWS/Kubernetes
-- **Web Service**: PHP-based frontend (`web/` directory) as primary container
-- **Worker Service**: Background processing for long-running analytics scripts
-- **Storage**: Persistent volumes for reports/ directory
-- **Secrets**: AWS Secrets Manager or Kubernetes secrets for API credentials
-
-### Environment Variables for Production
+### Running Tests
 ```bash
-# Core configuration
-GA4_PROPERTY_ID=your_property_id
-GA4_KEY_PATH=/secrets/ga4-service-account.json
-GSC_SITE_URL=https://yourdomain.com
-GSC_KEY_PATH=/secrets/gsc-service-account.json
+# All tests
+python run_tests.py
 
-# Optional integrations
-MAILCHIMP_API_KEY=your_mailchimp_key
-GOOGLE_ADS_CUSTOMER_ID=your_customer_id
-GOOGLE_ADS_KEY_PATH=/secrets/google-ads-service-account.json
+# Unit tests only
+python run_tests.py unit
 
-# Application settings
-FLASK_ENV=production
-REPORTS_DIR=/app/reports
+# Integration tests
+python run_tests.py integration
+
+# Specific script tests
+python run_tests.py --script content_performance
+
+# With coverage
+python run_tests.py --coverage
 ```
 
-### Docker Best Practices
-- **Multi-stage builds**: Separate build and runtime images
-- **Non-root user**: Run containers as non-privileged user
-- **Health checks**: Implement for web service and workers
-- **Logging**: Structured JSON logging for cloud environments
-- **Resource limits**: CPU/memory limits for Kubernetes pods
-
-### Infrastructure Patterns
-- **Scheduled Jobs**: Use Kubernetes CronJobs for daily/weekly reports
-- **Message Queues**: Consider Redis/RabbitMQ for async report generation
-- **Load Balancing**: AWS ALB/NLB for web interface
-- **Monitoring**: CloudWatch/Prometheus for metrics and alerts
+### Test Structure
+- Unit tests in `tests/test_*.py`
+- Script tests in `tests/test_scripts/`
+- Integration tests in `tests/test_integration/`
+- Mocks for API calls to avoid requiring credentials
 
 ## Key Conventions
 
