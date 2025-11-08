@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
@@ -13,7 +14,7 @@ from google.analytics.data_v1beta.types import (
 from src.config import REPORTS_DIR, GA4_PROPERTY_ID, GA4_KEY_PATH
 from src.pdf_generator import create_google_ads_report_pdf
 
-def get_google_ads_performance():
+def get_google_ads_performance(date_range=None):
     """Analyze Google Ads performance by campaign, ad, and time of day"""
 
     # Set environment variable for authentication
@@ -25,9 +26,17 @@ def get_google_ads_performance():
 
     client = BetaAnalyticsDataClient()
 
-    # Calculate date range: last 30 days
-    end_date = datetime.now().date() - timedelta(days=1)  # Yesterday as end
-    start_date = end_date - timedelta(days=29)  # 30 days total
+    # Calculate date range based on argument
+    if date_range == "yesterday":
+        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday
+        start_date = end_date
+    elif date_range == "today":
+        end_date = datetime.now().date()  # Today
+        start_date = end_date
+    else:
+        # Default: last 30 days
+        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday as end
+        start_date = end_date - timedelta(days=29)  # 30 days total
 
     print(f"🎯 Analyzing Google Ads Performance: {start_date} to {end_date}")
     print("=" * 80)
@@ -288,4 +297,12 @@ def get_google_ads_performance():
     print("Check the CSV files for detailed data and insights!")
 
 if __name__ == "__main__":
-    get_google_ads_performance()
+    # Parse command line arguments
+    date_range = None
+    if len(sys.argv) > 1:
+        if "--date" in sys.argv:
+            date_index = sys.argv.index("--date")
+            if date_index + 1 < len(sys.argv):
+                date_range = sys.argv[date_index + 1].lower()
+
+    get_google_ads_performance(date_range)

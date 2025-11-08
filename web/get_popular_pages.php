@@ -3,15 +3,47 @@
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
+// Load environment variables from .env file
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return false;
+    }
+
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+    return true;
+}
+
+// Load .env file from project root
+$envPath = dirname(__DIR__) . '/.env';
+loadEnv($envPath);
+
 // Set the working directory to the project root
 $project_root = dirname(__DIR__);
+
+// Get credentials path from environment
+$ga4KeyPath = getenv('GA4_KEY_PATH') ?: $project_root . '/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json';
 
 // Change to the project directory
 chdir($project_root);
 
 // Set environment variables
 putenv('PYTHONPATH=' . $project_root);
-putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $project_root . '/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json');
+putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $ga4KeyPath);
 
 // Run the get_top_pages script with JSON output
 $command = "python3 scripts/get_top_pages.py --json 2>&1";

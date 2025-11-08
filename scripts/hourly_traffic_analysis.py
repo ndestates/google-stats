@@ -9,6 +9,7 @@ Examples:
     python hourly_traffic_analysis.py /valuations
     python hourly_traffic_analysis.py https://www.ndestates.com/valuations 7
     python hourly_traffic_analysis.py /valuations 30
+    python hourly_traffic_analysis.py /valuations 90
 """
 
 import os
@@ -28,6 +29,9 @@ def get_last_30_days_range():
 
 def normalize_page_path(url_or_path):
     """Convert URL to page path format for GA4"""
+    # Strip surrounding quotes if present
+    url_or_path = url_or_path.strip('"').strip("'")
+
     # Remove protocol and domain if present
     if url_or_path.startswith('http://') or url_or_path.startswith('https://'):
         # Extract path from URL
@@ -100,6 +104,51 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
 
     # Process data by source/medium and hour
     source_hourly_data = {}
+    organic_hourly_data = {}  # Track search organic traffic by hour
+    social_organic_data = {
+        'facebook': {},
+        'instagram': {},
+        'twitter': {},
+        'linkedin': {},
+        'buffer': {}
+    }  # Track organic social traffic by platform and hour
+
+    # Define organic source/medium combinations
+    organic_sources = {
+        'google / organic',
+        'bing / organic',
+        'yahoo / organic',
+        'duckduckgo / organic',
+        'yandex / organic'
+    }
+
+    # Define organic social source/medium combinations
+    social_organic_sources = {
+        'facebook': {
+            'facebook.com / referral',
+            'l.facebook.com / referral',
+            'm.facebook.com / referral',
+            'facebook / social'
+        },
+        'instagram': {
+            'instagram.com / referral',
+            'l.instagram.com / referral',
+            'instagram.com / social'
+        },
+        'twitter': {
+            'twitter.com / social',
+            't.co / referral',
+            'twitter.com / referral'
+        },
+        'linkedin': {
+            'linkedin.com / social',
+            'linkedin.com / referral',
+            'lnkd.in / referral'
+        },
+        'buffer': {
+            'buffer'
+        }
+    }
 
     for row in page_traffic_data:
         actual_page_path = row.dimension_values[0].value
@@ -115,6 +164,39 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
         avg_session_duration = float(row.metric_values[5].value)
         bounce_rate = float(row.metric_values[6].value)
         engagement_rate = float(row.metric_values[7].value)
+
+        # Track organic traffic separately
+        if source_medium in organic_sources:
+            if hour not in organic_hourly_data:
+                organic_hourly_data[hour] = {
+                    'users': 0,
+                    'new_users': 0,
+                    'sessions': 0,
+                    'engaged_sessions': 0,
+                    'pageviews': 0
+                }
+            organic_hourly_data[hour]['users'] += users
+            organic_hourly_data[hour]['new_users'] += new_users
+            organic_hourly_data[hour]['sessions'] += sessions
+            organic_hourly_data[hour]['engaged_sessions'] += engaged_sessions
+            organic_hourly_data[hour]['pageviews'] += pageviews
+
+        # Track organic social traffic by platform
+        for platform, sources in social_organic_sources.items():
+            if source_medium in sources:
+                if hour not in social_organic_data[platform]:
+                    social_organic_data[platform][hour] = {
+                        'users': 0,
+                        'new_users': 0,
+                        'sessions': 0,
+                        'engaged_sessions': 0,
+                        'pageviews': 0
+                    }
+                social_organic_data[platform][hour]['users'] += users
+                social_organic_data[platform][hour]['new_users'] += new_users
+                social_organic_data[platform][hour]['sessions'] += sessions
+                social_organic_data[platform][hour]['engaged_sessions'] += engaged_sessions
+                social_organic_data[platform][hour]['pageviews'] += pageviews
 
         if source_medium not in source_hourly_data:
             source_hourly_data[source_medium] = {
@@ -200,7 +282,7 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
         print(f"   Total Users: {data['total_users']:,} (New: {data['total_new_users']:,})")
         print(f"   Total Sessions: {data['total_sessions']:,} (Engaged: {data['total_engaged_sessions']:,})")
         print(f"   Total Pageviews: {data['total_pageviews']:,}")
-        print(f"   Best Hour: {data['best_hour']:02d}:00 ({data['best_hour_users']:,} users)")
+        print(f"   Best Hour: {data['best_hour']:02d}:00 ({data['best_hour_users']:,} users)" if data['best_hour'] is not None else f"   Best Hour: N/A (0 users)")
 
         # Show channel grouping information
         if data['channel_groupings']:
@@ -209,8 +291,8 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
 
         # Show campaign information
         if data['campaigns']:
-            top_campaigns = list(data['campaigns'])[:3]  # Show top 3 campaigns
-            print(f"   Campaigns: {', '.join(top_campaigns)}")
+            top_campaigns = list(data['campaigns'])[:5]  # Show top 5 campaigns
+            print(f"   Campaigns (that drove traffic to this page): {', '.join(top_campaigns)}")
 
         # Display hourly breakdown
         print("   Hourly Traffic:")
@@ -227,11 +309,11 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
         total_page_engaged_sessions += data['total_engaged_sessions']
         total_page_pageviews += data['total_pageviews']
 
-        # Limit display to top 5 sources to avoid too much output
-        if i >= 5:
-            remaining_sources = len(sorted_sources) - 5
+        # Limit display to top 25 sources (increased from 5)
+        if i >= 25:
+            remaining_sources = len(sorted_sources) - 25
             if remaining_sources > 0:
-                remaining_users = sum(data['total_users'] for _, data in sorted_sources[5:])
+                remaining_users = sum(data['total_users'] for _, data in sorted_sources[25:])
                 print(f"\n... and {remaining_sources} more sources with {remaining_users:,} total users")
             break
 
@@ -241,6 +323,44 @@ def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: st
     print(f"   Total Sessions: {total_page_sessions:,} (Engaged: {total_page_engaged_sessions:,})")
     print(f"   Total Pageviews: {total_page_pageviews:,}")
     print(f"   Date Range: {start_date} to {end_date}")
+
+    # Calculate and display organic traffic summary
+    if organic_hourly_data:
+        total_organic_users = sum(hour_data['users'] for hour_data in organic_hourly_data.values())
+        total_organic_new_users = sum(hour_data['new_users'] for hour_data in organic_hourly_data.values())
+        total_organic_sessions = sum(hour_data['sessions'] for hour_data in organic_hourly_data.values())
+
+        # Find best hour for organic traffic
+        best_organic_hour = max(organic_hourly_data.keys(), key=lambda h: organic_hourly_data[h]['users'])
+        best_organic_users = organic_hourly_data[best_organic_hour]['users']
+
+        print(f"\n{'='*120}")
+        print("🌱 ORGANIC TRAFFIC SUMMARY:")
+        print(f"   Total Organic Users: {total_organic_users:,} (New: {total_organic_new_users:,})")
+        print(f"   Total Organic Sessions: {total_organic_sessions:,}")
+        print(f"   Best Hour for Organic Traffic: {best_organic_hour:02d}:00 ({best_organic_users:,} users)")
+        print(f"   Organic Traffic % of Total: {total_organic_users/total_page_users*100:.1f}%" if total_page_users > 0 else "   Organic Traffic % of Total: 0.0%")
+
+    # Calculate and display social organic traffic summaries
+    social_platforms = []
+    for platform, hourly_data in social_organic_data.items():
+        if hourly_data:
+            total_users = sum(hour_data['users'] for hour_data in hourly_data.values())
+            if total_users > 0:
+                best_hour = max(hourly_data.keys(), key=lambda h: hourly_data[h]['users'])
+                best_users = hourly_data[best_hour]['users']
+                social_platforms.append((platform, total_users, best_hour, best_users))
+
+    # Always print social media section for dashboard parsing
+    print(f"\n{'='*120}")
+    print("📱 SOCIAL ORGANIC TRAFFIC SUMMARY:")
+    if social_platforms:
+        print("   Best posting hours for each platform (organic reach):")
+        for platform, total_users, best_hour, best_users in sorted(social_platforms, key=lambda x: x[1], reverse=True):
+            platform_name = platform.title()
+            print(f"   {platform_name}: {best_hour:02d}:00 ({best_users:,} users) - Total: {total_users:,} users")
+    else:
+        print("   No organic social media traffic detected in the selected time period.")
 
     # Export detailed data to CSV
     csv_data = []
@@ -310,6 +430,7 @@ if __name__ == "__main__":
         print("💡 Tip: You can also run non-interactively:")
         print("   python hourly_traffic_analysis.py /valuations")
         print("   python hourly_traffic_analysis.py https://www.ndestates.com/valuations 7")
+        print("   python hourly_traffic_analysis.py /valuations 90")
         print()
 
         # Check if running in interactive terminal
@@ -329,9 +450,10 @@ if __name__ == "__main__":
         print("\nChoose time period:")
         print("1. Last 30 days")
         print("2. Last 7 days")
-        print("3. Custom date range")
+        print("3. Last 90 days")
+        print("4. Custom date range")
 
-        choice = input("Enter choice (1, 2, or 3): ").strip()
+        choice = input("Enter choice (1, 2, 3, or 4): ").strip()
 
         if choice == "1":
             analyze_hourly_traffic(target_url)
@@ -341,6 +463,11 @@ if __name__ == "__main__":
             start_date = end_date - timedelta(days=6)
             analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         elif choice == "3":
+            # Calculate 90-day range
+            end_date = datetime.now() - timedelta(days=1)
+            start_date = end_date - timedelta(days=89)
+            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        elif choice == "4":
             start_date = input("Enter start date (YYYY-MM-DD): ").strip()
             end_date = input("Enter end date (YYYY-MM-DD): ").strip()
             if start_date and end_date:

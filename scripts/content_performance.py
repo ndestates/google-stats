@@ -40,10 +40,10 @@ def analyze_content_engagement(start_date: str = None, end_date: str = None):
 
     response = run_report(
         dimensions=["pagePath", "pageTitle"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate", "engagementRate", "screenPageViews"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"],
         date_ranges=[date_range],
         order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="pageviews"), desc=True)
+            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)
         ],
         limit=100
     )
@@ -67,7 +67,7 @@ def analyze_content_engagement(start_date: str = None, end_date: str = None):
         avg_duration = float(row.metric_values[3].value)
         bounce_rate = float(row.metric_values[4].value)
         engagement_rate = float(row.metric_values[5].value)
-        screen_views = int(row.metric_values[6].value)
+        screen_views = pageviews  # screenPageViews is already at index 2
 
         content_data[page_path] = {
             'title': page_title,
@@ -82,8 +82,8 @@ def analyze_content_engagement(start_date: str = None, end_date: str = None):
 
         total_pageviews += pageviews
 
-    print("
-📊 CONTENT ENGAGEMENT ANALYSIS:"    print(f"   Total Page Views: {total_pageviews:,}")
+    print("📊 CONTENT ENGAGEMENT ANALYSIS:")
+    print(f"   Total Page Views: {total_pageviews:,}")
     print(f"   Unique Pages: {len(content_data)}")
     print()
 
@@ -106,24 +106,28 @@ def analyze_content_engagement(start_date: str = None, end_date: str = None):
             if data['avg_duration'] > 180:  # Over 3 minutes
                 long_sessions.append((page_path, data['avg_duration'], data['pageviews']))
 
-    print("   ⭐ HIGH ENGAGEMENT CONTENT (>70%):"    for page, engagement, views in sorted(high_engagement, key=lambda x: x[1], reverse=True)[:5]:
+    print("   ⭐ HIGH ENGAGEMENT CONTENT (>70%):")
+    for page, engagement, views in sorted(high_engagement, key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
-        print("15")
+        print(f"      • {page_display} (Engagement: {engagement:.1%}, Views: {views:,})")
     print()
 
-    print("   ⚠️  LOW ENGAGEMENT CONTENT (<30%):"    for page, engagement, views in sorted(low_engagement, key=lambda x: x[1])[:5]:
+    print("   ⚠️  LOW ENGAGEMENT CONTENT (<30%):")
+    for page, engagement, views in sorted(low_engagement, key=lambda x: x[1])[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
-        print("15")
+        print(f"      • {page_display} (Engagement: {engagement:.1%}, Views: {views:,})")
     print()
 
-    print("   🚪 HIGH BOUNCE CONTENT (>70%):"    for page, bounce, views in sorted(high_bounce, key=lambda x: x[1], reverse=True)[:5]:
+    print("   🚪 HIGH BOUNCE CONTENT (>70%):")
+    for page, bounce, views in sorted(high_bounce, key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
-        print("15")
+        print(f"      • {page_display} (Bounce: {bounce:.1%}, Views: {views:,})")
     print()
 
-    print("   ⏰ LONG SESSION CONTENT (>3 min):"    for page, duration, views in sorted(long_sessions, key=lambda x: x[1], reverse=True)[:5]:
+    print("   ⏰ LONG SESSION CONTENT (>3 min):")
+    for page, duration, views in sorted(long_sessions, key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
-        print("15")
+        print(f"      • {page_display} (Duration: {duration:.1f}s, Views: {views:,})")
     print()
 
     return content_data
@@ -143,10 +147,10 @@ def analyze_content_types(start_date: str = None, end_date: str = None):
     # Categorize content by URL patterns
     response = run_report(
         dimensions=["pagePath"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate", "engagementRate"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"],
         date_ranges=[date_range],
         order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="pageviews"), desc=True)
+            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)
         ],
         limit=200
     )
@@ -218,8 +222,8 @@ def analyze_content_types(start_date: str = None, end_date: str = None):
             cat_data['bounce_rate'] = cat_data['bounce_rate'] * (1 - weight) + bounce_rate * weight
             cat_data['engagement_rate'] = cat_data['engagement_rate'] * (1 - weight) + engagement_rate * weight
 
-    print("
-📊 CONTENT TYPE PERFORMANCE:"    print("   Category     | Pages | Users | Sessions | Pageviews | Avg Duration | Bounce | Engage")
+    print("📊 CONTENT TYPE PERFORMANCE:")
+    print("   Category     | Pages | Users | Sessions | Pageviews | Avg Duration | Bounce | Engage")
     print("   --------------|-------|-------|----------|-----------|--------------|--------|--------")
 
     total_pageviews = sum(cat['pageviews'] for cat in category_data.values())
@@ -228,11 +232,12 @@ def analyze_content_types(start_date: str = None, end_date: str = None):
         if data['pages'] > 0:
             category_display = category[:12] + "..." if len(category) > 12 else category
             percentage = (data['pageviews'] / total_pageviews) * 100 if total_pageviews > 0 else 0
-            print("12")
+            print(f"   {category_display:<12} | {data['pages']:>5} | {data['users']:>5} | {data['sessions']:>8} | {data['pageviews']:>9} | {data['avg_duration']:>12.1f}s | {data['bounce_rate']:>6.1%} | {data['engagement_rate']:>6.1%}")
     print()
 
     # Content type insights
-    print("   💡 CONTENT TYPE INSIGHTS:"    for category, data in category_data.items():
+    print("   💡 CONTENT TYPE INSIGHTS:")
+    for category, data in category_data.items():
         if data['pages'] > 0 and data['sessions'] > 5:
             if data['engagement_rate'] > 0.6:
                 print(f"   • {category}: Strong engagement ({data['engagement_rate']:.1%}) - {data['pages']} pages")
@@ -259,10 +264,10 @@ def analyze_content_effectiveness(start_date: str = None, end_date: str = None):
     # Get content with goal completions (simplified - using sessions as proxy)
     response = run_report(
         dimensions=["pagePath", "sessionDefaultChannelGrouping"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate"],
         date_ranges=[date_range],
         order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="pageviews"), desc=True)
+            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)
         ],
         limit=50
     )
@@ -316,17 +321,18 @@ def analyze_content_effectiveness(start_date: str = None, end_date: str = None):
             'bounce_rate': bounce_rate
         }
 
-    print("
-📊 CONTENT EFFECTIVENESS BY CHANNEL:"    print("   Channel          | Users | Sessions | Pageviews | Avg Duration | Bounce Rate")
+    print("📊 CONTENT EFFECTIVENESS BY CHANNEL:")
+    print("   Channel          | Users | Sessions | Pageviews | Avg Duration | Bounce Rate")
     print("   -----------------|-------|----------|-----------|--------------|------------")
 
     for channel, data in sorted(channel_performance.items(), key=lambda x: x[1]['total_sessions'], reverse=True):
         channel_display = channel[:15] + "..." if len(channel) > 15 else channel
-        print("15")
+        print(f"   {channel_display:<15} | {data['total_users']:>5} | {data['total_sessions']:>8} | {data['total_pageviews']:>9} | {data['avg_duration']:>12.1f}s | {data['avg_bounce']:>10.1%}")
     print()
 
     # Effectiveness recommendations
-    print("   💡 CONTENT EFFECTIVENESS RECOMMENDATIONS:"    print("   1. Channel Optimization:")
+    print("   💡 CONTENT EFFECTIVENESS RECOMMENDATIONS:")
+    print("   1. Channel Optimization:")
     for channel, data in channel_performance.items():
         if data['total_sessions'] > 10:
             if data['avg_bounce'] > 0.6:
@@ -427,19 +433,34 @@ def analyze_content_performance(content_type: str = "all", start_date: str = Non
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
         content_type = sys.argv[1]
-        days = int(sys.argv[2]) if len(sys.argv) >= 3 else 30
+        days_or_date = sys.argv[2] if len(sys.argv) >= 3 else "30"
 
         print(f"Content type: {content_type}")
-        print(f"Time period: Last {days} days")
 
-        if days == 7:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=6)
+        # Check if it's a date keyword
+        if days_or_date.lower() in ["yesterday", "today"]:
+            if days_or_date.lower() == "yesterday":
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date
+                print(f"Time period: Yesterday ({start_date.strftime('%Y-%m-%d')})")
+            elif days_or_date.lower() == "today":
+                end_date = datetime.now()
+                start_date = end_date
+                print(f"Time period: Today ({start_date.strftime('%Y-%m-%d')})")
             analyze_content_performance(content_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         else:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=days-1)
-            analyze_content_performance(content_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            # It's a number of days
+            days = int(days_or_date)
+            print(f"Time period: Last {days} days")
+
+            if days == 7:
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=6)
+                analyze_content_performance(content_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            else:
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=days-1)
+                analyze_content_performance(content_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
     else:
         print("Analyze content performance and engagement")
         print()
@@ -449,6 +470,7 @@ if __name__ == "__main__":
         print("  effectiveness - Content effectiveness analysis")
         print("  all           - Complete content analysis")
         print()
-        print("Usage: python content_performance.py <content_type> [days]")
+        print("Usage: python content_performance.py <content_type> [days|yesterday|today]")
         print("Example: python content_performance.py all 30")
+        print("Example: python content_performance.py all yesterday")
         exit(1)

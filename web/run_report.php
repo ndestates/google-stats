@@ -3,6 +3,38 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+// Load environment variables from .env file
+function loadEnv($path) {
+    if (!file_exists($path)) {
+        return false;
+    }
+
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+    return true;
+}
+
+// Load .env file from project root
+$envPath = dirname(__DIR__) . '/.env';
+loadEnv($envPath);
+
+// Get credentials path from environment
+$ga4KeyPath = getenv('GA4_KEY_PATH') ?: '/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json';
+
 // Check if this is a GET request to show the form
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ?>
@@ -40,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 <option value="gsc_ga_keywords.py">🔍 GSC-GA4 Keywords</option>
                 <option value="page_traffic_analysis.py">📈 Page Traffic Analysis</option>
                 <option value="google_ads_performance.py">📢 Google Ads Performance</option>
+                <option value="social_media_analytics">📱 Social Media Analytics</option>
             </select>
 
             <label for="args">Arguments (optional):</label>
@@ -110,7 +143,8 @@ $allowed_scripts = [
     'technical_performance.py',
     'user_behavior.py',
     'content_performance.py',
-    'seo_analysis.py'
+    'seo_analysis.py',
+    'social_media_analytics'
 ];
 
 if (!in_array($script, $allowed_scripts)) {
@@ -118,17 +152,25 @@ if (!in_array($script, $allowed_scripts)) {
     exit;
 }
 
-// Execute the selected script
-$script_path = "/var/www/html/scripts/$script";
-$args_array = $args ? explode(' ', $args) : [];
-$command = "cd /var/www/html && PYTHONPATH=/var/www/html GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json python3 $script_path " . implode(' ', array_map('escapeshellarg', $args_array));
+// Handle special case for social media analytics
+if ($script === 'social_media_analytics') {
+    $script_path = "/var/www/html/scripts/hourly_traffic_analysis.py";
+    // Use home page as default for social media analytics
+    $args_array = ['/'];
+    $command = "cd /var/www/html && PYTHONPATH=/var/www/html GOOGLE_APPLICATION_CREDENTIALS=" . escapeshellarg($ga4KeyPath) . " python3 $script_path " . implode(' ', array_map('escapeshellarg', $args_array));
+} else {
+    // Execute the selected script
+    $script_path = "/var/www/html/scripts/$script";
+    $args_array = $args ? explode(' ', $args) : [];
+    $command = "cd /var/www/html && PYTHONPATH=/var/www/html GOOGLE_APPLICATION_CREDENTIALS=" . escapeshellarg($ga4KeyPath) . " python3 $script_path " . implode(' ', array_map('escapeshellarg', $args_array));
+}
 
 // Set the working directory to the project root for proc_open
 $project_root = '/var/www/html';
 
 // Set environment variables if needed
 putenv('PYTHONPATH=/var/www/html');
-putenv('GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json');
+putenv('GOOGLE_APPLICATION_CREDENTIALS=' . $ga4KeyPath);
 
 // Execute the command with timeout and capture output
 $descriptors = [
@@ -154,28 +196,356 @@ if (is_resource($process)) {
     // Get exit code
     $return_code = proc_close($process);
 
-    // Output the results
-    ?>
-    <div class="container">
-        <h1>Report Results</h1>
-        <div class="result">
-    <?php
-    if ($return_code === 0) {
-        echo "✅ Report completed successfully:\n\n";
-        echo htmlspecialchars($output);
+    // Handle special formatting for social media analytics
+    if (($script === 'social_media_analytics' || $script === 'hourly_traffic_analysis.py') && $return_code === 0) {
+                // Parse the output to extract social media data
+                $lines = explode("\n", trim($output));
+                $social_data = [];
+                $in_social_section = false;
+                $no_social_data = false;
+
+                foreach ($lines as $line) {
+                    if (strpos($line, 'SOCIAL ORGANIC TRAFFIC SUMMARY:') !== false) {
+                        $in_social_section = true;
+                        continue;
+                    }
+
+                    if ($in_social_section && strpos($line, 'No organic social media traffic detected') !== false) {
+                        $no_social_data = true;
+                        break;
+                    }
+
+                    if ($in_social_section && strpos($line, 'Best posting hours') !== false) {
+                        continue;
+                    }
+
+                    if ($in_social_section && trim($line) === '') {
+                        continue;
+                    }
+
+                    if ($in_social_section && strpos($line, ':') !== false) {
+                        // Parse platform data: "Facebook: 14:00 (1,234 users) - Total: 5,678 users"
+                        if (preg_match('/^\s*([A-Za-z]+):\s*(\d{2}):00\s*\(([\d,]+)\s*users\)\s*-\s*Total:\s*([\d,]+)\s*users/', $line, $matches)) {
+                            $platform = strtolower($matches[1]);
+                            $best_hour = (int)$matches[2];
+                            $best_users = (int)str_replace(',', '', $matches[3]);
+                            $total_users = (int)str_replace(',', '', $matches[4]);
+
+                            $social_data[$platform] = [
+                                'name' => ucfirst($platform),
+                                'best_hour' => $best_hour,
+                                'best_users' => $best_users,
+                                'total_users' => $total_users
+                            ];
+                        }
+                    }
+
+                    // Stop parsing when we hit another section
+                    if ($in_social_section && (strpos($line, '=====') !== false || strpos($line, 'ORGANIC TRAFFIC SUMMARY') !== false)) {
+                        break;
+                    }
+                }        // Output the formatted social media dashboard
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Social Media Analytics Report</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+                    overflow: hidden;
+                }
+                .header {
+                    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                }
+                .header h1 {
+                    margin: 0;
+                    font-size: 2.5em;
+                    font-weight: 300;
+                }
+                .header p {
+                    margin: 10px 0 0 0;
+                    opacity: 0.9;
+                    font-size: 1.1em;
+                }
+                .content {
+                    padding: 40px;
+                }
+                .report-section {
+                    margin-bottom: 40px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 30px;
+                    border-left: 4px solid #007cba;
+                }
+                .section-title {
+                    font-size: 1.8em;
+                    margin-bottom: 20px;
+                    color: #333;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .platform-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+                @media (max-width: 768px) {
+                    .platform-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                .platform-card {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 25px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    border: 1px solid #e9ecef;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .platform-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                }
+                .platform-name {
+                    font-size: 1.4em;
+                    font-weight: bold;
+                    margin-bottom: 15px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .metric {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #f0f0f0;
+                }
+                .metric:last-child {
+                    border-bottom: none;
+                }
+                .metric-label {
+                    font-weight: 500;
+                    color: #666;
+                }
+                .metric-value {
+                    font-weight: bold;
+                    color: #333;
+                    font-size: 1.1em;
+                }
+                .best-hour {
+                    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+                    border-radius: 6px;
+                    padding: 15px;
+                    margin-top: 15px;
+                    border-left: 4px solid #ff8c42;
+                }
+                .best-hour strong {
+                    color: #e85d04;
+                }
+                .summary-stats {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+                @media (max-width: 768px) {
+                    .summary-stats {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                .stat-card {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .stat-value {
+                    font-size: 2em;
+                    font-weight: bold;
+                    color: #007cba;
+                    margin-bottom: 5px;
+                }
+                .stat-label {
+                    color: #666;
+                    font-size: 0.9em;
+                }
+                .error {
+                    background: #f8d7da;
+                    color: #721c24;
+                    padding: 20px;
+                    border-radius: 8px;
+                    border-left: 4px solid #dc3545;
+                    margin-bottom: 20px;
+                }
+                .refresh-btn {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 20px;
+                    transition: transform 0.2s;
+                }
+                .refresh-btn:hover {
+                    transform: translateY(-1px);
+                }
+                .footer {
+                    text-align: center;
+                    padding: 20px;
+                    background: #f8f9fa;
+                    color: #666;
+                    border-top: 1px solid #e9ecef;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📱 Social Media Analytics Dashboard</h1>
+                    <p>Optimal posting hours and organic traffic insights</p>
+                </div>
+
+                <div class="content">
+                    <?php
+                if (empty($social_data) && !$no_social_data) {
+                    echo '<div class="error">⚠️ No social media data found. The analytics script may not have detected organic social traffic in the selected time period.</div>';
+                } else {
+                    // Display summary statistics (show 0s if no data)
+                    $total_social_users = $no_social_data ? 0 : array_sum(array_column($social_data, 'total_users'));
+                    $active_platforms = $no_social_data ? 0 : count($social_data);
+                    $avg_best_hour = $no_social_data ? 0 : round(array_sum(array_column($social_data, 'best_hour')) / count($social_data));
+
+                    echo '<div class="report-section">';
+                    echo '<h2 class="section-title">📊 Summary Statistics</h2>';
+                    echo '<div class="summary-stats">';
+                    echo '<div class="stat-card">';
+                    echo '<div class="stat-value">' . number_format($total_social_users) . '</div>';
+                    echo '<div class="stat-label">Total Organic Social Users</div>';
+                    echo '</div>';
+                    echo '<div class="stat-card">';
+                    echo '<div class="stat-value">' . $active_platforms . '</div>';
+                    echo '<div class="stat-label">Active Platforms</div>';
+                    echo '</div>';
+                    echo '<div class="stat-card">';
+                    echo '<div class="stat-value">' . ($no_social_data ? 'N/A' : $avg_best_hour . ':00') . '</div>';
+                    echo '<div class="stat-label">Average Best Hour</div>';
+                    echo '</div>';
+                    echo '</div>';
+                    echo '</div>';
+
+                    // Display platform-specific data
+                    echo '<div class="report-section">';
+                    echo '<h2 class="section-title">🎯 Platform Performance</h2>';
+                    if ($no_social_data) {
+                        echo '<div class="platform-grid">';
+                        echo '<div class="platform-card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">';
+                        echo '<h3 style="color: #666; margin: 0;">📱 No Social Media Data Available</h3>';
+                        echo '<p style="color: #999; margin: 10px 0 0 0;">No organic social media traffic was detected for this page in the selected time period.</p>';
+                        echo '<p style="color: #999; font-size: 0.9em; margin: 10px 0 0 0;">Try selecting a different page or expanding the date range.</p>';
+                        echo '</div>';
+                        echo '</div>';
+                    } else {
+                        echo '<div class="platform-grid">';
+
+                        // Sort platforms by total users (descending)
+                        uasort($social_data, function($a, $b) {
+                            return $b['total_users'] <=> $a['total_users'];
+                        });
+
+                        foreach ($social_data as $platform => $data) {
+                            $emoji = '';
+                            switch ($platform) {
+                                case 'facebook': $emoji = '📘'; break;
+                                case 'instagram': $emoji = '📷'; break;
+                                case 'twitter': $emoji = '🐦'; break;
+                                case 'linkedin': $emoji = '💼'; break;
+                                case 'buffer': $emoji = '🔄'; break;
+                                default: $emoji = '📱';
+                            }
+
+                            echo '<div class="platform-card">';
+                            echo '<div class="platform-name">' . $emoji . ' ' . $data['name'] . '</div>';
+                            echo '<div class="metric">';
+                            echo '<span class="metric-label">Total Organic Users</span>';
+                            echo '<span class="metric-value">' . number_format($data['total_users']) . '</span>';
+                            echo '</div>';
+                            echo '<div class="best-hour">';
+                            echo '<strong>🏆 Best Posting Hour:</strong> ' . $data['best_hour'] . ':00<br>';
+                            echo '<small>(' . number_format($data['best_users']) . ' users reached)</small>';
+                            echo '</div>';
+                            echo '</div>';
+                        }
+
+                        echo '</div>';
+                    }
+                    echo '</div>';
+                }                    // Show raw output for debugging (collapsible)
+                    echo '<details style="margin-top: 30px;">';
+                    echo '<summary style="cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 4px;">🔧 Raw Script Output (Debug)</summary>';
+                    echo '<pre style="background: #f8f9fa; padding: 20px; border-radius: 4px; margin-top: 10px; font-size: 12px; overflow-x: auto;">' . htmlspecialchars($output) . '</pre>';
+                    echo '</details>';
+                    ?>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button class="refresh-btn" onclick="window.history.back()">← Back to Reports</button>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>Report generated on <?php echo date('F j, Y \a\t g:i A'); ?> | Data from last 90 days</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        <?php
     } else {
-        echo "⚠️ Report completed with warnings/errors (exit code: {$return_code}):\n\n";
-        // Only show output, not full error details to prevent information leakage
-        echo htmlspecialchars($output);
-        if (!empty($errors)) {
-            echo "\n\nErrors:\n" . htmlspecialchars($errors);
+        // Output the results for regular scripts
+        ?>
+        <div class="container">
+            <h1>Report Results</h1>
+            <div class="result">
+        <?php
+        if ($return_code === 0) {
+            echo "✅ Report completed successfully:\n\n";
+            echo htmlspecialchars($output);
+        } else {
+            echo "⚠️ Report completed with warnings/errors (exit code: {$return_code}):\n\n";
+            // Only show output, not full error details to prevent information leakage
+            echo htmlspecialchars($output);
+            if (!empty($errors)) {
+                echo "\n\nErrors:\n" . htmlspecialchars($errors);
+            }
         }
-    }
-    ?>
+        ?>
+            </div>
+            <p><a href="?">← Run Another Report</a></p>
         </div>
-        <p><a href="?">← Run Another Report</a></p>
-    </div>
-    <?php
+        <?php
+    }
 } else {
     ?>
     <div class="container">

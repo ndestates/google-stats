@@ -273,19 +273,34 @@ if __name__ == "__main__":
 
     if len(sys.argv) >= 2:
         goal_type = sys.argv[1]
-        days = int(sys.argv[2]) if len(sys.argv) >= 3 else 30
+        days_or_date = sys.argv[2] if len(sys.argv) >= 3 else "30"
 
         print(f"Analyzing goal type: {goal_type}")
-        print(f"Time period: Last {days} days")
 
-        if days == 7:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=6)
+        # Check if it's a date keyword
+        if days_or_date.lower() in ["yesterday", "today"]:
+            if days_or_date.lower() == "yesterday":
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date
+                print(f"Time period: Yesterday ({start_date.strftime('%Y-%m-%d')})")
+            elif days_or_date.lower() == "today":
+                end_date = datetime.now()
+                start_date = end_date
+                print(f"Time period: Today ({start_date.strftime('%Y-%m-%d')})")
             analyze_conversion_funnel(goal_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         else:
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=days-1)
-            analyze_conversion_funnel(goal_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            # It's a number of days
+            days = int(days_or_date)
+            print(f"Time period: Last {days} days")
+
+            if days == 7:
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=6)
+                analyze_conversion_funnel(goal_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            else:
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=days-1)
+                analyze_conversion_funnel(goal_type, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
     else:
         print("Analyze conversion funnels and user goal completion")
         print()
@@ -296,6 +311,7 @@ if __name__ == "__main__":
         print("  email_click     - Email link clicks")
         print("  all_goals       - All conversion events")
         print()
-        print("Usage: python conversion_funnel_analysis.py <goal_type> [days]")
+        print("Usage: python conversion_funnel_analysis.py <goal_type> [days|yesterday|today]")
         print("Example: python conversion_funnel_analysis.py contact_form 30")
+        print("Example: python conversion_funnel_analysis.py all yesterday")
         exit(1)

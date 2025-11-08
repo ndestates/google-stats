@@ -9,6 +9,7 @@ Examples:
     python page_traffic_analysis.py /valuations
     python page_traffic_analysis.py https://www.ndestates.com/valuations 7
     python page_traffic_analysis.py /valuations 30
+    python page_traffic_analysis.py /valuations 90
 """
 
 import os
@@ -28,6 +29,9 @@ def get_last_30_days_range():
 
 def normalize_page_path(url_or_path):
     """Convert URL to page path format for GA4"""
+    # Strip surrounding quotes if present
+    url_or_path = url_or_path.strip('"').strip("'")
+
     # Remove protocol and domain if present
     if url_or_path.startswith('http://') or url_or_path.startswith('https://'):
         # Extract path from URL
@@ -179,9 +183,9 @@ def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str 
         # Show campaign breakdown if there are multiple campaigns
         campaigns = data['campaigns']
         if len(campaigns) > 1:
-            print("   Campaigns:")
+            print("   Campaigns (that drove traffic to this page):")
             sorted_campaigns = sorted(campaigns.items(), key=lambda x: x[1]['users'], reverse=True)
-            for campaign_name, campaign_data in sorted_campaigns[:3]:  # Show top 3
+            for campaign_name, campaign_data in sorted_campaigns[:5]:  # Show top 5
                 campaign_name_display = campaign_name if campaign_name != '(not set)' else 'Direct/None'
                 print(f"     • {campaign_name_display}: {campaign_data['users']:,} users")
 
@@ -189,11 +193,11 @@ def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str 
         total_page_sessions += data['total_sessions']
         total_page_pageviews += data['total_pageviews']
 
-        # Limit display to top 10 sources
-        if i >= 10:
-            remaining_sources = len(sorted_sources) - 10
+        # Limit display to top 25 sources (increased from 10)
+        if i >= 25:
+            remaining_sources = len(sorted_sources) - 25
             if remaining_sources > 0:
-                remaining_users = sum(data['total_users'] for _, data in sorted_sources[10:])
+                remaining_users = sum(data['total_users'] for _, data in sorted_sources[25:])
                 print(f"\n... and {remaining_sources} more sources with {remaining_users:,} total users")
             break
 
@@ -267,6 +271,7 @@ if __name__ == "__main__":
         print("💡 Tip: You can also run non-interactively:")
         print("   python page_traffic_analysis.py /valuations")
         print("   python page_traffic_analysis.py https://www.ndestates.com/valuations 7")
+        print("   python page_traffic_analysis.py /valuations 90")
         print()
 
         # Check if running in interactive terminal
@@ -286,9 +291,10 @@ if __name__ == "__main__":
         print("\nChoose time period:")
         print("1. Last 30 days")
         print("2. Last 7 days")
-        print("3. Custom date range")
+        print("3. Last 90 days")
+        print("4. Custom date range")
 
-        choice = input("Enter choice (1, 2, or 3): ").strip()
+        choice = input("Enter choice (1, 2, 3, or 4): ").strip()
 
         if choice == "1":
             analyze_page_traffic(target_url)
@@ -298,6 +304,11 @@ if __name__ == "__main__":
             start_date = end_date - timedelta(days=6)
             analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         elif choice == "3":
+            # Calculate 90-day range
+            end_date = datetime.now() - timedelta(days=1)
+            start_date = end_date - timedelta(days=89)
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        elif choice == "4":
             start_date = input("Enter start date (YYYY-MM-DD): ").strip()
             end_date = input("Enter end date (YYYY-MM-DD): ").strip()
             if start_date and end_date:

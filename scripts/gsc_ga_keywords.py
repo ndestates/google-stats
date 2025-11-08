@@ -220,8 +220,10 @@ def get_top_keywords_report(days: int = 30):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Google Search Console + Google Analytics Keywords Insights')
-    parser.add_argument('--days', type=int, choices=[7, 30], default=30,
-                       help='Number of days for report (7 or 30, default: 30)')
+    parser.add_argument('--days', type=int, choices=[1, 7, 30], default=30,
+                       help='Number of days for report (1, 7, or 30, default: 30)')
+    parser.add_argument('--date', type=str, choices=['yesterday', 'today'],
+                       help='Use yesterday or today for single-day reports')
     parser.add_argument('--start-date', type=str,
                        help='Start date in YYYY-MM-DD format (for custom range)')
     parser.add_argument('--end-date', type=str,
@@ -236,9 +238,23 @@ if __name__ == "__main__":
     if args.start_date and args.end_date:
         print(f"Running custom date range report: {args.start_date} to {args.end_date}")
         generate_keywords_insights_report(args.start_date, args.end_date)
+    elif args.date:
+        # Handle yesterday/today
+        if args.date == 'yesterday':
+            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            print(f"Running yesterday's keywords insights report: {yesterday}")
+            generate_keywords_insights_report(yesterday, yesterday)
+        elif args.date == 'today':
+            today = datetime.now().strftime('%Y-%m-%d')
+            print(f"Running today's keywords insights report: {today}")
+            generate_keywords_insights_report(today, today)
     else:
         # Use days parameter for standard reports
-        if args.days == 7:
+        if args.days == 1:
+            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            print(f"Running 1-day keywords insights report: {yesterday}")
+            generate_keywords_insights_report(yesterday, yesterday)
+        elif args.days == 7:
             print("Running 7-day keywords insights report")
             get_top_keywords_report(7)
         else:  # default to 30 days

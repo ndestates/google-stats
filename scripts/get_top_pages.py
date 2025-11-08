@@ -18,7 +18,7 @@ from google.analytics.data_v1beta.types import (
 from src.config import REPORTS_DIR, GA4_PROPERTY_ID, GA4_KEY_PATH
 from src.pdf_generator import create_channel_report_pdf
 
-def get_top_pages_with_sources():
+def get_top_pages_with_sources(date_range=None):
     # Set environment variable for authentication
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
 
@@ -28,54 +28,56 @@ def get_top_pages_with_sources():
 
     client = BetaAnalyticsDataClient()
 
-    # Test basic connectivity first
-    print("🔗 Testing basic API connectivity...")
-    test_request = RunReportRequest(
-        property=f"properties/{GA4_PROPERTY_ID}",
-        metrics=[Metric(name="totalUsers")],
-        date_ranges=[DateRange(start_date="7daysAgo", end_date="yesterday")],
-    )
+    # Calculate date range
+    if date_range == "yesterday":
+        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday
+        start_date = end_date
+    elif date_range == "today":
+        end_date = datetime.now().date()  # Today
+        start_date = end_date
+    else:
+        # Default: last 30 days
+        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday as end
+        start_date = end_date - timedelta(days=29)  # 30 days total
 
-    try:
-        test_response = client.run_report(test_request)
-        print(f"✅ API connection successful! Total users (7 days): {test_response.rows[0].metric_values[0].value if test_response.rows else 'No data'}")
-    except Exception as e:
-        print(f"❌ API connection failed: {e}")
-        return
+    print(f"� Analyzing Top Pages: {start_date} to {end_date}")
+    print("=" * 80)
 
-    print("\n🔍 Now trying page-level data approaches...")
+    # Convert dates to GA4 format
+    start_date_ga4 = start_date.strftime('%Y-%m-%d')
+    end_date_ga4 = end_date.strftime('%Y-%m-%d')
 
     # Try multiple approaches to get page data
     approaches = [
         {
-            "name": "Simple page views (7 days)",
+            "name": f"Page path only ({(end_date - start_date).days + 1} days)",
             "dimensions": [Dimension(name="pagePath")],
             "metric": "screenPageViews",
-            "date_range": ("7daysAgo", "yesterday")
+            "date_range": (start_date_ga4, end_date_ga4)
         },
         {
-            "name": "Page path + source (7 days, totalUsers)",
+            "name": f"Page path + source ({(end_date - start_date).days + 1} days, totalUsers)",
             "dimensions": [Dimension(name="pagePath"), Dimension(name="sessionSourceMedium")],
             "metric": "totalUsers",
-            "date_range": ("7daysAgo", "yesterday")
+            "date_range": (start_date_ga4, end_date_ga4)
         },
         {
-            "name": "Page title only (30 days)",
+            "name": f"Page title only ({(end_date - start_date).days + 1} days)",
             "dimensions": [Dimension(name="pageTitle")],
             "metric": "screenPageViews",
-            "date_range": ("30daysAgo", "yesterday")
+            "date_range": (start_date_ga4, end_date_ga4)
         },
         {
-            "name": "Landing page + source (7 days)",
+            "name": f"Landing page + source ({(end_date - start_date).days + 1} days)",
             "dimensions": [Dimension(name="landingPage"), Dimension(name="sessionSourceMedium")],
             "metric": "totalUsers",
-            "date_range": ("7daysAgo", "yesterday")
+            "date_range": (start_date_ga4, end_date_ga4)
         },
         {
-            "name": "Page path + default channel (30 days)",
+            "name": f"Page path + default channel ({(end_date - start_date).days + 1} days)",
             "dimensions": [Dimension(name="pagePath"), Dimension(name="sessionDefaultChannelGrouping")],
             "metric": "totalUsers",
-            "date_range": ("30daysAgo", "yesterday")
+            "date_range": (start_date_ga4, end_date_ga4)
         }
     ]
 
@@ -241,7 +243,7 @@ def show_channel_fallback():
     except Exception as error:
         print(f"Error getting channel data: {error}")
 
-def get_top_pages_json():
+def get_top_pages_json(date_range=None):
     """Get top pages and output as JSON for web interface"""
     try:
         # Set environment variable for authentication
@@ -254,12 +256,28 @@ def get_top_pages_json():
 
         client = BetaAnalyticsDataClient()
 
-        # Get top pages from last 30 days
+        # Calculate date range
+        if date_range == "yesterday":
+            end_date = datetime.now().date() - timedelta(days=1)  # Yesterday
+            start_date = end_date
+        elif date_range == "today":
+            end_date = datetime.now().date()  # Today
+            start_date = end_date
+        else:
+            # Default: last 30 days
+            end_date = datetime.now().date() - timedelta(days=1)  # Yesterday as end
+            start_date = end_date - timedelta(days=29)  # 30 days total
+
+        # Convert dates to GA4 format
+        start_date_ga4 = start_date.strftime('%Y-%m-%d')
+        end_date_ga4 = end_date.strftime('%Y-%m-%d')
+
+        # Get top pages
         request = RunReportRequest(
             property=f"properties/{GA4_PROPERTY_ID}",
             dimensions=[Dimension(name="pagePath")],
             metrics=[Metric(name="totalUsers")],
-            date_ranges=[DateRange(start_date="30daysAgo", end_date="yesterday")],
+            date_ranges=[DateRange(start_date=start_date_ga4, end_date=end_date_ga4)],
             order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name="totalUsers"), desc=True)],
             limit=50,  # Get top 50 pages
         )
@@ -286,9 +304,16 @@ def get_top_pages_json():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get top performing pages report')
     parser.add_argument('--json', action='store_true', help='Output results as JSON for web interface')
+    parser.add_argument('--date', type=str, choices=['yesterday', 'today'],
+                       help='Use yesterday or today for single-day reports')
     args = parser.parse_args()
 
     if args.json:
-        get_top_pages_json()
+        get_top_pages_json(date_range=args.date if args.date else None)
+    elif args.date:
+        if args.date == 'yesterday':
+            get_top_pages_with_sources(date_range='yesterday')
+        elif args.date == 'today':
+            get_top_pages_with_sources(date_range='today')
     else:
         get_top_pages_with_sources()

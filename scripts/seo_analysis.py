@@ -95,8 +95,8 @@ def analyze_organic_traffic(start_date: str = None, end_date: str = None):
                 'avg_duration': avg_duration, 'bounce_rate': bounce_rate, 'engagement_rate': engagement_rate
             }
 
-    print("
-📊 ORGANIC TRAFFIC ANALYSIS:"    print("   Channel          | Users | Sessions | Pageviews | Avg Duration | Bounce | Engage")
+    print("📊 ORGANIC TRAFFIC ANALYSIS:")
+    print("   Channel          | Users | Sessions | Pageviews | Avg Duration | Bounce | Engage")
     print("   -----------------|-------|----------|-----------|--------------|--------|--------")
 
     total_sessions = sum(data['sessions'] for data in channel_data.values())
@@ -110,7 +110,8 @@ def analyze_organic_traffic(start_date: str = None, end_date: str = None):
     # Organic search insights
     if "Organic Search" in channel_data:
         organic = channel_data["Organic Search"]
-        print("   🔍 ORGANIC SEARCH PERFORMANCE:"        print(f"   • Organic sessions: {organic['sessions']:,} ({organic['sessions']/total_sessions*100:.1f}%)")
+        print("   🔍 ORGANIC SEARCH PERFORMANCE:")
+        print(f"   • Organic sessions: {organic['sessions']:,} ({organic['sessions']/total_sessions*100:.1f}%)")
         print(f"   • Organic users: {organic['users']:,}")
         print(f"   • Avg session duration: {organic['avg_duration']:.1f}s")
         print(f"   • Bounce rate: {organic['bounce_rate']:.1%}")
@@ -118,7 +119,8 @@ def analyze_organic_traffic(start_date: str = None, end_date: str = None):
         print()
 
         # Organic landing pages
-        print("   🏠 TOP ORGANIC LANDING PAGES:"        for page, data in sorted(organic_pages.items(), key=lambda x: x[1]['sessions'], reverse=True)[:5]:
+        print("   🏠 TOP ORGANIC LANDING PAGES:")
+        for page, data in sorted(organic_pages.items(), key=lambda x: x[1]['sessions'], reverse=True)[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
             print("15")
         print()
@@ -200,8 +202,8 @@ def analyze_keyword_performance(start_date: str = None, end_date: str = None):
             keyword_insights[theme]['avg_duration'] = current_duration * (1 - weight) + avg_duration * weight
             keyword_insights[theme]['bounce_rate'] = current_bounce * (1 - weight) + bounce_rate * weight
 
-    print("
-📊 KEYWORD THEME PERFORMANCE:"    print("   Theme           | Sessions | Users | Pageviews | Avg Duration | Bounce Rate")
+    print("📊 KEYWORD THEME PERFORMANCE:")
+    print("   Theme           | Sessions | Users | Pageviews | Avg Duration | Bounce Rate")
     print("   ----------------|----------|-------|-----------|--------------|------------")
 
     for theme, data in sorted(keyword_insights.items(), key=lambda x: x[1]['sessions'], reverse=True):
@@ -324,8 +326,8 @@ def analyze_seo_health(start_date: str = None, end_date: str = None):
             'avg_duration': avg_duration
         }
 
-    print("
-📊 SEO HEALTH BY DEVICE:"    print("   Device   | Sessions | Avg Duration | Bounce Rate | Engagement Rate")
+    print("📊 SEO HEALTH BY DEVICE:")
+    print("   Device   | Sessions | Avg Duration | Bounce Rate | Engagement Rate")
     print("   ---------|----------|--------------|-------------|----------------")
 
     for device, data in seo_health.items():
