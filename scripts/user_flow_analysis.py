@@ -108,8 +108,8 @@ def analyze_user_flow(start_page: str = "/", max_steps: int = 5, start_date: str
     # Sort flows by session volume
     sorted_flows = sorted(flow_data.items(), key=lambda x: x[1]['sessions'], reverse=True)
 
-    print("
-🌊 USER FLOW ANALYSIS:"    print(f"   Starting Page: {start_page}")
+    print("\n🌊 USER FLOW ANALYSIS:")
+    print(f"   Starting Page: {start_page}")
     print(f"   Total Sessions: {total_sessions:,}")
     print(f"   Total Users: {total_users:,}")
     print(f"   Unique Pages in Flow: {len(sorted_flows)}")

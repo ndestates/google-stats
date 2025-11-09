@@ -104,8 +104,8 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
         total_sessions += sessions
 
     # Calculate flow metrics
-    print("
-📊 USER FLOW ANALYSIS:"    print(f"   Total Page Views: {total_pageviews:,}")
+    print("\n📊 USER FLOW ANALYSIS:")
+    print(f"   Total Page Views: {total_pageviews:,}")
     print(f"   Total Sessions: {total_sessions:,}")
     print(f"   Unique Pages: {len(flow_data)}")
     print()

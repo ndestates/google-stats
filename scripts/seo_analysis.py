@@ -212,7 +212,8 @@ def analyze_keyword_performance(start_date: str = None, end_date: str = None):
     print()
 
     # Keyword insights
-    print("   💡 KEYWORD INSIGHTS:"    print("   • Focus on high-performing keyword themes")
+    print("   💡 KEYWORD INSIGHTS:")
+    print("   • Focus on high-performing keyword themes")
     print("   • Optimize pages with high bounce rates")
     print("   • Consider long-tail keyword opportunities")
     print("   • GA4 keyword data is limited - consider Search Console integration")

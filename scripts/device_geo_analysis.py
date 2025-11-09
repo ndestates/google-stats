@@ -107,7 +107,8 @@ def analyze_device_performance(start_date: str = None, end_date: str = None):
         total_sessions += sessions
 
     # Display device analysis
-    print("📊 DEVICE PERFORMANCE ANALYSIS:"    print(f"   Total Users: {total_users:,}")
+    print("📊 DEVICE PERFORMANCE ANALYSIS:")
+    print(f"   Total Users: {total_users:,}")
     print(f"   Total Sessions: {total_sessions:,}")
     print()
 

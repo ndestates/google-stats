@@ -117,36 +117,41 @@ def analyze_load_performance(start_date: str = None, end_date: str = None):
         if data['avg_bounce'] > 0.7:  # Over 70% bounce
             high_bounce_pages.append((page, data['avg_bounce']))
 
-    print("
-📊 TECHNICAL PERFORMANCE ANALYSIS:"    print(f"   Total Pages Analyzed: {len(performance_data)}")
+    print("\n📊 TECHNICAL PERFORMANCE ANALYSIS:")
+    print(f"   Total Pages Analyzed: {len(performance_data)}")
     print(f"   Total Sessions: {total_sessions:,}")
     print()
 
-    print("   🚨 PERFORMANCE ISSUES DETECTED:"    print(f"   • Pages with very short sessions (<30s): {len(slow_pages)}")
+    print("   🚨 PERFORMANCE ISSUES DETECTED:")
+    print(f"   • Pages with very short sessions (<30s): {len(slow_pages)}")
     print(f"   • Pages with low engagement (<30%): {len(low_engagement_pages)}")
     print(f"   • Pages with high bounce rate (>70%): {len(high_bounce_pages)}")
     print()
 
     if slow_pages:
-        print("   ⚠️  PAGES WITH SHORT SESSIONS:"        for page, duration in sorted(slow_pages, key=lambda x: x[1])[:5]:
+        print("   ⚠️  PAGES WITH SHORT SESSIONS:")
+        for page, duration in sorted(slow_pages, key=lambda x: x[1])[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
-            print("15")
+            print(f"      • {page_display} ({duration:.1f}s)")
         print()
 
     if low_engagement_pages:
-        print("   ⚠️  PAGES WITH LOW ENGAGEMENT:"        for page, engagement in sorted(low_engagement_pages, key=lambda x: x[1])[:5]:
+        print("   ⚠️  PAGES WITH LOW ENGAGEMENT:")
+        for page, engagement in sorted(low_engagement_pages, key=lambda x: x[1])[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
-            print("15")
+            print(f"      • {page_display} ({engagement:.1%})")
         print()
 
     if high_bounce_pages:
-        print("   ⚠️  PAGES WITH HIGH BOUNCE RATES:"        for page, bounce in sorted(high_bounce_pages, key=lambda x: x[1], reverse=True)[:5]:
+        print("   ⚠️  PAGES WITH HIGH BOUNCE RATES:")
+        for page, bounce in sorted(high_bounce_pages, key=lambda x: x[1], reverse=True)[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
-            print("15")
+            print(f"      • {page_display} ({bounce:.1%})")
         print()
 
     # Device performance comparison
-    print("📱 DEVICE PERFORMANCE COMPARISON:"    device_totals = {}
+    print("📱 DEVICE PERFORMANCE COMPARISON:")
+    device_totals = {}
     for page_data in performance_data.values():
         for device, device_data in page_data['devices'].items():
             if device not in device_totals:
@@ -166,11 +171,12 @@ def analyze_load_performance(start_date: str = None, end_date: str = None):
         avg_duration = data['duration'] / data['sessions'] if data['sessions'] > 0 else 0
         avg_bounce = data['bounce'] / data['sessions'] if data['sessions'] > 0 else 0
 
-        print("11")
+        print(f"   {device:<10} | {data['sessions']:<8,} | {avg_engagement:.1%}        | {avg_duration:.1f}s        | {avg_bounce:.1%}")
     print()
 
     # Performance recommendations
-    print("💡 TECHNICAL PERFORMANCE RECOMMENDATIONS:"    print("   1. Page Load Speed:")
+    print("💡 TECHNICAL PERFORMANCE RECOMMENDATIONS:")
+    print("   1. Page Load Speed:")
     print("      • Aim for <3 second load times on mobile")
     print("      • Optimize images and reduce server response time")
     print("      • Use caching and CDN for static assets")
@@ -247,12 +253,13 @@ def analyze_errors_events(start_date: str = None, end_date: str = None):
 
         total_events += event_count
 
-    print("
-📊 CUSTOM EVENTS ANALYSIS:"    print(f"   Total Events: {total_events:,}")
+    print("\n📊 CUSTOM EVENTS ANALYSIS:")
+    print(f"   Total Events: {total_events:,}")
     print(f"   Unique Event Types: {len(event_data)}")
     print()
 
-    print("   TOP CUSTOM EVENTS:"    print("   Event Name              | Count    | Users    | Avg per User | Top Page")
+    print("   TOP CUSTOM EVENTS:")
+    print("   Event Name              | Count    | Users    | Avg per User | Top Page")
     print("   -----------------------|----------|----------|--------------|----------")
 
     for event_name, data in sorted(event_data.items(), key=lambda x: x[1]['total_count'], reverse=True)[:10]:
@@ -261,14 +268,15 @@ def analyze_errors_events(start_date: str = None, end_date: str = None):
         top_page = max(data['pages'].items(), key=lambda x: x[1])[0] if data['pages'] else 'N/A'
         top_page_display = top_page[:15] + "..." if len(top_page) > 15 else top_page
 
-        print("22")
+        print(f"   {event_display:<22} | {data['total_count']:<8,} | {data['total_users']:<8,} | {avg_per_user:.1f}        | {top_page_display}")
     print()
 
     # Identify potential issues
     error_events = [name for name in event_data.keys() if any(word in name.lower() for word in ['error', 'fail', '404', 'exception'])]
     conversion_events = [name for name in event_data.keys() if any(word in name.lower() for word in ['convert', 'submit', 'purchase', 'signup'])]
 
-    print("🔍 EVENT TYPE ANALYSIS:"    if error_events:
+    print("🔍 EVENT TYPE ANALYSIS:")
+    if error_events:
         print(f"   • Potential error events detected: {', '.join(error_events[:3])}")
     if conversion_events:
         print(f"   • Conversion events detected: {', '.join(conversion_events[:3])}")
