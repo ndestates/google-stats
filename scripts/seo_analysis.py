@@ -337,7 +337,8 @@ def analyze_seo_health(start_date: str = None, end_date: str = None):
     print()
 
     # SEO health assessment
-    print("   🏥 SEO HEALTH ASSESSMENT:"    issues = []
+    print("   🏥 SEO HEALTH ASSESSMENT:")
+    issues = []
     recommendations = []
 
     for device, data in seo_health.items():

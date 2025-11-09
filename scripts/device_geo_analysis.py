@@ -121,7 +121,8 @@ def analyze_device_performance(start_date: str = None, end_date: str = None):
 
     # Detailed OS and browser breakdown
     for device, data in device_data.items():
-        print(f"📱 {device.upper()} DETAILS:"        print("   Operating Systems:")
+        print(f"📱 {device.upper()} DETAILS:")
+        print("   Operating Systems:")
         for os, users in sorted(data['os_breakdown'].items(), key=lambda x: x[1], reverse=True)[:5]:
             percentage = users / data['total_users'] * 100
             print("25")
@@ -133,7 +134,8 @@ def analyze_device_performance(start_date: str = None, end_date: str = None):
         print()
 
     # Device optimization recommendations
-    print("💡 DEVICE OPTIMIZATION RECOMMENDATIONS:"    mobile_users = device_data.get('mobile', {}).get('total_users', 0)
+    print("💡 DEVICE OPTIMIZATION RECOMMENDATIONS:")
+    mobile_users = device_data.get('mobile', {}).get('total_users', 0)
     desktop_users = device_data.get('desktop', {}).get('total_users', 0)
 
     if mobile_users > desktop_users:
@@ -236,7 +238,8 @@ def analyze_geographic_performance(start_date: str = None, end_date: str = None)
         total_users += users
 
     # Display geographic analysis
-    print("🌍 GEOGRAPHIC PERFORMANCE ANALYSIS:"    print(f"   Total Users: {total_users:,}")
+    print("🌍 GEOGRAPHIC PERFORMANCE ANALYSIS:")
+    print(f"   Total Users: {total_users:,}")
     print(f"   Countries: {len(geo_data)}")
     print()
 

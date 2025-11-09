@@ -29,7 +29,8 @@ def create_metrics(metric_names: List[str]) -> List[Metric]:
     return [Metric(name=name) for name in metric_names]
 
 def run_report(dimensions: List[str], metrics: List[str], date_ranges: List[DateRange],
-               order_bys: List[OrderBy] = None, limit: int = 10000) -> Any:
+               order_bys: List[OrderBy] = None, limit: int = 10000, 
+               dimension_filter: Any = None) -> Any:
     """
     Run a GA4 report with the given parameters
 
@@ -39,20 +40,26 @@ def run_report(dimensions: List[str], metrics: List[str], date_ranges: List[Date
         date_ranges: List of DateRange objects
         order_bys: Optional list of OrderBy objects
         limit: Maximum number of rows to return
+        dimension_filter: Optional FilterExpression for filtering dimensions
 
     Returns:
         GA4 RunReportResponse
     """
     client = get_ga4_client()
 
-    request = RunReportRequest(
-        property=f"properties/{GA4_PROPERTY_ID}",
-        dimensions=create_dimensions(dimensions),
-        metrics=create_metrics(metrics),
-        date_ranges=date_ranges,
-        order_bys=order_bys or [],
-        limit=limit,
-    )
+    request_params = {
+        "property": f"properties/{GA4_PROPERTY_ID}",
+        "dimensions": create_dimensions(dimensions),
+        "metrics": create_metrics(metrics),
+        "date_ranges": date_ranges,
+        "order_bys": order_bys or [],
+        "limit": limit,
+    }
+    
+    if dimension_filter:
+        request_params["dimension_filter"] = dimension_filter
+
+    request = RunReportRequest(**request_params)
 
     return client.run_report(request)
 

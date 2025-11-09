@@ -120,16 +120,18 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
         if data['total_exits'] > 0:
             exit_pages[page] = data['total_exits']
 
-    print("   🏠 TOP LANDING PAGES:"    for page, entrances in sorted(landing_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print("   🏠 TOP LANDING PAGES:")
+    for page, entrances in sorted(landing_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
         percentage = (entrances / total_sessions) * 100 if total_sessions > 0 else 0
-        print("15")
+        print(f"      - {page_display} ({entrances} entrances, {percentage:.1f}%)")
     print()
 
-    print("   🚪 TOP EXIT PAGES:"    for page, exits in sorted(exit_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
+    print("   🚪 TOP EXIT PAGES:")
+    for page, exits in sorted(exit_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
         percentage = (exits / total_sessions) * 100 if total_sessions > 0 else 0
-        print("15")
+        print(f"      - {page_display} ({exits} exits, {percentage:.1f}%)")
     print()
 
     # Analyze bounce and exit rates
@@ -141,9 +143,10 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
                 high_exit_pages.append((page, exit_rate, data['total_pageviews']))
 
     if high_exit_pages:
-        print("   ⚠️  PAGES WITH HIGH EXIT RATES (>50%):"        for page, exit_rate, pageviews in sorted(high_exit_pages, key=lambda x: x[1], reverse=True)[:5]:
+        print("   ⚠️  PAGES WITH HIGH EXIT RATES (>50%):")
+        for page, exit_rate, pageviews in sorted(high_exit_pages, key=lambda x: x[1], reverse=True)[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
-            print("15")
+            print(f"      - {page_display} (Exit Rate: {exit_rate:.1%}, Pageviews: {pageviews})")
         print()
 
     return flow_data
@@ -211,8 +214,8 @@ def analyze_navigation_paths(start_date: str = None, end_date: str = None):
         for to_page, count in to_pages.items():
             transition_probs[from_page][to_page] = count / total_from
 
-    print("
-📊 NAVIGATION PATH ANALYSIS:"    print(f"   Unique Transition Pairs: {len(transitions)}")
+    print("📊 NAVIGATION PATH ANALYSIS:")
+    print(f"   Unique Transition Pairs: {len(transitions)}")
     print()
 
     # Show top transitions
@@ -221,18 +224,20 @@ def analyze_navigation_paths(start_date: str = None, end_date: str = None):
         for to_page, count in to_pages.items():
             all_transitions.append((from_page, to_page, count, transition_probs[from_page][to_page]))
 
-    print("   🔄 TOP PAGE TRANSITIONS:"    print("   From → To                          | Sessions | Probability")
+    print("   🔄 TOP PAGE TRANSITIONS:")
+    print("   From → To                          | Sessions | Probability")
     print("   -----------------------------------|----------|------------")
 
     for from_page, to_page, sessions, prob in sorted(all_transitions, key=lambda x: x[2], reverse=True)[:10]:
         from_display = from_page[:20] + "..." if len(from_page) > 20 else from_page
         to_display = to_page[:20] + "..." if len(to_page) > 20 else to_page
         transition_display = f"{from_display} → {to_display}"
-        print("30")
+        print(f"      {transition_display:<35} | {sessions:<8} | {prob:.2%}")
     print()
 
     # Identify common user journeys
-    print("   🗺️  COMMON USER JOURNEYS:"    # Simple journey patterns (this is a simplified analysis)
+    print("   🗺️  COMMON USER JOURNEYS:")
+    # Simple journey patterns (this is a simplified analysis)
     journey_patterns = {
         'Homepage → Property': [],
         'Property → Contact': [],
@@ -332,8 +337,8 @@ def analyze_behavior_patterns(start_date: str = None, end_date: str = None):
         channel_totals[channel]['pageviews'] += pageviews
         channel_totals[channel]['users'] += users
 
-    print("
-📊 BEHAVIOR PATTERNS BY CHANNEL:"    print("   Channel          | Sessions | Users | Avg Duration | Bounce Rate | Engagement")
+    print("📊 BEHAVIOR PATTERNS BY CHANNEL:")
+    print("   Channel          | Sessions | Users | Avg Duration | Bounce Rate | Engagement")
     print("   -----------------|----------|-------|--------------|-------------|-----------")
 
     for channel, totals in channel_totals.items():
@@ -350,11 +355,12 @@ def analyze_behavior_patterns(start_date: str = None, end_date: str = None):
             avg_engagement += page_data['engagement_rate'] * weight
 
         channel_display = channel[:15] + "..." if len(channel) > 15 else channel
-        print("15")
+        print(f"      {channel_display:<15} | {totals['sessions']:<8,} | {totals['users']:<5,} | {avg_duration:<12.1f} | {avg_bounce:<11.1%} | {avg_engagement:<10.1%}")
     print()
 
     # Identify channel-specific insights
-    print("   💡 CHANNEL INSIGHTS:"    for channel, totals in channel_totals.items():
+    print("   💡 CHANNEL INSIGHTS:")
+    for channel, totals in channel_totals.items():
         if totals['sessions'] > 10:  # Minimum threshold
             avg_duration = sum(page_data['avg_duration'] * page_data['sessions'] for page_data in behavior_data[channel].values()) / totals['sessions']
             avg_bounce = sum(page_data['bounce_rate'] * page_data['sessions'] for page_data in behavior_data[channel].values()) / totals['sessions']
