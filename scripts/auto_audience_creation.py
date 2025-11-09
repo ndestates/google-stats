@@ -154,6 +154,168 @@ def analyze_user_behavior_for_audiences(days: int = 30):
     return unique_candidates
 
 
+def analyze_combination_audiences(days: int = 30):
+    """Analyze user behavior to identify combination audiences for similar properties"""
+
+    print("🔍 Analyzing combination audiences for similar properties...")
+    print("=" * 80)
+
+    # Calculate date range
+    end_date = datetime.now() - timedelta(days=1)  # Yesterday
+    start_date = end_date - timedelta(days=days-1)  # Period back
+
+    start_str = start_date.strftime('%Y-%m-%d')
+    end_str = end_date.strftime('%Y-%m-%d')
+
+    date_range = create_date_range(start_str, end_str)
+
+    # Get all property pages
+    response = run_report(
+        dimensions=["pagePath"],
+        metrics=["sessions", "totalUsers", "screenPageViews", "averageSessionDuration", "bounceRate"],
+        date_ranges=[date_range],
+        order_bys=[{"metric": {"metric_name": "sessions"}, "desc": True}],
+        limit=100
+    )
+
+    combination_candidates = []
+
+    if response.row_count > 0:
+        # Group pages by categories
+        three_bedroom_pages = []
+        st_helier_pages = []
+        senior_housing_pages = []
+        high_engagement_pages = []
+
+        total_three_bedroom_users = 0
+        total_st_helier_users = 0
+        total_senior_users = 0
+        total_high_engagement_users = 0
+
+        for row in response.rows:
+            page_path = row.dimension_values[0].value
+            sessions = int(row.metric_values[0].value)
+            users = int(row.metric_values[1].value)
+            pageviews = int(row.metric_values[2].value)
+            avg_duration = float(row.metric_values[3].value)
+            bounce_rate = float(row.metric_values[4].value)
+
+            # Skip non-property pages and low traffic
+            if 'properties' not in page_path or users < 20:
+                continue
+
+            # Three bedroom properties
+            if 'three-bedroom' in page_path.lower():
+                three_bedroom_pages.append({
+                    'page_path': page_path,
+                    'users': users,
+                    'sessions': sessions,
+                    'avg_duration': avg_duration,
+                    'bounce_rate': bounce_rate
+                })
+                total_three_bedroom_users += users
+
+            # St Helier properties
+            if 'st-helier' in page_path.lower():
+                st_helier_pages.append({
+                    'page_path': page_path,
+                    'users': users,
+                    'sessions': sessions,
+                    'avg_duration': avg_duration,
+                    'bounce_rate': bounce_rate
+                })
+                total_st_helier_users += users
+
+            # Senior housing
+            if 'over-60s' in page_path.lower() or 'senior' in page_path.lower():
+                senior_housing_pages.append({
+                    'page_path': page_path,
+                    'users': users,
+                    'sessions': sessions,
+                    'avg_duration': avg_duration,
+                    'bounce_rate': bounce_rate
+                })
+                total_senior_users += users
+
+            # High engagement pages
+            if bounce_rate < 0.5 and avg_duration > 30 and users > 50:
+                high_engagement_pages.append({
+                    'page_path': page_path,
+                    'users': users,
+                    'sessions': sessions,
+                    'avg_duration': avg_duration,
+                    'bounce_rate': bounce_rate
+                })
+                total_high_engagement_users += users
+
+        # Create combination audience recommendations with wildcard patterns
+        if total_three_bedroom_users > 500:
+            combination_candidates.append({
+                'type': 'combination',
+                'name': 'Three Bedroom Property Seekers',
+                'description': f'Users viewing any three bedroom properties ({total_three_bedroom_users} users across {len(three_bedroom_pages)} properties)',
+                'priority': 'high',
+                'total_users': total_three_bedroom_users,
+                'page_count': len(three_bedroom_pages),
+                'category': 'three_bedroom',
+                'wildcard_filter': {
+                    'type': 'contains',
+                    'value': 'three-bedroom'
+                },
+                'pages': three_bedroom_pages[:3]  # Top 3 for reference
+            })
+
+        if total_st_helier_users > 1000:
+            combination_candidates.append({
+                'type': 'combination',
+                'name': 'St Helier Property Seekers',
+                'description': f'Users viewing any properties in St Helier ({total_st_helier_users} users across {len(st_helier_pages)} properties)',
+                'priority': 'high',
+                'total_users': total_st_helier_users,
+                'page_count': len(st_helier_pages),
+                'category': 'st_helier',
+                'wildcard_filter': {
+                    'type': 'starts_with',
+                    'value': '/properties/st-helier/'
+                },
+                'pages': st_helier_pages[:3]  # Top 3 for reference
+            })
+
+        if total_senior_users > 100:
+            combination_candidates.append({
+                'type': 'combination',
+                'name': 'Senior Housing Seekers',
+                'description': f'Users viewing senior housing properties ({total_senior_users} users across {len(senior_housing_pages)} properties)',
+                'priority': 'medium',
+                'total_users': total_senior_users,
+                'page_count': len(senior_housing_pages),
+                'category': 'senior_housing',
+                'wildcard_filter': {
+                    'type': 'contains',
+                    'value': 'over-60s'
+                },
+                'pages': senior_housing_pages[:3]  # Top 3 for reference
+            })
+
+        if total_high_engagement_users > 200:
+            combination_candidates.append({
+                'type': 'combination',
+                'name': 'High Engagement Property Seekers',
+                'description': f'Users showing high engagement on property pages ({total_high_engagement_users} users across {len(high_engagement_pages)} properties)',
+                'priority': 'medium',
+                'total_users': total_high_engagement_users,
+                'page_count': len(high_engagement_pages),
+                'category': 'high_engagement',
+                'wildcard_filter': {
+                    'type': 'starts_with',
+                    'value': '/properties/'
+                },
+                'pages': high_engagement_pages[:3]  # Top 3 for reference
+            })
+
+    return combination_candidates
+
+
 def create_recommended_audiences(audience_candidates, create_all=False, priority_filter=None):
     """Create audiences based on the analysis"""
 
@@ -247,6 +409,8 @@ def main():
                        help='Number of days to analyze for audience recommendations (default: 30)')
     parser.add_argument('--generate-manual', action='store_true',
                        help='Generate a manual audience creation guide instead of trying to create automatically')
+    parser.add_argument('--analyze-combinations', action='store_true',
+                       help='Analyze and show combination audiences for similar properties')
 
     args = parser.parse_args()
 
@@ -254,13 +418,68 @@ def main():
         print("❌ GA4_PROPERTY_ID not found. Please check your .env file.")
         return
 
-    try:
-        # List existing audiences if requested
-        if args.list_existing:
-            print("📋 Existing Audiences:")
-            list_audiences(include_metrics=True)
-            print("\n" + "=" * 80 + "\n")
+    # Handle combination audience analysis
+    if args.analyze_combinations:
+        try:
+            combination_candidates = analyze_combination_audiences(args.days)
 
+            if not combination_candidates:
+                print("❌ No suitable combination audience candidates found from the analysis.")
+                return
+
+            print(f"\n🎯 Found {len(combination_candidates)} combination audiences to create")
+            print("=" * 80)
+
+            # Show combination recommendations
+            for candidate in combination_candidates:
+                print(f"• {candidate['name']} ({candidate['priority']} priority)")
+                print(f"  {candidate['description']}")
+                print(f"  📊 {candidate['page_count']} properties, {candidate['total_users']} total users")
+                print("  📄 Top properties:")
+                for page in candidate['pages'][:3]:  # Show top 3
+                    print(f"     • {page['page_path']} ({page['users']} users)")
+                print()
+
+            print("📋 MANUAL COMBINATION AUDIENCE CREATION GUIDE")
+            print("=" * 80)
+            print("To create these combination audiences manually in GA4:")
+            print()
+            print("Steps:")
+            print("1. Go to GA4 Property > Admin > Audiences")
+            print("2. Click 'Create Audience' > 'Create a custom audience'")
+            print("3. Use the efficient wildcard filters below (much better than listing individual pages!)")
+            print()
+
+            for candidate in combination_candidates:
+                print(f"🎯 {candidate['name']} ({candidate['priority']} priority)")
+                print(f"   Description: {candidate['description']}")
+                wildcard = candidate.get('wildcard_filter', {})
+                if wildcard:
+                    filter_type = wildcard.get('type', 'contains')
+                    filter_value = wildcard.get('value', '')
+                    if filter_type == 'starts_with':
+                        print(f"   Filter: Page path starts with '{filter_value}'")
+                    elif filter_type == 'contains':
+                        print(f"   Filter: Page path contains '{filter_value}'")
+                    else:
+                        print(f"   Filter: {filter_type} '{filter_value}'")
+                else:
+                    print("   Filter Type: Page path contains (OR conditions):")
+                    for page in candidate['pages']:
+                        print(f"     • {page['page_path']}")
+                    if candidate['page_count'] > len(candidate['pages']):
+                        print(f"     ... and {candidate['page_count'] - len(candidate['pages'])} more properties")
+                print("   Membership duration: 30 days")
+                print("   Status: Active")
+                print()
+
+            return
+
+        except Exception as e:
+            print(f"❌ Error analyzing combinations: {str(e)}")
+            return
+
+    try:
         # Analyze user behavior for audience recommendations
         audience_candidates = analyze_user_behavior_for_audiences(args.days)
 
@@ -290,7 +509,7 @@ def main():
             print()
 
             for candidate in audience_candidates:
-                if priority_filter and candidate['priority'] != priority_filter:
+                if args.priority and candidate['priority'] != args.priority:
                     continue
 
                 print(f"🎯 {candidate['name']} ({candidate['priority']} priority)")

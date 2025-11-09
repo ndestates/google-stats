@@ -127,13 +127,15 @@ def get_audience_sizes(audience_ids=None):
 def create_basic_audience(display_name: str, description: str = "", membership_duration_days: int = 30):
     """Create a basic audience with all users"""
 
+    if not description:
+        description = f"All users audience: {display_name}"
+
     service = get_admin_service()
 
     audience = {
         'displayName': display_name,
         'description': description,
-        'membershipDurationDays': membership_duration_days,
-        # All users audience - no filters needed for basic audience
+        'membershipDurationDays': membership_duration_days
     }
 
     request = service.properties().audiences().create(
@@ -157,12 +159,35 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
         'filterClauses': [{
             'clauseType': 'INCLUDE',
             'simpleFilter': {
-                'filterType': 'DIMENSION_OR_METRIC',
-                'dimensionOrMetricFilter': {
-                    'fieldName': 'pagePath',
-                    'stringFilter': {
-                        'matchType': 'CONTAINS',
-                        'value': page_path
+                'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+                'filterExpression': {
+                    'andGroup': {
+                        'filterExpressions': [{
+                            'orGroup': {
+                                'filterExpressions': [{
+                                    'eventFilter': {
+                                        'eventName': 'page_view',
+                                        'eventParameterFilterExpression': {
+                                            'andGroup': {
+                                                'filterExpressions': [{
+                                                    'orGroup': {
+                                                        'filterExpressions': [{
+                                                            'dimensionOrMetricFilter': {
+                                                                'fieldName': 'pageLocation',
+                                                                'stringFilter': {
+                                                                    'matchType': 'CONTAINS',
+                                                                    'value': page_path
+                                                                }
+                                                            }
+                                                        }]
+                                                    }
+                                                }]
+                                            }
+                                        }
+                                    }
+                                }]
+                            }
+                        }]
                     }
                 }
             }
@@ -190,12 +215,18 @@ def create_event_audience(display_name: str, event_name: str, membership_duratio
         'filterClauses': [{
             'clauseType': 'INCLUDE',
             'simpleFilter': {
-                'filterType': 'DIMENSION_OR_METRIC',
-                'dimensionOrMetricFilter': {
-                    'fieldName': 'eventName',
-                    'stringFilter': {
-                        'matchType': 'EXACT',
-                        'value': event_name
+                'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+                'filterExpression': {
+                    'andGroup': {
+                        'filterExpressions': [{
+                            'orGroup': {
+                                'filterExpressions': [{
+                                    'eventFilter': {
+                                        'eventName': event_name
+                                    }
+                                }]
+                            }
+                        }]
                     }
                 }
             }
@@ -224,12 +255,18 @@ def create_cart_abandoner_audience(display_name: str = "Cart Abandoners", member
             {
                 'clauseType': 'INCLUDE',
                 'simpleFilter': {
-                    'filterType': 'DIMENSION_OR_METRIC',
-                    'dimensionOrMetricFilter': {
-                        'fieldName': 'eventName',
-                        'stringFilter': {
-                            'matchType': 'EXACT',
-                            'value': 'add_to_cart'
+                    'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+                    'filterExpression': {
+                        'andGroup': {
+                            'filterExpressions': [{
+                                'orGroup': {
+                                    'filterExpressions': [{
+                                        'eventFilter': {
+                                            'eventName': 'add_to_cart'
+                                        }
+                                    }]
+                                }
+                            }]
                         }
                     }
                 }
@@ -237,12 +274,18 @@ def create_cart_abandoner_audience(display_name: str = "Cart Abandoners", member
             {
                 'clauseType': 'EXCLUDE',
                 'simpleFilter': {
-                    'filterType': 'DIMENSION_OR_METRIC',
-                    'dimensionOrMetricFilter': {
-                        'fieldName': 'eventName',
-                        'stringFilter': {
-                            'matchType': 'EXACT',
-                            'value': 'purchase'
+                    'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+                    'filterExpression': {
+                        'andGroup': {
+                            'filterExpressions': [{
+                                'orGroup': {
+                                    'filterExpressions': [{
+                                        'eventFilter': {
+                                            'eventName': 'purchase'
+                                        }
+                                    }]
+                                }
+                            }]
                         }
                     }
                 }
