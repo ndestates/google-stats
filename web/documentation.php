@@ -34,10 +34,12 @@
                             <a class="nav-link" href="#hourly-analysis"><i class="fas fa-clock"></i> Hourly Traffic Analysis</a>
                             <a class="nav-link" href="#page-analysis"><i class="fas fa-file-alt"></i> Page Traffic Analysis</a>
                             <a class="nav-link" href="#google-ads"><i class="fas fa-ad"></i> Google Ads Performance</a>
+                            <a class="nav-link" href="#google-ads-creative"><i class="fas fa-bullseye"></i> Google Ads Creative Performance</a>
                             <a class="nav-link" href="#mailchimp"><i class="fas fa-envelope"></i> Mailchimp Performance</a>
                             <a class="nav-link" href="#keywords"><i class="fas fa-search"></i> Keywords Analysis</a>
                             <a class="nav-link" href="#top-pages"><i class="fas fa-chart-line"></i> Top Pages Report</a>
                             <a class="nav-link" href="#audience"><i class="fas fa-users"></i> Audience Management</a>
+                            <a class="nav-link" href="#audience-stats"><i class="fas fa-users-cog"></i> Audience Statistics</a>
                             <a class="nav-link" href="#conversion-funnel"><i class="fas fa-filter"></i> Conversion Funnel</a>
                             <a class="nav-link" href="#bounce-rate"><i class="fas fa-door-open"></i> Bounce Rate Analysis</a>
                             <a class="nav-link" href="#device-geo"><i class="fas fa-mobile-alt"></i> Device & Geo Analysis</a>
@@ -85,8 +87,10 @@
                             <h5><i class="fas fa-bullhorn"></i> Marketing & Technical Tools</h5>
                             <ul>
                                 <li><strong>Google Ads Performance</strong> - Campaign effectiveness</li>
+                                <li><strong>Google Ads Creative Performance</strong> - Individual ad creative analysis</li>
                                 <li><strong>Mailchimp Performance</strong> - Email marketing analytics</li>
                                 <li><strong>Audience Management</strong> - GA4 audience creation</li>
+                                <li><strong>Audience Statistics</strong> - GA4 audience performance metrics</li>
                                 <li><strong>Technical Performance</strong> - Site performance analysis</li>
                                 <li><strong>User Behavior Analysis</strong> - Navigation patterns</li>
                                 <li><strong>Content Performance</strong> - Content engagement metrics</li>
@@ -250,6 +254,34 @@
                     </div>
                 </div>
 
+                <!-- Google Ads Creative Performance -->
+                <div id="google-ads-creative" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-bullseye"></i> Google Ads Creative Performance</h3>
+                            <p class="mb-0">Individual Google Ads creative performance analysis</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Features</h5>
+                            <ul>
+                                <li>Individual ad creative performance</li>
+                                <li>Creative ID analysis</li>
+                                <li>Network performance breakdown</li>
+                                <li>Top performing creatives identification</li>
+                                <li>Campaign and ad group insights</li>
+                            </ul>
+
+                            <h5>Web Usage</h5>
+                            <p>Click "Run Report" on the Google Ads Creative Performance card.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/google_ads_ad_performance.py</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Mailchimp Performance -->
                 <div id="mailchimp" class="doc-section">
                     <div class="tool-card">
@@ -343,6 +375,35 @@
                             <h5>Command Line</h5>
                             <div class="code-block">
                                 <code>ddev exec python3 scripts/audience_management.py --action create --type basic --name "All Users"</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audience Statistics -->
+                <div id="audience-stats" class="doc-section">
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <h3><i class="fas fa-users-cog"></i> Audience Statistics</h3>
+                            <p class="mb-0">Get performance metrics and analytics for all GA4 audiences</p>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Features</h5>
+                            <ul>
+                                <li>User counts and session metrics for each audience</li>
+                                <li>Engagement rates and bounce rate analysis</li>
+                                <li>New user percentages</li>
+                                <li>Audience portfolio summary</li>
+                                <li>Performance insights and recommendations</li>
+                                <li>CSV export with detailed metrics</li>
+                            </ul>
+
+                            <h5>Web Usage</h5>
+                            <p>Select time period from the Audience Statistics card.</p>
+
+                            <h5>Command Line</h5>
+                            <div class="code-block">
+                                <code>ddev exec python3 scripts/audience_stats.py --days 30</code>
                             </div>
                         </div>
                     </div>
@@ -497,33 +558,49 @@
                     <div class="tool-card">
                         <div class="tool-header">
                             <h3><i class="fas fa-route"></i> User Behavior Analysis</h3>
-                            <p class="mb-0">Analyze user navigation patterns and behavior flows</p>
+                            <p class="mb-0">Analyze user navigation patterns, engagement, and behavior flows</p>
                         </div>
                         <div class="tool-body">
                             <h5>Analysis Types</h5>
                             <ul>
-                                <li><strong>User Flow</strong> - Page transition patterns</li>
-                                <li><strong>Navigation Paths</strong> - Common user journeys</li>
-                                <li><strong>Behavior Patterns</strong> - Channel-specific behavior analysis</li>
-                                <li><strong>Journey Optimization</strong> - Path improvement recommendations</li>
+                                <li><strong>General Behavior Analysis</strong> - Overall site engagement patterns and hourly traffic</li>
+                                <li><strong>Property Pages Analysis</strong> - Dedicated analysis of property-related pages with location insights</li>
+                                <li><strong>User Flow Analysis</strong> - Page transition patterns from specific starting points</li>
+                                <li><strong>Engagement Optimization</strong> - High/low engagement page identification</li>
                             </ul>
 
                             <h5>Key Metrics</h5>
                             <div>
-                                <span class="metric-badge">Page Transitions</span>
-                                <span class="metric-badge">Session Flow</span>
-                                <span class="metric-badge">Path Probability</span>
-                                <span class="metric-badge">Channel Behavior</span>
+                                <span class="metric-badge">Bounce Rate</span>
+                                <span class="metric-badge">Session Duration</span>
+                                <span class="metric-badge">Page Views/Session</span>
+                                <span class="metric-badge">Hourly Traffic</span>
+                                <span class="metric-badge">Property Performance</span>
+                                <span class="metric-badge">Location Analysis</span>
                             </div>
 
-                            <h5>Web Usage</h5>
-                            <p>Select analysis type from the User Behavior Analysis card options.</p>
+                            <h5>Web Interface Options</h5>
+                            <ul>
+                                <li><strong>General Behavior (30 Days)</strong> - Comprehensive site-wide behavior analysis</li>
+                                <li><strong>Property Pages Analysis</strong> - Focused analysis of property listings and performance</li>
+                                <li><strong>Quick Behavior Check (7 Days)</strong> - Rapid assessment of recent user patterns</li>
+                            </ul>
 
                             <h5>Command Line</h5>
                             <div class="code-block">
-                                <code>ddev exec python3 scripts/user_behavior.py all 30</code><br>
-                                <code>ddev exec python3 scripts/user_behavior.py flow 7</code>
+                                <code>ddev exec python3 scripts/user_flow_analysis.py behavior 30 100</code><br>
+                                <code>ddev exec python3 scripts/user_flow_analysis.py properties 30 50</code><br>
+                                <code>ddev exec python3 scripts/user_flow_analysis.py /valuations 5 30</code>
                             </div>
+
+                            <h5>Property Analysis Insights</h5>
+                            <p>The property pages analysis provides location-based insights including:</p>
+                            <ul>
+                                <li>Traffic distribution across Jersey parishes (St Helier, St Saviour, etc.)</li>
+                                <li>Property type performance and engagement metrics</li>
+                                <li>Average sessions per property by location</li>
+                                <li>High/low engagement property identification</li>
+                            </ul>
                         </div>
                     </div>
                 </div>

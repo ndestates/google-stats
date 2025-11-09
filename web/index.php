@@ -10,6 +10,82 @@
         .report-card { margin-bottom: 20px; }
         .output { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; }
         .loading { display: none; }
+        
+        /* Site Metrics Dashboard */
+        .metrics-dashboard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .metrics-dashboard h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .metrics-dashboard .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 25px;
+        }
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .metric-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .metric-card .metric-icon {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .metric-card .metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .metric-period {
+            margin-bottom: 8px;
+        }
+        .metric-period-label {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 8px;
+            min-width: 65px;
+            text-align: center;
+        }
+        .metric-value {
+            display: inline-block;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .metrics-loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+        .metrics-error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -21,6 +97,16 @@
                     <i class="fas fa-book"></i> Documentation
                 </a>
             </nav>
+        </div>
+
+        <!-- Site Metrics Dashboard -->
+        <div class="metrics-dashboard" id="metricsContainer">
+            <div class="metrics-loading">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2">Loading site metrics...</div>
+            </div>
         </div>
 
         <div class="row">
@@ -128,6 +214,26 @@
             <div class="col-md-6">
                 <div class="card report-card">
                     <div class="card-header">
+                        <h5>Google Ads Creative Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze individual Google Ads creative performance</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="google_ads_ad_performance.py">Last 30 Days Report</button>
+                            <button class="btn btn-success run-report mb-1" data-script="google_ads_ad_performance.py">Last 7 Days Report</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-google_ads_ad_performance">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running report...
+                        </div>
+                        <div class="output" id="output-google_ads_ad_performance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
                         <h5>Mailchimp Performance</h5>
                     </div>
                     <div class="card-body">
@@ -199,6 +305,8 @@
                         <p>Create and manage Google Analytics audiences</p>
                         <div class="btn-group-vertical w-100" role="group">
                             <button class="btn btn-primary run-report mb-1" data-script="audience_management.py" data-args="--action list">List Audiences</button>
+                            <button class="btn btn-info run-report mb-1" data-script="audience_management.py" data-args="--action list --include-metrics">List Audiences with Stats</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="audience_management.py" data-args="--action list --analyze-performance">Analyze Audience Performance</button>
                             <button class="btn btn-success run-report mb-1" data-script="audience_management.py" data-args="--action create --type basic --name 'All Users'">Create All Users Audience</button>
                             <button class="btn btn-warning run-report mb-1" data-script="audience_management.py" data-args="--action create --type cart-abandoners --name 'Cart Abandoners'">Create Cart Abandoners</button>
                         </div>
@@ -207,6 +315,48 @@
                             Running audience management...
                         </div>
                         <div class="output" id="output-audience_management"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>Audience Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Get performance metrics for all GA4 audiences</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="audience_stats.py">Last 30 Days Report</button>
+                            <button class="btn btn-success run-report mb-1" data-script="audience_stats.py" data-args="--days 7">Last 7 Days Report</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="audience_stats.py" data-args="--days 90">Last 90 Days Report</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-audience_stats">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running audience analysis...
+                        </div>
+                        <div class="output" id="output-audience_stats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5>User Behavior Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze user paths, engagement patterns, and site behavior</p>
+                        <div class="btn-group-vertical w-100" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="user_flow_analysis.py" data-args="behavior 30 100">General Behavior (30 Days)</button>
+                            <button class="btn btn-success run-report mb-1" data-script="user_flow_analysis.py" data-args="properties 30 50">Property Pages Analysis</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="user_flow_analysis.py" data-args="behavior 7 50">Quick Behavior Check (7 Days)</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-user_flow_analysis">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Analyzing user behavior...
+                        </div>
+                        <div class="output" id="output-user_flow_analysis"></div>
                     </div>
                 </div>
             </div>
@@ -735,5 +885,108 @@
             }
         });
     </script>
+        });
+    </script>
+    <script>
+        // Load site metrics on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSiteMetrics();
+        });
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'm';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'k';
+            } else {
+                return num.toString();
+            }
+        }
+
+        function loadSiteMetrics() {
+            const container = document.getElementById('metricsContainer');
+            
+            fetch('api/site_metrics.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        container.innerHTML = `
+                            <div class="metrics-error">
+                                <strong>⚠️ Error loading metrics:</strong> ${data.error}
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = `
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <i class="fas fa-chart-line" style="font-size: 1.8rem; margin-right: 15px;"></i>
+                            <div>
+                                <h2>Site Metrics</h2>
+                                <div class="subtitle">Real-time analytics overview</div>
+                            </div>
+                        </div>
+                        <div class="metrics-row">
+                            <div class="metric-card">
+                                <div class="metric-icon">📄</div>
+                                <div class="metric-label">Total Pages Viewed</div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">24 Hours</span>
+                                    <span class="metric-value">${formatNumber(data['24_hours'].total_pageviews)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">30 Days</span>
+                                    <span class="metric-value">${formatNumber(data['30_days'].total_pageviews)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">Annual</span>
+                                    <span class="metric-value">${formatNumber(data.annual.total_pageviews)}</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">👁️</div>
+                                <div class="metric-label">Individual Properties Viewed</div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">24 Hours</span>
+                                    <span class="metric-value">${formatNumber(data['24_hours'].unique_properties)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">30 Days</span>
+                                    <span class="metric-value">${formatNumber(data['30_days'].unique_properties)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">Annual</span>
+                                    <span class="metric-value">${formatNumber(data.annual.unique_properties)}</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-icon">👥</div>
+                                <div class="metric-label">Unique Visitors</div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">24 Hours</span>
+                                    <span class="metric-value">${formatNumber(data['24_hours'].total_users)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">30 Days</span>
+                                    <span class="metric-value">${formatNumber(data['30_days'].total_users)}</span>
+                                </div>
+                                <div class="metric-period">
+                                    <span class="metric-period-label">Annual</span>
+                                    <span class="metric-value">${formatNumber(data.annual.total_users)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    container.innerHTML = `
+                        <div class="metrics-error">
+                            <strong>⚠️ Failed to load metrics:</strong> ${error.message}
+                        </div>
+                    `;
+                });
+        }
+    </script>
 </body>
 </html>
+```

@@ -1,0 +1,248 @@
+"""
+Tests for google_ads_ad_performance.py script
+"""
+
+import pytest
+import os
+import pandas as pd
+from unittest.mock import Mock, patch, MagicMock
+from datetime import datetime, timedelta
+
+from scripts.google_ads_ad_performance import (
+    analyze_ad_performance,
+    get_last_30_days_range,
+    get_top_ads_report
+)
+
+
+class TestGoogleAdsAdPerformance:
+    """Test Google Ads individual ad creative performance analysis"""
+
+    def test_get_last_30_days_range(self):
+        """Test date range calculation for last 30 days"""
+        start_date, end_date = get_last_30_days_range()
+
+        # Should return yesterday as end date
+        expected_end = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        assert end_date == expected_end
+
+        # Should return 30 days ago as start date
+        expected_start = (datetime.now() - timedelta(days=29)).strftime('%Y-%m-%d')
+        assert start_date == expected_start
+
+    @patch('scripts.google_ads_ad_performance.run_report')
+    def test_analyze_ad_performance_no_data(self, mock_run_report):
+        """Test ad performance analysis when no Google Ads data is available"""
+        # Mock no data response
+        mock_response = Mock()
+        mock_response.row_count = 0
+        mock_run_report.return_value = mock_response
+
+        result = analyze_ad_performance('2025-01-01', '2025-01-31')
+
+        assert result is None
+        # Should have called run_report twice (test + main query)
+        assert mock_run_report.call_count == 2
+
+    @patch('scripts.google_ads_ad_performance.run_report')
+    @patch('scripts.google_ads_ad_performance.get_report_filename')
+    @patch('builtins.print')  # Suppress print output
+    def test_analyze_ad_performance_with_data(self, mock_print, mock_get_filename, mock_run_report):
+        """Test ad performance analysis with mock Google Ads data"""
+        # Mock filename generation
+        mock_get_filename.return_value = '/tmp/test_report.csv'
+
+        # Mock initial test response (data available)
+        test_response = Mock()
+        test_response.row_count = 1
+        mock_run_report.return_value = test_response
+
+        # Create mock ad performance data
+        ad_response = Mock()
+        ad_response.row_count = 3
+
+        # Mock row data
+        mock_row1 = Mock()
+        mock_row1.dimension_values = [
+            Mock(value='creative_123'),  # creative_id
+            Mock(value='Test Campaign'),  # campaign_name
+            Mock(value='Ad Group 1'),     # ad_group_name
+            Mock(value='Google search')   # network_type
+        ]
+        mock_row1.metric_values = [
+            Mock(value='100'),  # users
+            Mock(value='150')   # sessions
+        ]
+
+        mock_row2 = Mock()
+        mock_row2.dimension_values = [
+            Mock(value='(not set)'),      # creative_id
+            Mock(value='(not set)'),      # campaign_name
+            Mock(value='(not set)'),      # ad_group_name
+            Mock(value='(not set)')       # network_type
+        ]
+        mock_row2.metric_values = [
+            Mock(value='50'),   # users
+            Mock(value='75')    # sessions
+        ]
+
+        mock_row3 = Mock()
+        mock_row3.dimension_values = [
+            Mock(value='creative_456'),   # creative_id
+            Mock(value='Test Campaign'),  # campaign_name
+            Mock(value='Ad Group 1'),     # ad_group_name
+            Mock(value='Google search')   # network_type
+        ]
+        mock_row3.metric_values = [
+            Mock(value='75'),   # users
+            Mock(value='100')   # sessions
+        ]
+
+        ad_response.rows = [mock_row1, mock_row2, mock_row3]
+
+        # Set up mock_run_report to return different responses
+        mock_run_report.side_effect = [test_response, ad_response]
+
+        with patch('scripts.google_ads_ad_performance.pd.DataFrame.to_csv') as mock_to_csv:
+            result = analyze_ad_performance('2025-01-01', '2025-01-31')
+
+            # Should return data
+            assert result is not None
+            assert len(result) == 3
+
+            # Check data structure
+            assert result[0]['Creative_ID'] == 'creative_123'
+            assert result[0]['Campaign_Name'] == 'Test Campaign'
+            assert result[0]['Users'] == 100
+            assert result[0]['Sessions'] == 150
+
+            # Check (not set) handling
+            assert result[1]['Creative_ID'] == '(not set)'
+            assert result[1]['Campaign_Name'] == '(not set)'
+
+            # Verify CSV export was called
+            mock_to_csv.assert_called_once()
+
+    @patch('scripts.google_ads_ad_performance.analyze_ad_performance')
+    def test_get_top_ads_report_30_days(self, mock_analyze):
+        """Test top ads report for 30 days"""
+        mock_analyze.return_value = [{'test': 'data'}]
+
+        result = get_top_ads_report()
+
+        mock_analyze.assert_called_once()
+        assert result == [{'test': 'data'}]
+
+    @patch('scripts.google_ads_ad_performance.analyze_ad_performance')
+    def test_get_top_ads_report_7_days(self, mock_analyze):
+        """Test top ads report for 7 days"""
+        mock_analyze.return_value = [{'test': 'data'}]
+
+        result = get_top_ads_report(7)
+
+        # Should have been called with 7-day date range
+        mock_analyze.assert_called_once()
+        args = mock_analyze.call_args[0]
+        assert len(args) == 2  # start_date, end_date
+
+    @patch('scripts.google_ads_ad_performance.run_report')
+    @patch('builtins.print')
+    def test_analyze_ad_performance_handles_empty_response(self, mock_print, mock_run_report):
+        """Test handling of empty response from GA4"""
+        # Mock responses
+        test_response = Mock()
+        test_response.row_count = 1
+        mock_run_report.return_value = test_response
+
+        # Second call returns empty
+        ad_response = Mock()
+        ad_response.row_count = 0
+        mock_run_report.side_effect = [test_response, ad_response]
+
+        result = analyze_ad_performance('2025-01-01', '2025-01-31')
+
+        assert result is None
+
+    @patch('scripts.google_ads_ad_performance.run_report')
+    @patch('builtins.print')
+    def test_analyze_ad_performance_data_processing(self, mock_print, mock_run_report):
+        """Test data processing and calculations"""
+        # Mock responses
+        test_response = Mock()
+        test_response.row_count = 1
+
+        ad_response = Mock()
+        ad_response.row_count = 2
+
+        # Create test data
+        mock_row1 = Mock()
+        mock_row1.dimension_values = [
+            Mock(value='creative_1'),
+            Mock(value='Campaign A'),
+            Mock(value='Group 1'),
+            Mock(value='Google search')
+        ]
+        mock_row1.metric_values = [Mock(value='200'), Mock(value='250')]
+
+        mock_row2 = Mock()
+        mock_row2.dimension_values = [
+            Mock(value='creative_2'),
+            Mock(value='Campaign A'),
+            Mock(value='Group 1'),
+            Mock(value='Google search')
+        ]
+        mock_row2.metric_values = [Mock(value='100'), Mock(value='125')]
+
+        ad_response.rows = [mock_row1, mock_row2]
+        mock_run_report.side_effect = [test_response, ad_response]
+
+        with patch('scripts.google_ads_ad_performance.get_report_filename'), \
+             patch('scripts.google_ads_ad_performance.pd.DataFrame.to_csv'):
+            result = analyze_ad_performance('2025-01-01', '2025-01-31')
+
+            assert len(result) == 2
+            # Should be sorted by users descending
+            assert result[0]['Users'] == 200
+            assert result[1]['Users'] == 100
+
+    @patch('scripts.google_ads_ad_performance.run_report')
+    @patch('builtins.print')
+    def test_analyze_ad_performance_network_analysis(self, mock_print, mock_run_report):
+        """Test network performance analysis"""
+        # Mock responses
+        test_response = Mock()
+        test_response.row_count = 1
+
+        ad_response = Mock()
+        ad_response.row_count = 3
+
+        # Create test data with different networks
+        rows = []
+        networks = ['Google search', 'Google Display Network', 'Cross-network']
+        users = [100, 200, 50]
+
+        for i, (network, user_count) in enumerate(zip(networks, users)):
+            mock_row = Mock()
+            mock_row.dimension_values = [
+                Mock(value=f'creative_{i}'),
+                Mock(value='Test Campaign'),
+                Mock(value='Test Group'),
+                Mock(value=network)
+            ]
+            mock_row.metric_values = [Mock(value=str(user_count)), Mock(value=str(user_count + 25))]
+            rows.append(mock_row)
+
+        ad_response.rows = rows
+        mock_run_report.side_effect = [test_response, ad_response]
+
+        with patch('scripts.google_ads_ad_performance.get_report_filename'), \
+             patch('scripts.google_ads_ad_performance.pd.DataFrame.to_csv'):
+            result = analyze_ad_performance('2025-01-01', '2025-01-31')
+
+            assert len(result) == 3
+            # Check that all networks are represented
+            network_types = [row['Network_Type'] for row in result]
+            assert 'Google search' in network_types
+            assert 'Google Display Network' in network_types
+            assert 'Cross-network' in network_types</content>
+<parameter name="filePath">/home/nickd/projects/google-stats/tests/test_scripts/test_google_ads_ad_performance.py
