@@ -141,3 +141,15 @@ from src.config import GA4_PROPERTY_ID, REPORTS_DIR
 - Property IDs and credentials validated in `src/config.py`
 - Google Ads credentials: `GOOGLE_ADS_CUSTOMER_ID`, `GOOGLE_ADS_CLIENT_ID`, etc.</content>
 <parameter name="filePath">/home/nickd/projects/google-stats/.github/copilot-instructions.md
+
+
+### Github instructions
+
+- Never commit sensitive information (API keys, secrets) to the repository.
+- Use `.env` files and gitignore them to manage environment-specific configurations.    
+- Make sure to document any setup steps in the README or relevant docs.
+- Regularly review and update documentation to reflect any changes in setup or configuration.
+- Review pull requests for any accidental inclusion of sensitive data.
+- Use branch protection rules to enforce code reviews before merging.
+- Do not store long-lived tokens or secrets in code; use environment variables instead.
+
