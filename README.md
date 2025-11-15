@@ -12,6 +12,7 @@ A comprehensive analytics platform for Google Analytics 4, Google Ads, Mailchimp
 
 ### Marketing Tools
 - **Google Ads Performance** - Campaign effectiveness and ROI tracking
+- **Google Ads Ad Creation** - Create new responsive search ads programmatically
 - **Mailchimp Performance** - Email marketing analytics
 - **Audience Management** - GA4 audience creation and management
 
@@ -28,7 +29,7 @@ A comprehensive analytics platform for Google Analytics 4, Google Ads, Mailchimp
 ### Prerequisites
 - DDEV environment
 - Google Analytics 4 property access
-- Google Ads API credentials (optional)
+- Google Ads API credentials (optional) - see [Google Ads Setup Guide](README_Google_Ads_Credentials.md)
 - Mailchimp API key (optional)
 
 ### Installation
@@ -59,6 +60,12 @@ ddev exec python3 scripts/page_traffic_analysis.py /valuations 30
 
 # Google Ads performance
 ddev exec python3 scripts/google_ads_performance.py
+
+# Create new Google Ads
+ddev exec python3 scripts/create_ad.py --customer-id 1234567890 --headlines "Luxury Space Cruise" --descriptions "Book your adventure" --final-urls "https://example.com"
+
+# Get Google Ads refresh token
+ddev exec python3 get_google_ads_refresh_token.py
 
 # Mailchimp reports
 ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday
@@ -99,8 +106,9 @@ google-stats/
 - Service account credentials in `.ddev/keys/`
 
 ### Google Ads (Optional)
-- Customer ID and credentials required
-- Configure in respective scripts
+- Customer ID and API credentials required
+- See [Google Ads Setup Guide](README_Google_Ads_Credentials.md) for complete setup instructions
+- Configure in `.env` file and respective scripts
 
 ### Mailchimp (Optional)
 - API key required for email analytics

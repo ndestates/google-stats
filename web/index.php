@@ -9,6 +9,7 @@
     <style>
         .report-card { margin-bottom: 20px; }
         .output { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        .output pre { white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; }
         .loading { display: none; }
         
         /* Site Metrics Dashboard */

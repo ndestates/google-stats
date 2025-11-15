@@ -117,7 +117,7 @@ from src.config import GA4_PROPERTY_ID, REPORTS_DIR
 
 ### External APIs
 - GA4 Admin API for audience management (`scripts/audience_management.py`)
-- Google Ads API for campaign data
+- Google Ads API for campaign data and ad creation (`scripts/create_ad.py`)
 - Mailchimp API for email performance
 - Google Search Console for keyword data
 
@@ -138,5 +138,6 @@ from src.config import GA4_PROPERTY_ID, REPORTS_DIR
 ### API Configuration
 - Environment variables in `.env`
 - Service account keys in `.ddev/keys/`
-- Property IDs and credentials validated in `src/config.py`</content>
+- Property IDs and credentials validated in `src/config.py`
+- Google Ads credentials: `GOOGLE_ADS_CUSTOMER_ID`, `GOOGLE_ADS_CLIENT_ID`, etc.</content>
 <parameter name="filePath">/home/nickd/projects/google-stats/.github/copilot-instructions.md

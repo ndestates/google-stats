@@ -80,3 +80,37 @@ def get_gsc_client():
     )
 
     return build('webmasters', 'v3', credentials=credentials)
+
+# Google Ads Configuration
+GOOGLE_ADS_CUSTOMER_ID = os.getenv("GOOGLE_ADS_CUSTOMER_ID")
+GOOGLE_ADS_CLIENT_ID = os.getenv("GOOGLE_ADS_CLIENT_ID")
+GOOGLE_ADS_CLIENT_SECRET = os.getenv("GOOGLE_ADS_CLIENT_SECRET")
+GOOGLE_ADS_REFRESH_TOKEN = os.getenv("GOOGLE_ADS_REFRESH_TOKEN")
+GOOGLE_ADS_DEVELOPER_TOKEN = os.getenv("GOOGLE_ADS_DEVELOPER_TOKEN")
+
+def load_google_ads_config():
+    """Load Google Ads configuration for client initialization"""
+    config = {
+        "client_id": GOOGLE_ADS_CLIENT_ID,
+        "client_secret": GOOGLE_ADS_CLIENT_SECRET,
+        "refresh_token": GOOGLE_ADS_REFRESH_TOKEN,
+        "developer_token": GOOGLE_ADS_DEVELOPER_TOKEN,
+        "use_proto_plus": True,
+    }
+    return config if all(config.values()) else None
+
+def get_google_ads_client():
+    """Get authenticated Google Ads API client"""
+    try:
+        from google.ads.googleads.client import GoogleAdsClient
+
+        config = load_google_ads_config()
+        if not config:
+            raise ValueError("Google Ads configuration not found. Please check your .env file.")
+
+        client = GoogleAdsClient.load_from_dict(config)
+        return client
+    except ImportError:
+        raise ImportError("Google Ads API not available. Install with: pip install google-ads")
+    except Exception as e:
+        raise Exception(f"Could not initialize Google Ads client: {e}")

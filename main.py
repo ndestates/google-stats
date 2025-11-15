@@ -16,6 +16,7 @@ def main():
     print("  • Top Pages: python -m scripts.get_top_pages")
     print("  • Google Ads Performance: python -m scripts.google_ads_performance")
     print("  • Social Media Timing: python -m scripts.social_media_timing")
+    print("  • Create Google Ads: python scripts/create_ad.py --help")
     print()
     print(f"Reports are saved to: {os.path.join(os.path.dirname(__file__), 'reports')}")
     print(f"Python version: {sys.version}")

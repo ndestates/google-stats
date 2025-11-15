@@ -196,8 +196,8 @@ if (is_resource($process)) {
     // Get exit code
     $return_code = proc_close($process);
 
-    // Handle special formatting for social media analytics
-    if (($script === 'social_media_analytics' || $script === 'hourly_traffic_analysis.py') && $return_code === 0) {
+    // Handle special formatting for analytics reports
+    if ($return_code === 0) {
                 // Parse the output to extract social media data
                 $lines = explode("\n", trim($output));
                 $social_data = [];
@@ -244,7 +244,25 @@ if (is_resource($process)) {
                     if ($in_social_section && (strpos($line, '=====') !== false || strpos($line, 'ORGANIC TRAFFIC SUMMARY') !== false)) {
                         break;
                     }
-                }        // Output the formatted social media dashboard
+                }
+
+                // Parse page path for linking
+                $page_path = '';
+                if ($script === 'hourly_traffic_analysis.py' && !empty($args)) {
+                    $arg_parts = explode(' ', trim($args));
+                    $page_arg = $arg_parts[0];
+                    if (strpos($page_arg, 'http') === 0) {
+                        $parsed = parse_url($page_arg);
+                        $page_path = $parsed['path'] ?? '';
+                    } else {
+                        $page_path = $page_arg;
+                    }
+                    if (!empty($page_path) && $page_path[0] !== '/') {
+                        $page_path = '/' . $page_path;
+                    }
+                }
+
+        // Output the formatted social media dashboard
         ?>
         <!DOCTYPE html>
         <html lang="en">
@@ -413,6 +431,34 @@ if (is_resource($process)) {
                 .refresh-btn:hover {
                     transform: translateY(-1px);
                 }
+                @media print {
+                    body {
+                        background: white !important;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    .container {
+                        box-shadow: none;
+                        margin: 0;
+                        max-width: none;
+                    }
+                    .header {
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                        color-adjust: exact;
+                    }
+                    .header a {
+                        color: blue !important;
+                        text-decoration: underline;
+                    }
+                    .refresh-btn {
+                        display: none;
+                    }
+                    .footer {
+                        page-break-before: always;
+                    }
+                }
                 .footer {
                     text-align: center;
                     padding: 20px;
@@ -425,15 +471,22 @@ if (is_resource($process)) {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>📱 Social Media Analytics Dashboard</h1>
-                    <p>Optimal posting hours and organic traffic insights</p>
+                    <h1>🏠 NDEstates - Property Analytics Report</h1>
+                    <p>Comprehensive analytics insights for your website</p>
+                    <?php if (!empty($page_path)): ?>
+                    <p>Page: <a href="https://www.ndestates.com<?php echo htmlspecialchars($page_path); ?>" target="_blank" style="color: white; text-decoration: underline;"><?php echo htmlspecialchars($page_path); ?></a></p>
+                    <?php endif; ?>
+                    <button class="refresh-btn" onclick="window.print()">🖨️ Print / Download PDF</button>
                 </div>
 
                 <div class="content">
                     <?php
-                if (empty($social_data) && !$no_social_data) {
+                $is_social_script = ($script === 'social_media_analytics' || $script === 'hourly_traffic_analysis.py');
+                if ($is_social_script && empty($social_data) && !$no_social_data) {
                     echo '<div class="error">⚠️ No social media data found. The analytics script may not have detected organic social traffic in the selected time period.</div>';
-                } else {
+                }
+
+                if ($is_social_script) {
                     // Display summary statistics (show 0s if no data)
                     $total_social_users = $no_social_data ? 0 : array_sum(array_column($social_data, 'total_users'));
                     $active_platforms = $no_social_data ? 0 : count($social_data);
@@ -462,10 +515,10 @@ if (is_resource($process)) {
                     echo '<h2 class="section-title">🎯 Platform Performance</h2>';
                     if ($no_social_data) {
                         echo '<div class="platform-grid">';
-                        echo '<div class="platform-card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">';
+                        echo '<div class="platform-card" style="grid-column: 1 / -1; text-align: center; padding: 40px; overflow: visible;">';
                         echo '<h3 style="color: #666; margin: 0;">📱 No Social Media Data Available</h3>';
-                        echo '<p style="color: #999; margin: 10px 0 0 0;">No organic social media traffic was detected for this page in the selected time period.</p>';
-                        echo '<p style="color: #999; font-size: 0.9em; margin: 10px 0 0 0;">Try selecting a different page or expanding the date range.</p>';
+                        echo '<p style="color: #999; margin: 10px 0 0 0; word-wrap: break-word; white-space: normal;">No organic social media traffic was detected for this page in the selected time period.</p>';
+                        echo '<p style="color: #999; font-size: 0.9em; margin: 10px 0 0 0; word-wrap: break-word; white-space: normal;">Try a different page or expand the date range.</p>';
                         echo '</div>';
                         echo '</div>';
                     } else {
@@ -503,12 +556,23 @@ if (is_resource($process)) {
                         echo '</div>';
                     }
                     echo '</div>';
-                }                    // Show raw output for debugging (collapsible)
-                    echo '<details style="margin-top: 30px;">';
+                } else {
+                    // For non-social scripts, display the raw output in a styled box
+                    echo '<div class="report-section">';
+                    echo '<h2 class="section-title">📄 Report Output</h2>';
+                    echo '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">';
+                    echo '<pre style="margin: 0; font-family: monospace; font-size: 14px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word;">' . htmlspecialchars($output) . '</pre>';
+                    echo '</div>';
+                    echo '</div>';
+                }
+
+                // Show raw output for debugging (collapsible) - only for social scripts
+                if ($is_social_script) {
                     echo '<summary style="cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 4px;">🔧 Raw Script Output (Debug)</summary>';
                     echo '<pre style="background: #f8f9fa; padding: 20px; border-radius: 4px; margin-top: 10px; font-size: 12px; overflow-x: auto;">' . htmlspecialchars($output) . '</pre>';
                     echo '</details>';
-                    ?>
+                }
+                ?>
 
                     <div style="text-align: center; margin-top: 30px;">
                         <button class="refresh-btn" onclick="window.history.back()">← Back to Reports</button>
@@ -516,7 +580,7 @@ if (is_resource($process)) {
                 </div>
 
                 <div class="footer">
-                    <p>Report generated on <?php echo date('F j, Y \a\t g:i A'); ?> | Data from last 90 days</p>
+                    <p>Report generated on <?php echo date('F j, Y \a\t g:i A'); ?> | NDEstates Analytics | Powered by Google Analytics 4</p>
                 </div>
             </div>
         </body>
