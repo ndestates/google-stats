@@ -91,56 +91,40 @@ GOOGLE_ADS_DEVELOPER_TOKEN=your-actual-developer-token
 
 ## Step 6: Generate OAuth Refresh Token
 
-### Create Authorization Script
-Use the provided `get_google_ads_refresh_token.py` script which automatically loads your credentials from the `.env` file.
+### Method 1: OAuth Playground (Recommended - Easiest)
+Use Google's official OAuth Playground for the most reliable experience:
 
-**Alternative**: If you prefer to create your own script, here's a template:
+**Important Setup Step**: You must add the OAuth Playground redirect URI to your Google Cloud Console OAuth client.
 
-**Alternative**: If you prefer to create your own script, here's a template:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Edit your OAuth 2.0 Client ID (Desktop application)
+3. Under "Authorized redirect URIs", add: `https://developers.google.com/oauthplayground`
+4. Save the changes
 
-```python
-#!/usr/bin/env python3
-"""
-OAuth flow to get refresh token for Google Ads API
-"""
+Then:
+1. Visit: https://developers.google.com/oauthplayground/
+2. Click the gear icon ⚙️ to configure
+3. Set OAuth Client ID and Secret from your `.env` file
+4. Use scope: `https://www.googleapis.com/auth/adwords`
+5. Complete authorization and copy the refresh token
 
-import os
-from dotenv import load_dotenv
-from google_auth_oauthlib.flow import InstalledAppFlow
+See `GOOGLE_ADS_OAUTH_PLAYGROUND.md` for detailed instructions.
 
-# Load environment variables
-load_dotenv()
+### Method 2: Manual Script (Alternative)
+```bash
+python3 manual_google_ads_oauth.py
+```
 
-CLIENT_ID = os.getenv('GOOGLE_ADS_CLIENT_ID')
-CLIENT_SECRET = os.getenv('GOOGLE_ADS_CLIENT_SECRET')
-
-def main():
-    scopes = ['https://www.googleapis.com/auth/adwords']
-    flow = InstalledAppFlow.from_client_config(
-        {
-            "installed": {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob", "http://localhost"],
-                "auth_uri": "https://accounts.google.com/o/oauth/authorize",
-                "token_uri": "https://oauth2.googleapis.com/token"
-            }
-        },
-        scopes=scopes
-    )
-    flow.run_local_server(port=8080)
-    credentials = flow.credentials
-    print("Refresh Token:", credentials.refresh_token)
-
-if __name__ == "__main__":
-    main()
+### Method 3: Original Script (May have issues in some environments)
+```bash
+ddev exec python3 get_google_ads_refresh_token.py
 ```
 
 ### Important Notes
 
 - **OAuth Client Type**: Make sure to select "Desktop application" when creating your OAuth client in Google Cloud Console. Web applications require specific redirect URIs and are more complex to set up.
-- **Redirect URI**: The script uses `urn:ietf:wg:oauth:2.0:oob` which is automatically configured for desktop applications.
-- **DDEV Environment**: The manual OAuth flow works reliably in containerized environments like DDEV.
+- **Multiple Methods**: If one OAuth method doesn't work, try the alternatives (OAuth Playground is usually most reliable).
+- **DDEV Environment**: Manual OAuth flows work reliably in containerized environments.
 
 **Update your .env file:**
 ```env

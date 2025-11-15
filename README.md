@@ -66,6 +66,8 @@ ddev exec python3 scripts/create_ad.py --customer-id 1234567890 --headlines "Lux
 
 # Get Google Ads refresh token
 ddev exec python3 get_google_ads_refresh_token.py
+# OR use OAuth Playground (recommended): see GOOGLE_ADS_OAUTH_PLAYGROUND.md
+# OR use manual script: python3 manual_google_ads_oauth.py
 
 # Mailchimp reports
 ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday
