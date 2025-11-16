@@ -118,6 +118,42 @@ header('Expires: 0');
 $script = $_POST['script'] ?? '';
 $args = $_POST['args'] ?? '';
 
+// Handle logo upload if present
+$logo_path = null;
+if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+    $upload_dir = '/tmp/analytics_logos/';
+    
+    // Create upload directory if it doesn't exist
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
+    
+    // Validate file type
+    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+    $file_type = $_FILES['logo']['type'];
+    
+    if (!in_array($file_type, $allowed_types)) {
+        echo "Error: Invalid logo file type. Only JPG, PNG, and GIF are allowed.";
+        exit;
+    }
+    
+    // Generate unique filename
+    $file_extension = pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION);
+    $logo_filename = 'logo_' . time() . '_' . rand(1000, 9999) . '.' . $file_extension;
+    $logo_path = $upload_dir . $logo_filename;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($_FILES['logo']['tmp_name'], $logo_path)) {
+        echo "Error: Failed to save logo file.";
+        exit;
+    }
+    
+    // Add logo path to arguments if logo was uploaded
+    if (strpos($args, '--logo-uploaded') !== false) {
+        $args = str_replace('--logo-uploaded', '--logo-path "' . $logo_path . '"', $args);
+    }
+}
+
 if (empty($script)) {
     echo "Error: No script specified";
     exit;

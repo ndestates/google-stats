@@ -52,7 +52,7 @@ def normalize_page_path(url_or_path):
 
     return page_path
 
-def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str = None, property_name: str = "", property_address: str = ""):
+def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str = None, property_name: str = "", property_address: str = "", logo_path: str = ""):
     """Analyze traffic sources for a specific page URL"""
 
     if not start_date or not end_date:
@@ -244,7 +244,7 @@ def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str 
         if property_address:
             src.config.PROPERTY_ADDRESS = property_address
             
-        pdf_filename = create_campaign_report_pdf(source_data, f"{page_path}_{start_date}_to_{end_date}", total_page_users, len(sorted_sources))
+        pdf_filename = create_campaign_report_pdf(source_data, f"{page_path}_{start_date}_to_{end_date}", total_page_users, len(sorted_sources), logo_path)
         print(f"📄 PDF report exported to: {pdf_filename}")
         
         # Restore original values
@@ -260,6 +260,7 @@ if __name__ == "__main__":
     # Parse command line arguments
     property_name = ""
     property_address = ""
+    logo_path = ""
     
     # Check for property arguments
     args = sys.argv[1:]
@@ -272,6 +273,11 @@ if __name__ == "__main__":
             continue
         elif args[i] == '--property-address' and i + 1 < len(args):
             property_address = args[i + 1]
+            args.pop(i)  # Remove the flag
+            args.pop(i)  # Remove the value
+            continue
+        elif args[i] == '--logo-path' and i + 1 < len(args):
+            logo_path = args[i + 1]
             args.pop(i)  # Remove the flag
             args.pop(i)  # Remove the value
             continue
@@ -289,17 +295,19 @@ if __name__ == "__main__":
             print(f"Property Name: {property_name}")
         if property_address:
             print(f"Property Address: {property_address}")
+        if logo_path:
+            print(f"Logo: {os.path.basename(logo_path)}")
 
         if days == 7:
             # Calculate 7-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=6)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address, logo_path)
         else:
             # Default to 30 days or custom days
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=days-1)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address, logo_path)
 
     else:
         # Interactive mode
@@ -334,25 +342,25 @@ if __name__ == "__main__":
         choice = input("Enter choice (1, 2, 3, or 4): ").strip()
 
         if choice == "1":
-            analyze_page_traffic(target_url)
+            analyze_page_traffic(target_url, property_name=property_name, property_address=property_address, logo_path=logo_path)
         elif choice == "2":
             # Calculate 7-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=6)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address, logo_path)
         elif choice == "3":
             # Calculate 90-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=89)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address, logo_path)
         elif choice == "4":
             start_date = input("Enter start date (YYYY-MM-DD): ").strip()
             end_date = input("Enter end date (YYYY-MM-DD): ").strip()
             if start_date and end_date:
-                analyze_page_traffic(target_url, start_date, end_date)
+                analyze_page_traffic(target_url, start_date, end_date, property_name, property_address, logo_path)
             else:
                 print("Invalid dates provided. Using last 30 days.")
-                analyze_page_traffic(target_url)
+                analyze_page_traffic(target_url, property_name=property_name, property_address=property_address, logo_path=logo_path)
         else:
             print("Invalid choice. Analyzing last 30 days by default.")
-            analyze_page_traffic(target_url)
+            analyze_page_traffic(target_url, property_name=property_name, property_address=property_address, logo_path=logo_path)

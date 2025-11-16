@@ -152,6 +152,11 @@
                                     <div class="form-text">Will appear on PDF reports</div>
                                 </div>
                             </div>
+                            <div class="mb-3">
+                                <label for="property-logo" class="form-label">Company Logo (Optional):</label>
+                                <input type="file" class="form-control" id="property-logo" accept="image/*">
+                                <div class="form-text">Upload your company logo (PNG, JPG, GIF) - will appear on PDF reports</div>
+                            </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
                         <div class="loading mt-2" id="loading-page_traffic_analysis">
@@ -203,6 +208,11 @@
                                     <input type="text" class="form-control" id="hourly-property-address" placeholder="e.g., St Helier">
                                     <div class="form-text">Will appear on PDF reports</div>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="hourly-property-logo" class="form-label">Company Logo (Optional):</label>
+                                <input type="file" class="form-control" id="hourly-property-logo" accept="image/*">
+                                <div class="form-text">Upload your company logo (PNG, JPG, GIF) - will appear on PDF reports</div>
                             </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
@@ -622,17 +632,28 @@
                     const days = document.getElementById('analysis-days').value;
                     const propertyName = document.getElementById('property-name').value.trim();
                     const propertyAddress = document.getElementById('property-address').value.trim();
+                    const logoFile = document.getElementById('property-logo').files[0];
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
+                    // Create FormData for file upload
+                    const formData = new FormData();
+                    formData.append('script', 'page_traffic_analysis.py');
+                    
                     let scriptArgs = `"${url}" ${days}`;
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
+                    if (logoFile) {
+                        formData.append('logo', logoFile);
+                        scriptArgs += ` --logo-uploaded`;
+                    }
                     
-                    runScript('page_traffic_analysis.py', scriptArgs);
+                    formData.append('args', scriptArgs);
+
+                    runScriptWithData('run_report.php', formData);
                 });
             }
 
@@ -645,17 +666,28 @@
                     const days = document.getElementById('hourly-analysis-days').value;
                     const propertyName = document.getElementById('hourly-property-name').value.trim();
                     const propertyAddress = document.getElementById('hourly-property-address').value.trim();
+                    const logoFile = document.getElementById('hourly-property-logo').files[0];
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
+                    // Create FormData for file upload
+                    const formData = new FormData();
+                    formData.append('script', 'hourly_traffic_analysis.py');
+                    
                     let scriptArgs = `"${url}" ${days}`;
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
+                    if (logoFile) {
+                        formData.append('logo', logoFile);
+                        scriptArgs += ` --logo-uploaded`;
+                    }
                     
-                    runScript('hourly_traffic_analysis.py', scriptArgs);
+                    formData.append('args', scriptArgs);
+
+                    runScriptWithData('run_report.php', formData);
                 });
             }
 
@@ -856,6 +888,54 @@
 
                 // Make AJAX request
                 fetch('run_report.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                })
+                .catch(error => {
+                    if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
+                })
+                .finally(() => {
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (submitBtn) submitBtn.disabled = false;
+                    if (hourlySubmitBtn) hourlySubmitBtn.disabled = false;
+                    if (socialSubmitBtn) socialSubmitBtn.disabled = false;
+                    buttons.forEach(btn => btn.disabled = false);
+                });
+            }
+
+            function runScriptWithData(endpoint, formData) {
+                // Extract script name from formData for loading/output divs
+                const scriptName = formData.get('script');
+                const scriptBaseName = scriptName.replace('.py', '');
+                const loadingDiv = document.getElementById('loading-' + scriptBaseName);
+                const outputDiv = document.getElementById('output-' + scriptBaseName);
+
+                // Show loading
+                if (loadingDiv) loadingDiv.style.display = 'block';
+                if (outputDiv) outputDiv.innerHTML = '';
+
+                // Disable form/button
+                const submitBtn = document.querySelector('#page-traffic-form button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+
+                // Disable hourly form button
+                const hourlySubmitBtn = document.querySelector('#hourly-traffic-form button[type="submit"]');
+                if (hourlySubmitBtn) hourlySubmitBtn.disabled = true;
+
+                // Disable social media form button
+                const socialSubmitBtn = document.querySelector('#social-media-form button[type="submit"]');
+                if (socialSubmitBtn) socialSubmitBtn.disabled = true;
+
+                // Disable regular buttons with this script name
+                const buttons = document.querySelectorAll(`[data-script="${scriptName}"]`);
+                buttons.forEach(btn => btn.disabled = true);
+
+                // Make AJAX request
+                fetch(endpoint, {
                     method: 'POST',
                     body: formData
                 })
