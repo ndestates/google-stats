@@ -107,6 +107,14 @@ google-stats/
 - Property ID configured in `src/config.py`
 - Service account credentials in `.ddev/keys/`
 
+### Property Information (Optional)
+Add property name and address to customize PDF reports:
+```env
+# Add to your .env file
+PROPERTY_NAME="Your Business Name"
+PROPERTY_ADDRESS="123 Main Street, City, State 12345"
+```
+
 ### Google Ads (Optional)
 - Customer ID and API credentials required
 - See [Google Ads Setup Guide](README_Google_Ads_Credentials.md) for complete setup instructions

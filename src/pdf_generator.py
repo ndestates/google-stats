@@ -12,7 +12,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
-from src.config import REPORTS_DIR
+from src.config import REPORTS_DIR, PROPERTY_NAME, PROPERTY_ADDRESS
 
 def get_pdf_filename(base_name, date_info):
     """Generate PDF filename with timestamp"""
@@ -77,6 +77,25 @@ def create_yesterday_report_pdf(page_data, report_date, total_users, total_pages
 
     story.append(Paragraph(f"YESTERDAY'S PAGE-SOURCE REPORT ({report_date})", title_style))
     story.append(Spacer(1, 12))
+
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
 
     # Summary section
     summary_style = ParagraphStyle(
@@ -169,6 +188,25 @@ def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users
     story.append(Paragraph(f"COMPREHENSIVE PAGE-SOURCE REPORT ({start_date} to {end_date})", title_style))
     story.append(Spacer(1, 12))
 
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
+
     # Summary section
     summary_style = ParagraphStyle(
         'Summary',
@@ -256,6 +294,25 @@ def create_channel_report_pdf(channel_data, date_range, total_users, total_sessi
     story.append(Paragraph(f"CHANNEL PERFORMANCE REPORT ({date_range})", title_style))
     story.append(Spacer(1, 12))
 
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
+
     # Summary section
     summary_style = ParagraphStyle(
         'Summary',
@@ -330,6 +387,25 @@ def create_google_ads_report_pdf(campaign_data, hourly_data, date_range):
 
     story.append(Paragraph(f"GOOGLE ADS PERFORMANCE REPORT ({date_range})", title_style))
     story.append(Spacer(1, 12))
+
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
 
     # Campaign Performance Section
     if campaign_data:
@@ -426,6 +502,25 @@ def create_campaign_report_pdf(campaign_data, date_range, total_users, total_cam
 
     story.append(Paragraph(f"CAMPAIGN PERFORMANCE REPORT ({date_range})", title_style))
     story.append(Spacer(1, 12))
+
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
 
     # Summary section
     summary_style = ParagraphStyle(

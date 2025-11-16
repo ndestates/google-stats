@@ -140,6 +140,18 @@
                                     <option value="90">Last 90 days</option>
                                 </select>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="property-name" class="form-label">Property Name (Optional):</label>
+                                    <input type="text" class="form-control" id="property-name" placeholder="e.g., 4 Melrose Apartments">
+                                    <div class="form-text">Will appear on PDF reports</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="property-address" class="form-label">Property Address (Optional):</label>
+                                    <input type="text" class="form-control" id="property-address" placeholder="e.g., St Helier">
+                                    <div class="form-text">Will appear on PDF reports</div>
+                                </div>
+                            </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
                         <div class="loading mt-2" id="loading-page_traffic_analysis">
@@ -179,6 +191,18 @@
                                     <option value="7">Last 7 days</option>
                                     <option value="90">Last 90 days</option>
                                 </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="hourly-property-name" class="form-label">Property Name (Optional):</label>
+                                    <input type="text" class="form-control" id="hourly-property-name" placeholder="e.g., 4 Melrose Apartments">
+                                    <div class="form-text">Will appear on PDF reports</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="hourly-property-address" class="form-label">Property Address (Optional):</label>
+                                    <input type="text" class="form-control" id="hourly-property-address" placeholder="e.g., St Helier">
+                                    <div class="form-text">Will appear on PDF reports</div>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
@@ -596,13 +620,18 @@
                     e.preventDefault();
                     const url = document.getElementById('page-url').value.trim();
                     const days = document.getElementById('analysis-days').value;
+                    const propertyName = document.getElementById('property-name').value.trim();
+                    const propertyAddress = document.getElementById('property-address').value.trim();
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
-                    const scriptArgs = `"${url}" ${days}`;
+                    let scriptArgs = `"${url}" ${days}`;
+                    if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
+                    if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
+                    
                     runScript('page_traffic_analysis.py', scriptArgs);
                 });
             }
@@ -614,13 +643,18 @@
                     e.preventDefault();
                     const url = document.getElementById('hourly-page-url').value.trim();
                     const days = document.getElementById('hourly-analysis-days').value;
+                    const propertyName = document.getElementById('hourly-property-name').value.trim();
+                    const propertyAddress = document.getElementById('hourly-property-address').value.trim();
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
-                    const scriptArgs = `"${url}" ${days}`;
+                    let scriptArgs = `"${url}" ${days}`;
+                    if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
+                    if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
+                    
                     runScript('hourly_traffic_analysis.py', scriptArgs);
                 });
             }

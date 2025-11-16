@@ -13,6 +13,10 @@ load_dotenv()
 GA4_PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
 GA4_KEY_PATH = os.getenv("GA4_KEY_PATH")
 
+# Property Information (optional - for report customization)
+PROPERTY_NAME = os.getenv("PROPERTY_NAME", "")
+PROPERTY_ADDRESS = os.getenv("PROPERTY_ADDRESS", "")
+
 # Google Search Console Configuration
 GSC_SITE_URL = os.getenv("GSC_SITE_URL")
 GSC_KEY_PATH = os.getenv("GSC_KEY_PATH")

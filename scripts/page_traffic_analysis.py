@@ -20,6 +20,7 @@ from google.analytics.data_v1beta.types import OrderBy
 
 from src.config import REPORTS_DIR
 from src.ga4_client import run_report, create_date_range, get_report_filename
+from src.pdf_generator import create_campaign_report_pdf
 
 def get_last_30_days_range():
     """Get date range for the last 30 days"""
@@ -51,7 +52,7 @@ def normalize_page_path(url_or_path):
 
     return page_path
 
-def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str = None):
+def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str = None, property_name: str = "", property_address: str = ""):
     """Analyze traffic sources for a specific page URL"""
 
     if not start_date or not end_date:
@@ -233,10 +234,22 @@ def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str 
         print(f"\n📄 Detailed data exported to: {csv_filename}")
 
         # Generate PDF report (reuse campaign PDF generator)
-        # Note: PDF generation requires data structure adjustment, CSV export works perfectly
-        # pdf_filename = create_campaign_report_pdf(source_data, f"{page_path}_{start_date}_to_{end_date}", total_page_users, len(sorted_sources))
-        # print(f"📄 PDF report exported to: {pdf_filename}")
-        print("💡 PDF generation available in other scripts. Use CSV export for detailed analysis.")
+        # Temporarily set property info for PDF generation
+        import src.config
+        original_property_name = src.config.PROPERTY_NAME
+        original_property_address = src.config.PROPERTY_ADDRESS
+        
+        if property_name:
+            src.config.PROPERTY_NAME = property_name
+        if property_address:
+            src.config.PROPERTY_ADDRESS = property_address
+            
+        pdf_filename = create_campaign_report_pdf(source_data, f"{page_path}_{start_date}_to_{end_date}", total_page_users, len(sorted_sources))
+        print(f"📄 PDF report exported to: {pdf_filename}")
+        
+        # Restore original values
+        src.config.PROPERTY_NAME = original_property_name
+        src.config.PROPERTY_ADDRESS = original_property_address
 
     return source_data
 
@@ -244,25 +257,49 @@ if __name__ == "__main__":
     print("🔍 Page Traffic Analysis Tool")
     print("=" * 40)
 
-    # Check for command line arguments
-    if len(sys.argv) >= 2:
+    # Parse command line arguments
+    property_name = ""
+    property_address = ""
+    
+    # Check for property arguments
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == '--property-name' and i + 1 < len(args):
+            property_name = args[i + 1]
+            args.pop(i)  # Remove the flag
+            args.pop(i)  # Remove the value
+            continue
+        elif args[i] == '--property-address' and i + 1 < len(args):
+            property_address = args[i + 1]
+            args.pop(i)  # Remove the flag
+            args.pop(i)  # Remove the value
+            continue
+        i += 1
+
+    # Check for remaining arguments
+    if len(args) >= 1:
         # Command line mode
-        target_url = sys.argv[1]
-        days = int(sys.argv[2]) if len(sys.argv) >= 3 else 30
+        target_url = args[0]
+        days = int(args[1]) if len(args) >= 2 else 30
 
         print(f"Analyzing URL: {target_url}")
         print(f"Time period: Last {days} days")
+        if property_name:
+            print(f"Property Name: {property_name}")
+        if property_address:
+            print(f"Property Address: {property_address}")
 
         if days == 7:
             # Calculate 7-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=6)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
         else:
             # Default to 30 days or custom days
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=days-1)
-            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_page_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
 
     else:
         # Interactive mode
