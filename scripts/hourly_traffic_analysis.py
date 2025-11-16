@@ -51,7 +51,7 @@ def normalize_page_path(url_or_path):
 
     return page_path
 
-def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: str = None):
+def analyze_hourly_traffic(target_url: str, start_date: str = None, end_date: str = None, property_name: str = "", property_address: str = ""):
     """Analyze hourly traffic sources for a specific page URL"""
 
     if not start_date or not end_date:
@@ -405,23 +405,49 @@ if __name__ == "__main__":
 
     # Check for command line arguments
     if len(sys.argv) >= 2:
-        # Command line mode
-        target_url = sys.argv[1]
-        days = int(sys.argv[2]) if len(sys.argv) >= 3 else 30
+        # Parse command line arguments
+        property_name = ""
+        property_address = ""
+        
+        # Check for property arguments
+        args = sys.argv[1:]
+        i = 0
+        while i < len(args):
+            if args[i] == '--property-name' and i + 1 < len(args):
+                property_name = args[i + 1]
+                args.pop(i)  # Remove the flag
+                args.pop(i)  # Remove the value
+                continue
+            elif args[i] == '--property-address' and i + 1 < len(args):
+                property_address = args[i + 1]
+                args.pop(i)  # Remove the flag
+                args.pop(i)  # Remove the value
+                continue
+            i += 1
 
-        print(f"Analyzing URL: {target_url}")
-        print(f"Time period: Last {days} days")
+        # Check for remaining arguments
+        if len(args) >= 1:
+            # Command line mode
+            target_url = args[0]
+            days = int(args[1]) if len(args) >= 2 else 30
 
-        if days == 7:
-            # Calculate 7-day range
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=6)
-            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
-        else:
-            # Default to 30 days or custom days
-            end_date = datetime.now() - timedelta(days=1)
-            start_date = end_date - timedelta(days=days-1)
-            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            print(f"Analyzing URL: {target_url}")
+            print(f"Time period: Last {days} days")
+            if property_name:
+                print(f"Property Name: {property_name}")
+            if property_address:
+                print(f"Property Address: {property_address}")
+
+            if days == 7:
+                # Calculate 7-day range
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=6)
+                analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
+            else:
+                # Default to 30 days or custom days
+                end_date = datetime.now() - timedelta(days=1)
+                start_date = end_date - timedelta(days=days-1)
+                analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), property_name, property_address)
 
     else:
         # Interactive mode
@@ -456,25 +482,25 @@ if __name__ == "__main__":
         choice = input("Enter choice (1, 2, 3, or 4): ").strip()
 
         if choice == "1":
-            analyze_hourly_traffic(target_url)
+            analyze_hourly_traffic(target_url, property_name="", property_address="")
         elif choice == "2":
             # Calculate 7-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=6)
-            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), "", "")
         elif choice == "3":
             # Calculate 90-day range
             end_date = datetime.now() - timedelta(days=1)
             start_date = end_date - timedelta(days=89)
-            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+            analyze_hourly_traffic(target_url, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), "", "")
         elif choice == "4":
             start_date = input("Enter start date (YYYY-MM-DD): ").strip()
             end_date = input("Enter end date (YYYY-MM-DD): ").strip()
             if start_date and end_date:
-                analyze_hourly_traffic(target_url, start_date, end_date)
+                analyze_hourly_traffic(target_url, start_date, end_date, "", "")
             else:
                 print("Invalid dates provided. Using last 30 days.")
-                analyze_hourly_traffic(target_url)
+                analyze_hourly_traffic(target_url, property_name="", property_address="")
         else:
             print("Invalid choice. Analyzing last 30 days by default.")
-            analyze_hourly_traffic(target_url)
+            analyze_hourly_traffic(target_url, property_name="", property_address="")

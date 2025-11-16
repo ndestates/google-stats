@@ -12,10 +12,15 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 
-from src.config import REPORTS_DIR, PROPERTY_NAME, PROPERTY_ADDRESS
+from src.config import REPORTS_DIR, PROPERTY_NAME, PROPERTY_ADDRESS, get_company_logo_path
 
-def add_logo_to_story(story, logo_path):
+def add_logo_to_story(story, logo_path=None):
     """Add logo to the PDF story if logo file exists"""
+    # If logo_path is provided for backward compatibility, use it
+    # Otherwise, get the stored company logo
+    if logo_path is None:
+        logo_path = get_company_logo_path()
+
     if logo_path and os.path.exists(logo_path):
         try:
             # Create logo image (max width 200px, maintain aspect ratio)
@@ -72,7 +77,7 @@ def create_wrapped_paragraph(text, style, max_width=None):
         text = text[:max_width-3] + "..."
     return Paragraph(text, style)
 
-def create_yesterday_report_pdf(page_data, report_date, total_users, total_pages, avg_users_per_page, logo_path=None):
+def create_yesterday_report_pdf(page_data, report_date, total_users, total_pages, avg_users_per_page):
     """Generate PDF for yesterday's page-source report"""
 
     filename = get_pdf_filename("yesterday_report", report_date)
@@ -93,7 +98,7 @@ def create_yesterday_report_pdf(page_data, report_date, total_users, total_pages
     story.append(Spacer(1, 12))
 
     # Add logo if provided
-    add_logo_to_story(story, logo_path)
+    add_logo_to_story(story)
 
     # Property Information (if provided)
     if PROPERTY_NAME or PROPERTY_ADDRESS:
@@ -185,7 +190,7 @@ def create_yesterday_report_pdf(page_data, report_date, total_users, total_pages
     doc.build(story)
     return filename
 
-def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users, total_pages, avg_users_per_page, logo_path=None):
+def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users, total_pages, avg_users_per_page):
     """Generate PDF for comprehensive page-source report"""
 
     filename = get_pdf_filename("comprehensive_page_source_report", f"{start_date}_to_{end_date}")
@@ -206,7 +211,7 @@ def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users
     story.append(Spacer(1, 12))
 
     # Add logo if provided
-    add_logo_to_story(story, logo_path)
+    add_logo_to_story(story)
 
     # Property Information (if provided)
     if PROPERTY_NAME or PROPERTY_ADDRESS:
@@ -294,7 +299,7 @@ def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users
     doc.build(story)
     return filename
 
-def create_channel_report_pdf(channel_data, date_range, total_users, total_sessions, logo_path=None):
+def create_channel_report_pdf(channel_data, date_range, total_users, total_sessions):
     """Generate PDF for channel performance report"""
 
     filename = get_pdf_filename("channel_report", date_range)
@@ -315,7 +320,7 @@ def create_channel_report_pdf(channel_data, date_range, total_users, total_sessi
     story.append(Spacer(1, 12))
 
     # Add logo if provided
-    add_logo_to_story(story, logo_path)
+    add_logo_to_story(story)
 
     # Property Information (if provided)
     if PROPERTY_NAME or PROPERTY_ADDRESS:
@@ -391,7 +396,7 @@ def create_channel_report_pdf(channel_data, date_range, total_users, total_sessi
     doc.build(story)
     return filename
 
-def create_google_ads_report_pdf(campaign_data, hourly_data, date_range, logo_path=None):
+def create_google_ads_report_pdf(campaign_data, hourly_data, date_range):
     """Generate PDF for Google Ads performance report"""
 
     filename = get_pdf_filename("google_ads_performance", date_range)
@@ -412,7 +417,7 @@ def create_google_ads_report_pdf(campaign_data, hourly_data, date_range, logo_pa
     story.append(Spacer(1, 12))
 
     # Add logo if provided
-    add_logo_to_story(story, logo_path)
+    add_logo_to_story(story)
 
     # Property Information (if provided)
     if PROPERTY_NAME or PROPERTY_ADDRESS:
@@ -509,7 +514,7 @@ def create_google_ads_report_pdf(campaign_data, hourly_data, date_range, logo_pa
     doc.build(story)
     return filename
 
-def create_campaign_report_pdf(campaign_data, date_range, total_users, total_campaigns, logo_path=None):
+def create_campaign_report_pdf(campaign_data, date_range, total_users, total_campaigns):
     """Generate PDF for campaign performance report"""
 
     filename = get_pdf_filename("campaign_performance", date_range)
@@ -530,7 +535,7 @@ def create_campaign_report_pdf(campaign_data, date_range, total_users, total_cam
     story.append(Spacer(1, 12))
 
     # Add logo if provided
-    add_logo_to_story(story, logo_path)
+    add_logo_to_story(story)
 
     # Property Information (if provided)
     if PROPERTY_NAME or PROPERTY_ADDRESS:

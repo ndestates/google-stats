@@ -4,6 +4,7 @@ Handles environment variables and GA4 client setup
 """
 
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -13,9 +14,41 @@ load_dotenv()
 GA4_PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
 GA4_KEY_PATH = os.getenv("GA4_KEY_PATH")
 
-# Property Information (optional - for report customization)
+# Property Information (optional - for PDF customization)
 PROPERTY_NAME = os.getenv("PROPERTY_NAME", "")
 PROPERTY_ADDRESS = os.getenv("PROPERTY_ADDRESS", "")
+
+def get_company_logo_path():
+    """Get the stored company logo path from admin settings"""
+    try:
+        settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "uploads", "settings.json")
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+                logo_path = settings.get('company_logo')
+                if logo_path:
+                    # Convert relative path to absolute path
+                    full_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", logo_path)
+                    if os.path.exists(full_path):
+                        return full_path
+    except Exception:
+        pass
+    return None
+
+def get_default_property_info():
+    """Get default property information from admin settings"""
+    try:
+        settings_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "uploads", "settings.json")
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+                return {
+                    'name': settings.get('default_property_name', ''),
+                    'address': settings.get('default_property_address', '')
+                }
+    except Exception:
+        pass
+    return {'name': '', 'address': ''}
 
 # Google Search Console Configuration
 GSC_SITE_URL = os.getenv("GSC_SITE_URL")

@@ -152,10 +152,8 @@
                                     <div class="form-text">Will appear on PDF reports</div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="property-logo" class="form-label">Company Logo (Optional):</label>
-                                <input type="file" class="form-control" id="property-logo" accept="image/*">
-                                <div class="form-text">Upload your company logo (PNG, JPG, GIF) - will appear on PDF reports</div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> <strong>Company Logo:</strong> Set your company logo once in the <a href="admin.php" target="_blank">Admin Settings</a> panel. It will automatically appear on all your reports.
                             </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
@@ -209,10 +207,8 @@
                                     <div class="form-text">Will appear on PDF reports</div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="hourly-property-logo" class="form-label">Company Logo (Optional):</label>
-                                <input type="file" class="form-control" id="hourly-property-logo" accept="image/*">
-                                <div class="form-text">Upload your company logo (PNG, JPG, GIF) - will appear on PDF reports</div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> <strong>Company Logo:</strong> Set your company logo once in the <a href="admin.php" target="_blank">Admin Settings</a> panel. It will automatically appear on all your reports.
                             </div>
                             <button type="submit" class="btn btn-primary">Run Analysis</button>
                         </form>
@@ -254,8 +250,8 @@
                     <div class="card-body">
                         <p>Analyze individual Google Ads creative performance</p>
                         <div class="btn-group-vertical w-100" role="group">
-                            <button class="btn btn-primary run-report mb-1" data-script="google_ads_ad_performance.py">Last 30 Days Report</button>
-                            <button class="btn btn-success run-report mb-1" data-script="google_ads_ad_performance.py">Last 7 Days Report</button>
+                            <button class="btn btn-primary run-report mb-1" data-script="google_ads_ad_performance.py" data-args="30">Last 30 Days Report</button>
+                            <button class="btn btn-success run-report mb-1" data-script="google_ads_ad_performance.py" data-args="7">Last 7 Days Report</button>
                         </div>
                         <div class="loading mt-2" id="loading-google_ads_ad_performance">
                             <div class="spinner-border spinner-border-sm" role="status"></div>
@@ -632,28 +628,17 @@
                     const days = document.getElementById('analysis-days').value;
                     const propertyName = document.getElementById('property-name').value.trim();
                     const propertyAddress = document.getElementById('property-address').value.trim();
-                    const logoFile = document.getElementById('property-logo').files[0];
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
-                    // Create FormData for file upload
-                    const formData = new FormData();
-                    formData.append('script', 'page_traffic_analysis.py');
-                    
                     let scriptArgs = `"${url}" ${days}`;
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
-                    if (logoFile) {
-                        formData.append('logo', logoFile);
-                        scriptArgs += ` --logo-uploaded`;
-                    }
-                    
-                    formData.append('args', scriptArgs);
 
-                    runScriptWithData('run_report.php', formData);
+                    runScript('page_traffic_analysis.py', scriptArgs);
                 });
             }
 
@@ -666,28 +651,17 @@
                     const days = document.getElementById('hourly-analysis-days').value;
                     const propertyName = document.getElementById('hourly-property-name').value.trim();
                     const propertyAddress = document.getElementById('hourly-property-address').value.trim();
-                    const logoFile = document.getElementById('hourly-property-logo').files[0];
 
                     if (!url) {
                         alert('Please enter a page URL or path');
                         return;
                     }
 
-                    // Create FormData for file upload
-                    const formData = new FormData();
-                    formData.append('script', 'hourly_traffic_analysis.py');
-                    
                     let scriptArgs = `"${url}" ${days}`;
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
-                    if (logoFile) {
-                        formData.append('logo', logoFile);
-                        scriptArgs += ` --logo-uploaded`;
-                    }
-                    
-                    formData.append('args', scriptArgs);
 
-                    runScriptWithData('run_report.php', formData);
+                    runScript('hourly_traffic_analysis.py', scriptArgs);
                 });
             }
 
@@ -1018,8 +992,46 @@
             }
         }
 
-        function loadSiteMetrics() {
+        function loadSiteMetrics(forceRefresh = false) {
             const container = document.getElementById('metricsContainer');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const cacheKey = 'siteMetrics';
+            const cacheExpiry = 10 * 60 * 1000; // 10 minutes in milliseconds
+            
+            // Show loading state on refresh button if it exists
+            if (forceRefresh && refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                refreshBtn.disabled = true;
+            }
+            
+            // Check for cached data if not forcing refresh
+            if (!forceRefresh) {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const cacheData = JSON.parse(cached);
+                        const now = Date.now();
+                        
+                        // Check if cache is still valid (less than 10 minutes old)
+                        if (now - cacheData.timestamp < cacheExpiry) {
+                            renderMetrics(cacheData.data, true); // true = from cache
+                            return;
+                        }
+                    } catch (e) {
+                        // Invalid cache, continue to fetch fresh data
+                    }
+                }
+            }
+            
+            // Show loading state
+            container.innerHTML = `
+                <div class="metrics-loading">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading site metrics...</div>
+                </div>
+            `;
             
             fetch('api/site_metrics.php')
                 .then(response => response.json())
@@ -1033,73 +1045,103 @@
                         return;
                     }
 
-                    container.innerHTML = `
-                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                            <i class="fas fa-chart-line" style="font-size: 1.8rem; margin-right: 15px;"></i>
-                            <div>
-                                <h2>Site Metrics</h2>
-                                <div class="subtitle">Real-time analytics overview</div>
-                            </div>
-                        </div>
-                        <div class="metrics-row">
-                            <div class="metric-card">
-                                <div class="metric-icon">📄</div>
-                                <div class="metric-label">Total Pages Viewed</div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">24 Hours</span>
-                                    <span class="metric-value">${formatNumber(data['24_hours'].total_pageviews)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">30 Days</span>
-                                    <span class="metric-value">${formatNumber(data['30_days'].total_pageviews)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">Annual</span>
-                                    <span class="metric-value">${formatNumber(data.annual.total_pageviews)}</span>
-                                </div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-icon">👁️</div>
-                                <div class="metric-label">Individual Properties Viewed</div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">24 Hours</span>
-                                    <span class="metric-value">${formatNumber(data['24_hours'].unique_properties)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">30 Days</span>
-                                    <span class="metric-value">${formatNumber(data['30_days'].unique_properties)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">Annual</span>
-                                    <span class="metric-value">${formatNumber(data.annual.unique_properties)}</span>
-                                </div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-icon">👥</div>
-                                <div class="metric-label">Unique Visitors</div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">24 Hours</span>
-                                    <span class="metric-value">${formatNumber(data['24_hours'].total_users)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">30 Days</span>
-                                    <span class="metric-value">${formatNumber(data['30_days'].total_users)}</span>
-                                </div>
-                                <div class="metric-period">
-                                    <span class="metric-period-label">Annual</span>
-                                    <span class="metric-value">${formatNumber(data.annual.total_users)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    // Cache the data
+                    const cacheData = {
+                        data: data,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                    
+                    renderMetrics(data, false); // false = fresh data
                 })
                 .catch(error => {
+                    // Reset refresh button if it exists
+                    const refreshBtn = document.getElementById('refreshBtn');
+                    if (refreshBtn) {
+                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                        refreshBtn.disabled = false;
+                    }
+                    
                     container.innerHTML = `
                         <div class="metrics-error">
                             <strong>⚠️ Failed to load metrics:</strong> ${error.message}
                         </div>
                     `;
                 });
+        }
+
+        function renderMetrics(data, fromCache = false) {
+            const container = document.getElementById('metricsContainer');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // Reset refresh button if it exists
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                refreshBtn.disabled = false;
+            }
+            
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                    <i class="fas fa-chart-line" style="font-size: 1.8rem; margin-right: 15px;"></i>
+                    <div style="flex: 1;">
+                        <h2 style="margin: 0;">Site Metrics ${fromCache ? '<small class="text-muted">(cached)</small>' : ''}</h2>
+                        <div class="subtitle">Real-time analytics overview</div>
+                    </div>
+                    <button onclick="loadSiteMetrics(true)" class="btn btn-sm btn-outline-light" title="Refresh metrics" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="metrics-row">
+                    <div class="metric-card">
+                        <div class="metric-icon">📄</div>
+                        <div class="metric-label">Total Pages Viewed</div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">24 Hours</span>
+                            <span class="metric-value">${formatNumber(data['24_hours'].total_pageviews)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">30 Days</span>
+                            <span class="metric-value">${formatNumber(data['30_days'].total_pageviews)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">Annual</span>
+                            <span class="metric-value">${formatNumber(data.annual.total_pageviews)}</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">👁️</div>
+                        <div class="metric-label">Individual Properties Viewed</div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">24 Hours</span>
+                            <span class="metric-value">${formatNumber(data['24_hours'].unique_properties)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">30 Days</span>
+                            <span class="metric-value">${formatNumber(data['30_days'].unique_properties)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">Annual</span>
+                            <span class="metric-value">${formatNumber(data.annual.unique_properties)}</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">👥</div>
+                        <div class="metric-label">Unique Visitors</div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">24 Hours</span>
+                            <span class="metric-value">${formatNumber(data['24_hours'].total_users)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">30 Days</span>
+                            <span class="metric-value">${formatNumber(data['30_days'].total_users)}</span>
+                        </div>
+                        <div class="metric-period">
+                            <span class="metric-period-label">Annual</span>
+                            <span class="metric-value">${formatNumber(data.annual.total_users)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     </script>
 </body>

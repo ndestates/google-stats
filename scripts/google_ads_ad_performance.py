@@ -4,6 +4,7 @@ Analyze individual Google Ads creative performance to identify best performing c
 """
 
 import os
+import sys
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
@@ -175,30 +176,51 @@ def get_top_ads_report(days: int = 30):
         return analyze_ad_performance()
 
 if __name__ == "__main__":
-    print("🎯 Google Ads Creative Performance Analyzer")
-    print("=" * 50)
-    print("Identify your best performing individual ad creatives")
-    print()
-
-    print("Choose time period:")
-    print("1. Last 30 days")
-    print("2. Last 7 days")
-    print("3. Custom date range")
-
-    choice = input("Enter choice (1, 2, or 3): ").strip()
-
-    if choice == "1":
-        analyze_ad_performance()
-    elif choice == "2":
-        get_top_ads_report(7)
-    elif choice == "3":
-        start_date = input("Enter start date (YYYY-MM-DD): ").strip()
-        end_date = input("Enter end date (YYYY-MM-DD): ").strip()
-        if start_date and end_date:
-            analyze_ad_performance(start_date, end_date)
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        # Command line mode
+        if len(sys.argv) >= 2:
+            days = int(sys.argv[1])
+            get_top_ads_report(days)
         else:
-            print("Invalid dates provided. Using last 30 days.")
+            print("Usage: python google_ads_ad_performance.py [days]")
+            print("Example: python google_ads_ad_performance.py 30")
             analyze_ad_performance()
     else:
-        print("Invalid choice. Analyzing last 30 days by default.")
-        analyze_ad_performance()
+        # Interactive mode
+        print("🎯 Google Ads Creative Performance Analyzer")
+        print("=" * 50)
+        print("Identify your best performing individual ad creatives")
+        print()
+
+        # Check if running in interactive terminal
+        if not sys.stdin.isatty():
+            print("❌ This script requires command line arguments when run non-interactively.")
+            print("   Usage: python google_ads_ad_performance.py [days]")
+            print("   Example: python google_ads_ad_performance.py 30")
+            print("   Running with default: Last 30 days")
+            analyze_ad_performance()
+            exit(0)
+
+        print("Choose time period:")
+        print("1. Last 30 days")
+        print("2. Last 7 days")
+        print("3. Custom date range")
+
+        choice = input("Enter choice (1, 2, or 3): ").strip()
+
+        if choice == "1":
+            analyze_ad_performance()
+        elif choice == "2":
+            get_top_ads_report(7)
+        elif choice == "3":
+            start_date = input("Enter start date (YYYY-MM-DD): ").strip()
+            end_date = input("Enter end date (YYYY-MM-DD): ").strip()
+            if start_date and end_date:
+                analyze_ad_performance(start_date, end_date)
+            else:
+                print("Invalid dates provided. Using last 30 days.")
+                analyze_ad_performance()
+        else:
+            print("Invalid choice. Analyzing last 30 days by default.")
+            analyze_ad_performance()
