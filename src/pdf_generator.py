@@ -613,3 +613,164 @@ def create_campaign_report_pdf(campaign_data, date_range, total_users, total_cam
     # Build PDF
     doc.build(story)
     return filename
+
+def create_24hour_campaign_report_pdf(hourly_data, campaign_data, date_info, total_users):
+    """Generate PDF for 24-hour campaign performance report"""
+
+    filename = get_pdf_filename("24hour_campaign_performance", date_info)
+    doc = SimpleDocTemplate(filename, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+
+    story.append(Paragraph(f"24-HOUR CAMPAIGN PERFORMANCE REPORT ({date_info})", title_style))
+    story.append(Spacer(1, 12))
+
+    # Add logo if provided
+    add_logo_to_story(story)
+
+    # Property Information (if provided)
+    if PROPERTY_NAME or PROPERTY_ADDRESS:
+        property_style = ParagraphStyle(
+            'PropertyInfo',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            alignment=TA_CENTER
+        )
+
+        property_info = []
+        if PROPERTY_NAME:
+            property_info.append(f"Property: {PROPERTY_NAME}")
+        if PROPERTY_ADDRESS:
+            property_info.append(f"Address: {PROPERTY_ADDRESS}")
+
+        story.append(Paragraph(" | ".join(property_info), property_style))
+        story.append(Spacer(1, 12))
+
+    # Summary section
+    summary_style = ParagraphStyle(
+        'Summary',
+        parent=styles['Normal'],
+        fontSize=12,
+        spaceAfter=20
+    )
+
+    story.append(Paragraph("📊 DAILY SUMMARY:", styles['Heading2']))
+    story.append(Paragraph(f"Date: {date_info}", summary_style))
+    story.append(Paragraph(f"Total Users Across All Hours: {total_users:,}", summary_style))
+    story.append(Paragraph(f"Hours with Data: {len(hourly_data)}", summary_style))
+    story.append(Spacer(1, 20))
+
+    # Hourly breakdown table
+    story.append(Paragraph("🕐 HOURLY PERFORMANCE BREAKDOWN:", styles['Heading2']))
+    story.append(Spacer(1, 10))
+
+    # Create hourly table data
+    hourly_table_data = [['Hour', 'Users', 'Sessions', 'Pageviews', 'Top Campaign']]
+
+    cell_style, header_style = get_table_styles()
+
+    for hour in range(24):
+        if hour in hourly_data:
+            data = hourly_data[hour]
+            # Get top campaign for this hour
+            top_campaign = ""
+            if data['campaigns']:
+                sorted_campaigns = sorted(data['campaigns'].items(), key=lambda x: x[1]['users'], reverse=True)
+                top_campaign_name = sorted_campaigns[0][0]
+                top_campaign = f"{top_campaign_name[:25]}{'...' if len(top_campaign_name) > 25 else ''}"
+
+            hourly_table_data.append([
+                create_wrapped_paragraph(f"{hour:02d}:00-{hour+1:02d}:00", cell_style),
+                create_wrapped_paragraph(f"{data['total_users']:,}", cell_style),
+                create_wrapped_paragraph(f"{data['total_sessions']:,}", cell_style),
+                create_wrapped_paragraph(f"{data['total_pageviews']:,}", cell_style),
+                create_wrapped_paragraph(top_campaign, cell_style)
+            ])
+        else:
+            hourly_table_data.append([
+                create_wrapped_paragraph(f"{hour:02d}:00-{hour+1:02d}:00", cell_style),
+                create_wrapped_paragraph("0", cell_style),
+                create_wrapped_paragraph("0", cell_style),
+                create_wrapped_paragraph("0", cell_style),
+                create_wrapped_paragraph("-", cell_style)
+            ])
+
+    # Create table with proper column widths
+    col_widths = [80, 60, 60, 70, 150]
+
+    hourly_table = Table(hourly_table_data, colWidths=col_widths, repeatRows=1)
+
+    # Style the table
+    hourly_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('LEADING', (0, 1), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+
+    story.append(hourly_table)
+    story.append(Spacer(1, 20))
+
+    # Top campaigns section
+    story.append(Paragraph("📧 TOP CAMPAIGNS OVERALL:", styles['Heading2']))
+    story.append(Spacer(1, 10))
+
+    # Sort campaigns by total users
+    sorted_campaigns = sorted(campaign_data.items(), key=lambda x: x[1]['total_users'], reverse=True)[:10]
+
+    # Create campaign table data
+    campaign_table_data = [['Campaign Name', 'Source/Medium', 'Total Users', 'Hours Active']]
+
+    for campaign_name, data in sorted_campaigns:
+        hours_active = len(data['hourly_breakdown'])
+        campaign_table_data.append([
+            create_wrapped_paragraph(campaign_name, cell_style),
+            create_wrapped_paragraph(data['source_medium'], cell_style),
+            create_wrapped_paragraph(f"{data['total_users']:,}", cell_style),
+            create_wrapped_paragraph(str(hours_active), cell_style)
+        ])
+
+    # Create table with proper column widths
+    campaign_col_widths = [180, 120, 70, 70]
+
+    campaign_table = Table(campaign_table_data, colWidths=campaign_col_widths, repeatRows=1)
+
+    # Style the table
+    campaign_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('LEADING', (0, 1), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+
+    story.append(campaign_table)
+
+    # Build PDF
+    doc.build(story)
+    return filename

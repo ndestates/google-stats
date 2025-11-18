@@ -269,12 +269,30 @@
                     </div>
                     <div class="card-body">
                         <p>Analyze Mailchimp campaign performance</p>
-                        <div class="btn-group-vertical w-100" role="group">
+                        <div class="btn-group-vertical w-100 mb-3" role="group">
                             <button class="btn btn-primary run-report mb-1" data-script="mailchimp_performance.py" data-args="--report-type yesterday">Yesterday's Report</button>
-                            <button class="btn btn-success run-report mb-1" data-script="mailchimp_performance.py" data-args="--report-type today">Today's Report</button>
                             <button class="btn btn-secondary run-report mb-1" data-script="mailchimp_performance.py" data-args="--report-type monthly">Monthly Report</button>
                             <button class="btn btn-info run-report mb-1" data-script="mailchimp_performance.py" data-args="--report-type sources">Check Email Sources</button>
                         </div>
+
+                        <!-- Custom Date Range Section -->
+                        <div class="border-top pt-3">
+                            <h6 class="mb-2"><i class="fas fa-calendar-alt"></i> Custom Date Range</h6>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label for="mailchimp-start-date" class="form-label small">Start Date</label>
+                                    <input type="date" class="form-control form-control-sm" id="mailchimp-start-date" value="<?php echo date('Y-m-d', strtotime('-7 days')); ?>">
+                                </div>
+                                <div class="col-6">
+                                    <label for="mailchimp-end-date" class="form-label small">End Date</label>
+                                    <input type="date" class="form-control form-control-sm" id="mailchimp-end-date" value="<?php echo date('Y-m-d', strtotime('-1 day')); ?>">
+                                </div>
+                            </div>
+                            <button class="btn btn-warning btn-sm run-custom-date-report w-100" data-script="mailchimp_performance.py" data-report-type="date-range" data-start-date-id="mailchimp-start-date" data-end-date-id="mailchimp-end-date">
+                                <i class="fas fa-calendar-check"></i> Run Custom Date Range Report
+                            </button>
+                        </div>
+
                         <div class="loading mt-2" id="loading-mailchimp_performance">
                             <div class="spinner-border spinner-border-sm" role="status"></div>
                             Running report...
@@ -758,6 +776,17 @@
                 });
             }
 
+            // Handle hourly popular pages selection
+            const hourlyPopularPagesSelect = document.getElementById('hourly-popular-pages-select');
+            if (hourlyPopularPagesSelect) {
+                hourlyPopularPagesSelect.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    if (selectedValue) {
+                        document.getElementById('hourly-page-url').value = selectedValue;
+                    }
+                });
+            }
+
             // Handle social media analysis form
             const socialMediaForm = document.getElementById('social-media-form');
             if (socialMediaForm) {
@@ -825,6 +854,24 @@
                     if (selectedValue) {
                         document.getElementById('social-page-url').value = selectedValue;
                     }
+                });
+            }
+
+            // Handle mailchimp custom date range form
+            const mailchimpDateRangeForm = document.getElementById('mailchimp-date-range-form');
+            if (mailchimpDateRangeForm) {
+                mailchimpDateRangeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const startDate = document.getElementById('mailchimp-start-date').value;
+                    const endDate = document.getElementById('mailchimp-end-date').value;
+
+                    if (!startDate || !endDate) {
+                        alert('Please select both start and end dates');
+                        return;
+                    }
+
+                    const scriptArgs = `--start-date ${startDate} --end-date ${endDate}`;
+                    runScript('mailchimp_performance.py', scriptArgs);
                 });
             }
 

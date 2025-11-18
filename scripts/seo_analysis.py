@@ -40,7 +40,7 @@ def analyze_organic_traffic(start_date: str = None, end_date: str = None):
 
     response = run_report(
         dimensions=["sessionDefaultChannelGrouping", "pagePath"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate", "engagementRate"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"],
         date_ranges=[date_range],
         order_bys=[
             OrderBy(metric=OrderBy.MetricOrderBy(metric_name="sessions"), desc=True)
@@ -144,7 +144,7 @@ def analyze_keyword_performance(start_date: str = None, end_date: str = None):
 
     response = run_report(
         dimensions=["pagePath", "sessionDefaultChannelGrouping"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate"],
         date_ranges=[date_range],
         dimension_filter={
             "filter": {
@@ -263,7 +263,7 @@ def analyze_seo_health(start_date: str = None, end_date: str = None):
     # Get comprehensive SEO metrics
     response = run_report(
         dimensions=["pagePath", "deviceCategory"],
-        metrics=["totalUsers", "sessions", "pageviews", "averageSessionDuration", "bounceRate", "engagementRate"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate", "engagementRate"],
         date_ranges=[date_range],
         dimension_filter={
             "filter": {
@@ -274,7 +274,7 @@ def analyze_seo_health(start_date: str = None, end_date: str = None):
             }
         },
         order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="pageviews"), desc=True)
+            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)
         ],
         limit=50
     )

@@ -244,7 +244,24 @@ def analyze_page_traffic(target_url: str, start_date: str = None, end_date: str 
         if property_address:
             src.config.PROPERTY_ADDRESS = property_address
             
-        pdf_filename = create_campaign_report_pdf(source_data, f"{page_path}_{start_date}_to_{end_date}", total_page_users, len(sorted_sources))
+        # Restructure data for PDF generator (expects campaign-centric structure)
+        pdf_campaign_data = {}
+        for source_medium, source_info in source_data.items():
+            for campaign_name, campaign_info in source_info['campaigns'].items():
+                # Create a unique key combining campaign and source
+                campaign_key = f"{campaign_name} ({source_medium})" if campaign_name != '(not set)' else f"Direct ({source_medium})"
+                pdf_campaign_data[campaign_key] = {
+                    'source_medium': source_medium,
+                    'total_users': campaign_info['users'],
+                    'total_sessions': campaign_info['sessions'], 
+                    'total_pageviews': campaign_info['pageviews'],
+                    'pages': {}  # Empty pages dict for compatibility
+                }
+        
+        # Sanitize page_path for filename (replace slashes with underscores)
+        safe_page_path = page_path.replace('/', '_').replace('\\', '_')
+
+        pdf_filename = create_campaign_report_pdf(pdf_campaign_data, f"{safe_page_path}_{start_date}_to_{end_date}", total_page_users, len(pdf_campaign_data))
         print(f"📄 PDF report exported to: {pdf_filename}")
         
         # Restore original values
