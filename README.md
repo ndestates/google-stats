@@ -1,6 +1,8 @@
 # Google Analytics Platform
 
-A comprehensive analytics platform for Google Analytics 4, Google Ads, Mailchimp, and Google Search Console data analysis.
+**Version 2.1** - A comprehensive analytics platform for Google Analytics 4, Google Ads, Mailchimp, and Google Search Console data analysis.
+
+© 2025 ND Holdings Limited. All rights reserved.
 
 ## 🚀 Features
 
