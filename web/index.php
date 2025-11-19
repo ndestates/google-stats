@@ -1190,9 +1190,23 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    }
                 })
                 .catch(error => {
                     if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
@@ -1238,9 +1252,23 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    }
                 })
                 .catch(error => {
                     if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
@@ -1281,18 +1309,32 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    // Check if it's HTML (social media dashboard) or plain text (error)
-                    if (data.includes('<html>') || data.includes('<!DOCTYPE html>')) {
-                        // It's HTML, open in new window
-                        const newWindow = window.open('', '_blank');
-                        newWindow.document.write(data);
-                        newWindow.document.close();
-                        if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-success">Social media analytics opened in new window/tab</div>';
-                    } else {
-                        // It's plain text, display in output div
-                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        // Check if it's HTML (social media dashboard) or plain text (error)
+                        if (data.includes('<html>') || data.includes('<!DOCTYPE html>')) {
+                            // It's HTML, open in new window
+                            const newWindow = window.open('', '_blank');
+                            newWindow.document.write(data);
+                            newWindow.document.close();
+                            if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-success">Social media analytics opened in new window/tab</div>';
+                        } else {
+                            // It's plain text, display in output div
+                            if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                        }
                     }
                 })
                 .catch(error => {
