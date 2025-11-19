@@ -4,12 +4,13 @@ Analyze traffic sources and performance by hour of day for a specific URL/page
 
 Usage:
     python hourly_traffic_analysis.py [URL] [days]
+    python hourly_traffic_analysis.py [URL] --start-date YYYY-MM-DD --end-date YYYY-MM-DD
 
 Examples:
     python hourly_traffic_analysis.py /valuations
     python hourly_traffic_analysis.py https://www.ndestates.com/valuations 7
     python hourly_traffic_analysis.py /valuations 30
-    python hourly_traffic_analysis.py /valuations 90
+    python hourly_traffic_analysis.py /valuations --start-date 2025-11-01 --end-date 2025-11-19
 """
 
 import os
@@ -408,6 +409,8 @@ if __name__ == "__main__":
         # Parse command line arguments
         property_name = ""
         property_address = ""
+        start_date = None
+        end_date = None
         
         # Check for property arguments
         args = sys.argv[1:]
@@ -423,22 +426,37 @@ if __name__ == "__main__":
                 args.pop(i)  # Remove the flag
                 args.pop(i)  # Remove the value
                 continue
+            elif args[i] == '--start-date' and i + 1 < len(args):
+                start_date = args[i + 1]
+                args.pop(i)  # Remove the flag
+                args.pop(i)  # Remove the value
+                continue
+            elif args[i] == '--end-date' and i + 1 < len(args):
+                end_date = args[i + 1]
+                args.pop(i)  # Remove the flag
+                args.pop(i)  # Remove the value
+                continue
             i += 1
 
         # Check for remaining arguments
         if len(args) >= 1:
             # Command line mode
             target_url = args[0]
-            days = int(args[1]) if len(args) >= 2 else 30
+            days = int(args[1]) if len(args) >= 2 and not start_date else 30
 
             print(f"Analyzing URL: {target_url}")
-            print(f"Time period: Last {days} days")
+            if start_date and end_date:
+                print(f"Date range: {start_date} to {end_date}")
+            else:
+                print(f"Time period: Last {days} days")
             if property_name:
                 print(f"Property Name: {property_name}")
             if property_address:
                 print(f"Property Address: {property_address}")
 
-            if days == 7:
+            if start_date and end_date:
+                analyze_hourly_traffic(target_url, start_date, end_date, property_name, property_address)
+            elif days == 7:
                 # Calculate 7-day range
                 end_date = datetime.now() - timedelta(days=1)
                 start_date = end_date - timedelta(days=6)

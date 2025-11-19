@@ -78,13 +78,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             <label for="args">Arguments (optional):</label>
             <input type="text" name="args" id="args" placeholder="--report-type yesterday">
 
-            <button type="submit">Run Report</button>
+            <label for="start_date">Start Date (optional):</label>
+            <input type="date" name="start_date" id="start_date">
+
+            <label for="end_date">End Date (optional):</label>
+            <input type="date" name="end_date" id="end_date">
+
+            <button type="submit" id="submit-btn">Run Report</button>
         </form>
 
         <div class="warning">
             <strong>Security Notice:</strong> This page requires HTTP Basic Authentication.
             Contact your administrator for access credentials.
         </div>
+
+        <script>
+            document.getElementById('submit-btn').addEventListener('click', function(e) {
+                const startDate = document.getElementById('start_date').value;
+                const endDate = document.getElementById('end_date').value;
+
+                if (startDate && endDate) {
+                    if (startDate > endDate) {
+                        alert('Start date cannot be after end date.');
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            });
+        </script>
     </div>
 </body>
 </html>
@@ -117,6 +138,20 @@ header('Expires: 0');
 // Get the script name and arguments from POST data
 $script = $_POST['script'] ?? '';
 $args = $_POST['args'] ?? '';
+$start_date = $_POST['start_date'] ?? '';
+$end_date = $_POST['end_date'] ?? '';
+
+// Validate and append date arguments
+if ($start_date && $end_date) {
+    if ($start_date > $end_date) {
+        echo "Error: Start date cannot be after end date";
+        exit;
+    }
+    $args .= " --start-date " . escapeshellarg($start_date) . " --end-date " . escapeshellarg($end_date);
+} elseif ($start_date || $end_date) {
+    echo "Error: Both start and end dates must be provided together";
+    exit;
+}
 
 // Execute the script
 

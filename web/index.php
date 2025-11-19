@@ -138,7 +138,14 @@
                                     <option value="30">Last 30 days</option>
                                     <option value="7">Last 7 days</option>
                                     <option value="90">Last 90 days</option>
+                                    <option value="custom">Custom Range</option>
                                 </select>
+                            </div>
+                            <div class="mb-3" id="custom-date-range" style="display: none;">
+                                <label for="start-date" class="form-label">Start Date:</label>
+                                <input type="date" class="form-control" id="start-date" required>
+                                <label for="end-date" class="form-label">End Date:</label>
+                                <input type="date" class="form-control" id="end-date" required>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -193,7 +200,14 @@
                                     <option value="30">Last 30 days</option>
                                     <option value="7">Last 7 days</option>
                                     <option value="90">Last 90 days</option>
+                                    <option value="custom">Custom Range</option>
                                 </select>
+                            </div>
+                            <div class="mb-3" id="hourly-custom-date-range" style="display: none;">
+                                <label for="hourly-start-date" class="form-label">Start Date:</label>
+                                <input type="date" class="form-control" id="hourly-start-date" required>
+                                <label for="hourly-end-date" class="form-label">End Date:</label>
+                                <input type="date" class="form-control" id="hourly-end-date" required>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -640,6 +654,17 @@
             // Handle page traffic analysis form
             const pageTrafficForm = document.getElementById('page-traffic-form');
             if (pageTrafficForm) {
+                // Handle time period selection
+                const analysisDaysSelect = document.getElementById('analysis-days');
+                const customDateRange = document.getElementById('custom-date-range');
+                analysisDaysSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customDateRange.style.display = 'block';
+                    } else {
+                        customDateRange.style.display = 'none';
+                    }
+                });
+
                 pageTrafficForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const url = document.getElementById('page-url').value.trim();
@@ -652,7 +677,22 @@
                         return;
                     }
 
-                    let scriptArgs = `"${url}" ${days}`;
+                    let scriptArgs;
+                    if (days === 'custom') {
+                        const startDate = document.getElementById('start-date').value;
+                        const endDate = document.getElementById('end-date').value;
+                        if (!startDate || !endDate) {
+                            alert('Please select both start and end dates');
+                            return;
+                        }
+                        if (startDate > endDate) {
+                            alert('Start date cannot be after end date');
+                            return;
+                        }
+                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                    } else {
+                        scriptArgs = `"${url}" ${days}`;
+                    }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
 
@@ -663,6 +703,17 @@
             // Handle hourly traffic analysis form
             const hourlyTrafficForm = document.getElementById('hourly-traffic-form');
             if (hourlyTrafficForm) {
+                // Handle time period selection
+                const hourlyAnalysisDaysSelect = document.getElementById('hourly-analysis-days');
+                const hourlyCustomDateRange = document.getElementById('hourly-custom-date-range');
+                hourlyAnalysisDaysSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        hourlyCustomDateRange.style.display = 'block';
+                    } else {
+                        hourlyCustomDateRange.style.display = 'none';
+                    }
+                });
+
                 hourlyTrafficForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const url = document.getElementById('hourly-page-url').value.trim();
@@ -675,7 +726,22 @@
                         return;
                     }
 
-                    let scriptArgs = `"${url}" ${days}`;
+                    let scriptArgs;
+                    if (days === 'custom') {
+                        const startDate = document.getElementById('hourly-start-date').value;
+                        const endDate = document.getElementById('hourly-end-date').value;
+                        if (!startDate || !endDate) {
+                            alert('Please select both start and end dates');
+                            return;
+                        }
+                        if (startDate > endDate) {
+                            alert('Start date cannot be after end date');
+                            return;
+                        }
+                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                    } else {
+                        scriptArgs = `"${url}" ${days}`;
+                    }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
 
