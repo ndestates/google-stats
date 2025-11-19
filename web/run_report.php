@@ -35,10 +35,14 @@ loadEnv($envPath);
 // Load encrypted credentials (primary)
 require_once 'credentials.php';
 require_once 'version.php';
+require_once 'auth.php'; // Include new authentication system
 load_credentials_to_env();
 
-// Get credentials path from environment
-$ga4KeyPath = getenv('GA4_KEY_PATH') ?: '/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json';
+// Check authentication using new system
+if (!is_logged_in()) {
+    header('Location: index.php?error=auth_required');
+    exit;
+}
 
 // Check if this is a GET request to show the form
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -93,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         </form>
 
         <div class="warning">
-            <strong>Security Notice:</strong> This page requires HTTP Basic Authentication.
-            Contact your administrator for access credentials.
+            <strong>Security Notice:</strong> You must be logged in to access this page.
+            <a href="index.php">Return to login</a> if you haven't authenticated yet.
         </div>
 
         <script>
@@ -115,18 +119,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 </body>
 </html>
     <?php
-    exit;
-}
-
-// Basic HTTP Authentication
-$username = 'admin';
-$password = 'analytics2025'; // CHANGE THIS TO A SECURE PASSWORD
-
-if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ||
-    $_SERVER['PHP_AUTH_USER'] !== $username || $_SERVER['PHP_AUTH_PW'] !== $password) {
-    header('WWW-Authenticate: Basic realm="Analytics Reports"');
-    header('HTTP/1.0 401 Unauthorized');
-    echo 'Authentication required to access this page.';
     exit;
 }
 

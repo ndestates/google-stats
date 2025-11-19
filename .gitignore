@@ -5,6 +5,17 @@ __pycache__/
 
 # Environment variables
 .env
+credentials.enc
+
+# DDEV certificates and keys
+.ddev/traefik/certs/
+
+# Credentials and keys
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
 
 # Generated reports
 reports/

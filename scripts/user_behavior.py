@@ -38,13 +38,13 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
 
     date_range = create_date_range(start_date, end_date)
 
-    # Get page path data with landing/exit pages
+    # Get page path data with landing pages (exitPage not available in GA4)
     response = run_report(
-        dimensions=["pagePath", "landingPage", "exitPage"],
-        metrics=["totalUsers", "sessions", "pageviews", "entrances", "exits"],
+        dimensions=["pagePath", "landingPage"],
+        metrics=["totalUsers", "sessions", "screenPageViews", "averageSessionDuration", "bounceRate"],
         date_ranges=[date_range],
         order_bys=[
-            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="pageviews"), desc=True)
+            OrderBy(metric=OrderBy.MetricOrderBy(metric_name="screenPageViews"), desc=True)
         ],
         limit=100
     )
@@ -63,12 +63,12 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
     for row in response.rows:
         page_path = row.dimension_values[0].value
         landing_page = row.dimension_values[1].value
-        exit_page = row.dimension_values[2].value
+        # exit_page not available in GA4
         users = int(row.metric_values[0].value)
         sessions = int(row.metric_values[1].value)
         pageviews = int(row.metric_values[2].value)
-        entrances = int(row.metric_values[3].value)
-        exits = int(row.metric_values[4].value)
+        avg_duration = float(row.metric_values[3].value)
+        bounce_rate = float(row.metric_values[4].value)
 
         # Track page metrics
         if page_path not in flow_data:
@@ -76,8 +76,8 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
                 'total_users': 0,
                 'total_sessions': 0,
                 'total_pageviews': 0,
-                'total_entrances': 0,
-                'total_exits': 0,
+                'avg_duration': 0,
+                'bounce_rate': 0,
                 'landing_pages': {},
                 'exit_pages': {}
             }
@@ -85,20 +85,14 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
         flow_data[page_path]['total_users'] += users
         flow_data[page_path]['total_sessions'] += sessions
         flow_data[page_path]['total_pageviews'] += pageviews
-        flow_data[page_path]['total_entrances'] += entrances
-        flow_data[page_path]['total_exits'] += exits
+        flow_data[page_path]['avg_duration'] = avg_duration
+        flow_data[page_path]['bounce_rate'] = bounce_rate
 
         # Track landing pages
         if landing_page and landing_page != page_path:
             if landing_page not in flow_data[page_path]['landing_pages']:
                 flow_data[page_path]['landing_pages'][landing_page] = 0
-            flow_data[page_path]['landing_pages'][landing_page] += entrances
-
-        # Track exit pages
-        if exit_page and exit_page != page_path:
-            if exit_page not in flow_data[page_path]['exit_pages']:
-                flow_data[page_path]['exit_pages'][exit_page] = 0
-            flow_data[page_path]['exit_pages'][exit_page] += exits
+            flow_data[page_path]['landing_pages'][landing_page] += sessions  # Use sessions instead of entrances
 
         total_pageviews += pageviews
         total_sessions += sessions
@@ -110,43 +104,32 @@ def analyze_user_flow(start_date: str = None, end_date: str = None):
     print(f"   Unique Pages: {len(flow_data)}")
     print()
 
-    # Identify top landing and exit pages
+    # Identify top landing pages (using sessions as proxy for landings)
     landing_pages = {}
-    exit_pages = {}
-
-    for page, data in flow_data.items():
-        if data['total_entrances'] > 0:
-            landing_pages[page] = data['total_entrances']
-        if data['total_exits'] > 0:
-            exit_pages[page] = data['total_exits']
 
     print("   🏠 TOP LANDING PAGES:")
-    for page, entrances in sorted(landing_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
+    for page, sessions in sorted(landing_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
         page_display = page[:50] + "..." if len(page) > 50 else page
-        percentage = (entrances / total_sessions) * 100 if total_sessions > 0 else 0
-        print(f"      - {page_display} ({entrances} entrances, {percentage:.1f}%)")
+        percentage = (sessions / total_sessions) * 100 if total_sessions > 0 else 0
+        print(f"      - {page_display} ({sessions} sessions, {percentage:.1f}%)")
     print()
 
-    print("   🚪 TOP EXIT PAGES:")
-    for page, exits in sorted(exit_pages.items(), key=lambda x: x[1], reverse=True)[:5]:
-        page_display = page[:50] + "..." if len(page) > 50 else page
-        percentage = (exits / total_sessions) * 100 if total_sessions > 0 else 0
-        print(f"      - {page_display} ({exits} exits, {percentage:.1f}%)")
+    # Note: Exit page analysis not available in GA4
+    print("   📝 Note: Exit page analysis not available in GA4")
     print()
 
-    # Analyze bounce and exit rates
-    high_exit_pages = []
+    # Analyze bounce rates instead
+    high_bounce_pages = []
     for page, data in flow_data.items():
-        if data['total_pageviews'] > 10:  # Minimum threshold
-            exit_rate = data['total_exits'] / data['total_pageviews']
-            if exit_rate > 0.5:  # High exit rate
-                high_exit_pages.append((page, exit_rate, data['total_pageviews']))
+        if data['total_sessions'] > 5:  # Minimum threshold
+            if data['bounce_rate'] > 0.7:  # High bounce rate
+                high_bounce_pages.append((page, data['bounce_rate'], data['total_sessions']))
 
-    if high_exit_pages:
-        print("   ⚠️  PAGES WITH HIGH EXIT RATES (>50%):")
-        for page, exit_rate, pageviews in sorted(high_exit_pages, key=lambda x: x[1], reverse=True)[:5]:
+    if high_bounce_pages:
+        print("   ⚠️  PAGES WITH HIGH BOUNCE RATES (>70%):")
+        for page, bounce_rate, sessions in sorted(high_bounce_pages, key=lambda x: x[1], reverse=True)[:5]:
             page_display = page[:50] + "..." if len(page) > 50 else page
-            print(f"      - {page_display} (Exit Rate: {exit_rate:.1%}, Pageviews: {pageviews})")
+            print(f"      - {page_display} (Bounce Rate: {bounce_rate:.1%}, Sessions: {sessions})")
         print()
 
     return flow_data
@@ -386,11 +369,15 @@ def analyze_user_behavior(analysis_type: str = "all", start_date: str = None, en
     if analysis_type in ["flow", "all"]:
         results['flow'] = analyze_user_flow(start_date, end_date)
 
+    # Note: Navigation paths analysis requires custom event tracking in GA4
+    # Skipping for now as previousPagePath is not available
     if analysis_type in ["paths", "all"]:
-        results['paths'] = analyze_navigation_paths(start_date, end_date)
+        print("📝 Note: Navigation paths analysis requires custom event setup in GA4")
+        results['paths'] = None
 
     if analysis_type in ["patterns", "behavior", "all"]:
-        results['behavior'] = analyze_behavior_patterns(start_date, end_date)
+        print("📝 Note: Behavior patterns analysis requires additional GA4 event setup")
+        results['behavior'] = None
 
     # Export combined data
     if results:
@@ -405,8 +392,8 @@ def analyze_user_behavior(analysis_type: str = "all", start_date: str = None, en
                     'Users': data['total_users'],
                     'Sessions': data['total_sessions'],
                     'Pageviews': data['total_pageviews'],
-                    'Entrances': data['total_entrances'],
-                    'Exits': data['total_exits'],
+                    'Avg_Duration': data['avg_duration'],
+                    'Bounce_Rate': data['bounce_rate'],
                     'Metric_Type': 'Page_Metrics',
                     'Date_Range': f"{start_date}_to_{end_date}"
                 })

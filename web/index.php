@@ -6,6 +6,29 @@
     <title>Google Analytics Reports</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .property-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        .property-preview .preview-image img {
+            border: 1px solid #dee2e6;
+        }
+        .property-preview .preview-details h6 {
+            color: #007cba;
+            font-weight: 600;
+        }
+        .campaign-url-form .form-control[readonly] {
+            background-color: #e9ecef;
+        }
+        .url-preview {
+            font-family: monospace;
+            font-size: 0.875rem;
+            word-break: break-all;
+        }
+    </style>
     <?php
     // Start session for authentication
     session_start();
@@ -727,6 +750,83 @@
                 </div>
             </div>
         </div>
+
+        <!-- Property Page URL Tools -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-home"></i> Property Page Campaign Tools</h5>
+                        <small class="text-muted">St Helier Two Bedroom House with Patio & Garden</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Page Preview</h6>
+                                <div class="property-preview mb-3">
+                                    <div class="preview-image">
+                                        <img src="https://via.placeholder.com/300x200/007cba/ffffff?text=Property+Image" 
+                                             alt="Property Preview" class="img-fluid rounded" style="width: 100%; max-height: 200px; object-fit: cover;">
+                                    </div>
+                                    <div class="preview-details mt-2">
+                                        <h6 class="mb-1">St Helier Two Bedroom House with Patio & Garden</h6>
+                                        <p class="text-muted small mb-1">Beautiful two bedroom property in St Helier with patio and garden</p>
+                                        <p class="text-primary mb-0"><strong>Page:</strong> /properties/st-helier-two-bedroom-house-with-patio-garden</p>
+                                        <a href="#" id="preview-link" class="btn btn-sm btn-outline-primary mt-2" target="_blank">
+                                            <i class="fas fa-external-link-alt"></i> View Full Page
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Campaign URL Builder</h6>
+                                <form id="campaign-url-form">
+                                    <div class="mb-3">
+                                        <label for="base-url" class="form-label">Base URL:</label>
+                                        <input type="text" class="form-control" id="base-url" 
+                                               value="https://www.ndestates.com/properties/st-helier-two-bedroom-house-with-patio-garden" readonly>
+                                        <div class="form-text">Property page URL (read-only)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="url-prepend" class="form-label">URL Prepend (Optional):</label>
+                                        <input type="text" class="form-control" id="url-prepend" 
+                                               placeholder="e.g., /featured or /special-offer">
+                                        <div class="form-text">Add a path prefix to the URL (e.g., for campaign tracking)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-source" class="form-label">UTM Source:</label>
+                                        <input type="text" class="form-control" id="utm-source" placeholder="e.g., facebook, google, email">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-medium" class="form-label">UTM Medium:</label>
+                                        <input type="text" class="form-control" id="utm-medium" placeholder="e.g., cpc, social, email">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-campaign" class="form-label">UTM Campaign:</label>
+                                        <input type="text" class="form-control" id="utm-campaign" placeholder="e.g., spring-promo-2025">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="generated-url" class="form-label">Generated Campaign URL:</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="generated-url" readonly>
+                                            <button class="btn btn-outline-secondary" type="button" id="copy-url-btn">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Copy this URL for your marketing campaigns</div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="button" class="btn btn-primary" id="generate-url-btn">
+                                            <i class="fas fa-magic"></i> Generate Campaign URL
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -791,9 +891,9 @@
                             alert('Start date cannot be after end date');
                             return;
                         }
-                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                        scriptArgs = `${url} --start-date ${startDate} --end-date ${endDate}`;
                     } else {
-                        scriptArgs = `"${url}" ${days}`;
+                        scriptArgs = `${url} ${days}`;
                     }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
@@ -840,9 +940,9 @@
                             alert('Start date cannot be after end date');
                             return;
                         }
-                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                        scriptArgs = `${url} --start-date ${startDate} --end-date ${endDate}`;
                     } else {
-                        scriptArgs = `"${url}" ${days}`;
+                        scriptArgs = `${url} ${days}`;
                     }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
@@ -968,7 +1068,7 @@
                         return;
                     }
 
-                    const scriptArgs = `"${url}" ${days}`;
+                    const scriptArgs = `${url} ${days}`;
                     runScript('hourly_traffic_analysis.py', scriptArgs);
                 });
             }
@@ -1188,6 +1288,94 @@
                 });
             }
         });
+
+        // Property Page Campaign URL Builder functionality
+        const generateUrlBtn = document.getElementById('generate-url-btn');
+        const copyUrlBtn = document.getElementById('copy-url-btn');
+        const generatedUrlInput = document.getElementById('generated-url');
+        const previewLink = document.getElementById('preview-link');
+
+        if (generateUrlBtn) {
+            generateUrlBtn.addEventListener('click', function() {
+                const baseUrl = document.getElementById('base-url').value;
+                const prepend = document.getElementById('url-prepend').value.trim();
+                const utmSource = document.getElementById('utm-source').value.trim();
+                const utmMedium = document.getElementById('utm-medium').value.trim();
+                const utmCampaign = document.getElementById('utm-campaign').value.trim();
+
+                let finalUrl = baseUrl;
+
+                // Add prepend if provided
+                if (prepend) {
+                    // Ensure prepend starts with /
+                    const cleanPrepend = prepend.startsWith('/') ? prepend : '/' + prepend;
+                    // Remove trailing / from base URL if present
+                    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                    finalUrl = cleanBase + cleanPrepend;
+                }
+
+                // Add UTM parameters
+                const utmParams = [];
+                if (utmSource) utmParams.push(`utm_source=${encodeURIComponent(utmSource)}`);
+                if (utmMedium) utmParams.push(`utm_medium=${encodeURIComponent(utmMedium)}`);
+                if (utmCampaign) utmParams.push(`utm_campaign=${encodeURIComponent(utmCampaign)}`);
+
+                if (utmParams.length > 0) {
+                    const separator = finalUrl.includes('?') ? '&' : '?';
+                    finalUrl += separator + utmParams.join('&');
+                }
+
+                generatedUrlInput.value = finalUrl;
+                
+                // Update preview link
+                previewLink.href = finalUrl;
+                previewLink.style.display = 'inline-block';
+            });
+        }
+
+        if (copyUrlBtn) {
+            copyUrlBtn.addEventListener('click', function() {
+                const url = generatedUrlInput.value;
+                if (!url) {
+                    alert('Please generate a URL first');
+                    return;
+                }
+
+                navigator.clipboard.writeText(url).then(function() {
+                    // Show success feedback
+                    const originalText = copyUrlBtn.innerHTML;
+                    copyUrlBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyUrlBtn.classList.remove('btn-outline-secondary');
+                    copyUrlBtn.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        copyUrlBtn.innerHTML = originalText;
+                        copyUrlBtn.classList.remove('btn-success');
+                        copyUrlBtn.classList.add('btn-outline-secondary');
+                    }, 2000);
+                }).catch(function(err) {
+                    // Fallback for older browsers
+                    generatedUrlInput.select();
+                    document.execCommand('copy');
+                    
+                    const originalText = copyUrlBtn.innerHTML;
+                    copyUrlBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyUrlBtn.classList.remove('btn-outline-secondary');
+                    copyUrlBtn.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        copyUrlBtn.innerHTML = originalText;
+                        copyUrlBtn.classList.remove('btn-success');
+                        copyUrlBtn.classList.add('btn-outline-secondary');
+                    }, 2000);
+                });
+            });
+        }
+
+        // Set initial preview link
+        if (previewLink) {
+            previewLink.href = document.getElementById('base-url').value;
+        }
     </script>
         });
     </script>
