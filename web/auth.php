@@ -374,10 +374,9 @@ function generate_csrf_token() {
  */
 function get_csrf_token() {
     $token = test_session_get('csrf_token');
-    $token_time = test_session_get('csrf_token_time', 0);
-
-    // Regenerate token if it doesn't exist or is older than 1 hour
-    if (!$token || (time() - $token_time) > 3600) {
+    
+    // Generate token if it doesn't exist
+    if (!$token) {
         $token = generate_csrf_token();
     }
 
@@ -400,19 +399,13 @@ function validate_csrf_token() {
     
     // Check if posted token matches current session token
     if (!empty($session_token) && hash_equals($session_token, $token)) {
-        // Regenerate token after successful validation for security
-        generate_csrf_token();
-        return true;
-    }
-    
-    // If token is expired (> 1 hour old), regenerate and check again
-    if (!empty($session_token) && (time() - $token_time) > 3600) {
-        // The posted token might be the expired token from the HTML
-        // Regenerate the session token and check if it matches
-        $new_token = generate_csrf_token();
-        // Don't check against the new token, just accept expired tokens
-        // This is a compromise for UX - tokens are still validated but not strictly time-limited
-        generate_csrf_token(); // Regenerate for next request
+        // Check if token is older than 1 hour and regenerate if needed
+        if ((time() - $token_time) > 3600) {
+            generate_csrf_token();
+        } else {
+            // Regenerate token after successful validation for security
+            generate_csrf_token();
+        }
         return true;
     }
     
