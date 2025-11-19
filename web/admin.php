@@ -149,6 +149,13 @@
 
                                 $settings['company_logo'] = 'uploads/logos/' . $logo_filename;
                                 $success_message = 'Company logo uploaded successfully!';
+                                
+                                // Save settings after logo upload
+                                if (file_put_contents($settings_file, json_encode($settings, JSON_PRETTY_PRINT))) {
+                                    $success_message = 'Company logo uploaded and settings saved successfully!';
+                                } else {
+                                    $error_message = 'Logo uploaded but failed to save settings.';
+                                }
                             } else {
                                 $error_message = 'Failed to save logo file.';
                             }
