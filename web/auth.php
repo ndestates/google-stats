@@ -356,12 +356,78 @@ function change_password($username, $new_password) {
 }
 
 /**
+ * CSRF PROTECTION FUNCTIONS
+ */
+
+/**
+ * Generate a new CSRF token
+ */
+function generate_csrf_token() {
+    $token = bin2hex(random_bytes(32));
+    test_session_set('csrf_token', $token);
+    test_session_set('csrf_token_time', time());
+    return $token;
+}
+
+/**
+ * Get current CSRF token (generate if not exists)
+ */
+function get_csrf_token() {
+    $token = test_session_get('csrf_token');
+    $token_time = test_session_get('csrf_token_time', 0);
+
+    // Regenerate token if it doesn't exist or is older than 1 hour
+    if (!$token || (time() - $token_time) > 3600) {
+        $token = generate_csrf_token();
+    }
+
+    return $token;
+}
+
+/**
+ * Validate CSRF token from POST request
+ */
+function validate_csrf_token() {
+    $token = $_POST['csrf_token'] ?? '';
+    $session_token = test_session_get('csrf_token');
+
+    if (empty($token) || empty($session_token)) {
+        return false;
+    }
+
+    // Use timing-safe comparison
+    if (hash_equals($session_token, $token)) {
+        // Regenerate token after successful validation for security
+        generate_csrf_token();
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Get CSRF token HTML input field
+ */
+function csrf_token_field() {
+    $token = get_csrf_token();
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
+}
+
+/**
  * Handle authentication actions
  */
 if (isset($_GET['action'])) {
     switch ($_GET['action']) {
         case 'login':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Validate CSRF token
+                if (!validate_csrf_token()) {
+                    global $web_logger;
+                    $web_logger->log_security_event('CSRF_TOKEN_INVALID', ['action' => 'login']);
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
                 $username = trim($_POST['username'] ?? '');
                 $password = $_POST['password'] ?? '';
 
@@ -385,6 +451,14 @@ if (isset($_GET['action'])) {
 
         case 'add_user':
             if (is_logged_in() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Validate CSRF token
+                if (!validate_csrf_token()) {
+                    global $web_logger;
+                    $web_logger->log_security_event('CSRF_TOKEN_INVALID', ['action' => 'add_user']);
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
                 $new_username = trim($_POST['new_username'] ?? '');
                 $new_password = $_POST['new_password'] ?? '';
                 $confirm_password = $_POST['confirm_password'] ?? '';
@@ -406,6 +480,14 @@ if (isset($_GET['action'])) {
 
         case 'delete_user':
             if (is_logged_in() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Validate CSRF token
+                if (!validate_csrf_token()) {
+                    global $web_logger;
+                    $web_logger->log_security_event('CSRF_TOKEN_INVALID', ['action' => 'delete_user']);
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
                 $delete_username = $_POST['delete_username'] ?? '';
                 $current_user = get_logged_in_user();
 
@@ -422,6 +504,14 @@ if (isset($_GET['action'])) {
 
         case 'change_password':
             if (is_logged_in() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                // Validate CSRF token
+                if (!validate_csrf_token()) {
+                    global $web_logger;
+                    $web_logger->log_security_event('CSRF_TOKEN_INVALID', ['action' => 'change_password']);
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
                 $current_password = $_POST['current_password'] ?? '';
                 $new_password = $_POST['new_password'] ?? '';
                 $confirm_password = $_POST['confirm_password'] ?? '';

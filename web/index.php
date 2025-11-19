@@ -92,6 +92,7 @@
                             <?php endif; ?>
 
                             <form method="POST" action="auth.php?action=login&redirect=index.php">
+                                <?php echo csrf_token_field(); ?>
                                 <div class="mb-3">
                                     <label for="username" class="form-label">Username</label>
                                     <input type="text" class="form-control" id="username" name="username" required>
@@ -244,6 +245,7 @@
                     <div class="card-body">
                         <p>Analyze page traffic and performance metrics</p>
                         <form id="page-traffic-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -306,6 +308,7 @@
                     <div class="card-body">
                         <p>Analyze hourly traffic patterns and best times by source</p>
                         <form id="hourly-traffic-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="hourly-page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -718,6 +721,7 @@
                     <div class="card-body">
                         <p>Discover optimal posting hours for social media platforms by analyzing specific page traffic</p>
                         <form id="social-media-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="social-page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -1174,6 +1178,12 @@
                 if (scriptArgs) {
                     formData.append('args', scriptArgs);
                 }
+                
+                // Add CSRF token
+                const csrfToken = document.querySelector('input[name="csrf_token"]');
+                if (csrfToken) {
+                    formData.append('csrf_token', csrfToken.value);
+                }
 
                 // Make AJAX request
                 fetch('run_report.php', {
@@ -1259,6 +1269,12 @@
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('script', scriptName);
+                
+                // Add CSRF token
+                const csrfToken = document.querySelector('input[name="csrf_token"]');
+                if (csrfToken) {
+                    formData.append('csrf_token', csrfToken.value);
+                }
 
                 // Make AJAX request
                 fetch('run_report.php', {

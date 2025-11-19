@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         <p>This interface requires authentication to run analytics scripts.</p>
 
         <form method="POST">
+            <?php echo csrf_token_field(); ?>
             <label for="script">Select Script:</label>
             <select name="script" id="script" required>
                 <option value="">Choose a script...</option>
@@ -137,6 +138,12 @@ $script = $_POST['script'] ?? '';
 $args = $_POST['args'] ?? '';
 $start_date = $_POST['start_date'] ?? '';
 $end_date = $_POST['end_date'] ?? '';
+
+// Validate CSRF token
+if (!validate_csrf_token()) {
+    echo "Error: Security validation failed. Please refresh the page and try again.";
+    exit;
+}
 
 // Validate and append date arguments
 if ($start_date && $end_date) {
