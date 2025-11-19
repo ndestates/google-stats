@@ -7,7 +7,7 @@ import pandas as pd
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 
-from scripts.device_geo_analysis import analyze_device_performance, analyze_geo_performance, analyze_device_geo
+from scripts.device_geo_analysis import analyze_device_performance, analyze_geographic_performance, analyze_device_geo
 
 
 class TestDeviceGeoAnalysis:
@@ -101,7 +101,7 @@ class TestDeviceGeoAnalysis:
     @patch('scripts.device_geo_analysis.create_date_range')
     @patch('scripts.device_geo_analysis.get_report_filename')
     @patch('pandas.DataFrame.to_csv')
-    def test_analyze_geo_performance_success(self, mock_to_csv, mock_get_filename, mock_create_range, mock_run_report):
+    def test_analyze_geographic_performance_success(self, mock_to_csv, mock_get_filename, mock_create_range, mock_run_report):
         """Test successful geographic performance analysis"""
         # Mock GA4 response with geo data
         mock_response = Mock()
@@ -147,7 +147,7 @@ class TestDeviceGeoAnalysis:
         # Mock filename
         mock_get_filename.return_value = "/path/to/report.csv"
 
-        result = analyze_geo_performance("2025-11-01", "2025-11-07")
+        result = analyze_geographic_performance("2025-11-01", "2025-11-07")
 
         # Should return results
         assert result is not None
@@ -165,7 +165,7 @@ class TestDeviceGeoAnalysis:
         assert "city" in dimensions
 
     @patch('scripts.device_geo_analysis.analyze_device_performance')
-    @patch('scripts.device_geo_analysis.analyze_geo_performance')
+    @patch('scripts.device_geo_analysis.analyze_geographic_performance')
     @patch('scripts.device_geo_analysis.get_report_filename')
     @patch('pandas.DataFrame.to_csv')
     def test_analyze_device_geo_all(self, mock_to_csv, mock_get_filename, mock_geo_perf, mock_device_perf):

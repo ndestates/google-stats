@@ -254,14 +254,16 @@ def analyze_geographic_performance(start_date: str = None, end_date: str = None)
     # Top regions for top countries
     top_countries = sorted(geo_data.items(), key=lambda x: x[1]['total_users'], reverse=True)[:3]
     for country, data in top_countries:
-        print(f"📍 TOP REGIONS IN {country.upper()}:"        regions = sorted(data['regions'].items(), key=lambda x: x[1]['users'], reverse=True)[:5]
+        print(f"📍 TOP REGIONS IN {country.upper()}:")
+        regions = sorted(data['regions'].items(), key=lambda x: x[1]['users'], reverse=True)[:5]
         for region, region_data in regions:
             region_display = region[:25] + "..." if len(region) > 25 else region
             print("30")
         print()
 
     # Geographic insights and recommendations
-    print("💡 GEOGRAPHIC OPTIMIZATION RECOMMENDATIONS:"    # Language and localization
+    print("💡 GEOGRAPHIC OPTIMIZATION RECOMMENDATIONS:")
+    # Language and localization
     top_country = max(geo_data.items(), key=lambda x: x[1]['total_users'])[0]
     if top_country != "United States":
         print(f"   • Consider localizing content for {top_country} market")
