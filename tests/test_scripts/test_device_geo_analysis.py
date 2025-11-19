@@ -67,8 +67,9 @@ class TestDeviceGeoAnalysis:
 
         # Should return results
         assert result is not None
-        assert "device_performance" in result
-        assert len(result["device_performance"]) == 2
+        assert "desktop" in result
+        assert "mobile" in result
+        assert len(result) == 2
 
         # Verify API was called with correct parameters
         mock_run_report.assert_called_once()
@@ -151,8 +152,9 @@ class TestDeviceGeoAnalysis:
 
         # Should return results
         assert result is not None
-        assert "geo_performance" in result
-        assert len(result["geo_performance"]) == 2
+        assert "United States" in result
+        assert "United Kingdom" in result
+        assert len(result) == 2
 
         # Verify API was called with correct parameters
         mock_run_report.assert_called_once()
@@ -170,8 +172,28 @@ class TestDeviceGeoAnalysis:
     @patch('pandas.DataFrame.to_csv')
     def test_analyze_device_geo_all(self, mock_to_csv, mock_get_filename, mock_geo_perf, mock_device_perf):
         """Test combined device and geo analysis"""
-        mock_device_perf.return_value = {"device_performance": [{"device": "desktop", "users": 1000}]}
-        mock_geo_perf.return_value = {"geo_performance": [{"country": "US", "users": 500}]}
+        mock_device_perf.return_value = {
+            "desktop": {
+                "total_users": 1000,
+                "total_sessions": 1200,
+                "total_pageviews": 5000,
+                "avg_bounce_rate": 0.25,
+                "avg_duration": 180.5,
+                "avg_engagement": 0.75,
+                "os_breakdown": {"Windows": 800},
+                "browser_breakdown": {"Chrome": 900}
+            }
+        }
+        mock_geo_perf.return_value = {
+            "United States": {
+                "total_users": 500,
+                "total_sessions": 600,
+                "total_pageviews": 2500,
+                "avg_bounce_rate": 0.30,
+                "avg_duration": 200.0,
+                "regions": {"California": {"cities": {"San Francisco": {"users": 500, "sessions": 600, "pageviews": 2500}}, "users": 500, "sessions": 600, "pageviews": 2500}}
+            }
+        }
         mock_get_filename.return_value = "/path/to/report.csv"
 
         result = analyze_device_geo("all", "2025-11-01", "2025-11-07")
@@ -182,8 +204,8 @@ class TestDeviceGeoAnalysis:
 
         # Should return combined results
         assert result is not None
-        assert "device_performance" in result
-        assert "geo_performance" in result
+        assert "device" in result
+        assert "geo" in result
 
     def test_get_last_30_days_range(self):
         """Test date range calculation"""

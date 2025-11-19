@@ -89,19 +89,18 @@ class TestUserBehavior:
         mock_run_report.assert_called_once()
         call_args = mock_run_report.call_args
 
-        # Check dimensions include pagePath, landingPage, exitPage
+        # Check dimensions include pagePath, landingPage
         dimensions = call_args[1]["dimensions"]
         assert "pagePath" in dimensions
         assert "landingPage" in dimensions
-        assert "exitPage" in dimensions
 
         # Check metrics
         metrics = call_args[1]["metrics"]
         assert "totalUsers" in metrics
         assert "sessions" in metrics
-        assert "pageviews" in metrics
-        assert "entrances" in metrics
-        assert "exits" in metrics
+        assert "screenPageViews" in metrics
+        assert "averageSessionDuration" in metrics
+        assert "bounceRate" in metrics
 
     @patch('scripts.user_behavior.run_report')
     def test_analyze_user_flow_no_data(self, mock_run_report):
@@ -190,6 +189,8 @@ class TestUserBehavior:
                 "total_pageviews": 1500,
                 "total_entrances": 800,
                 "total_exits": 200,
+                "avg_duration": 180.5,
+                "bounce_rate": 0.25,
                 "landing_pages": {},
                 "exit_pages": {}
             }
@@ -204,10 +205,11 @@ class TestUserBehavior:
 
         result = analyze_user_behavior("all", "2025-11-01", "2025-11-07")
 
-        # Should call all analysis functions
+        # Should call flow analysis function (others are skipped due to GA4 limitations)
         mock_user_flow.assert_called_once_with("2025-11-01", "2025-11-07")
-        mock_nav_paths.assert_called_once_with("2025-11-01", "2025-11-07")
-        mock_behavior_patterns.assert_called_once_with("2025-11-01", "2025-11-07")
+        # Navigation paths and behavior patterns are not called (GA4 limitations noted in code)
+        mock_nav_paths.assert_not_called()
+        mock_behavior_patterns.assert_not_called()
 
         # Should return combined results
         assert result is not None
