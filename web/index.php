@@ -270,9 +270,9 @@
                             </div>
                             <div class="mb-3" id="custom-date-range" style="display: none;">
                                 <label for="start-date" class="form-label">Start Date:</label>
-                                <input type="date" class="form-control" id="start-date" required>
+                                <input type="date" class="form-control" id="start-date">
                                 <label for="end-date" class="form-label">End Date:</label>
-                                <input type="date" class="form-control" id="end-date" required>
+                                <input type="date" class="form-control" id="end-date">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -333,9 +333,9 @@
                             </div>
                             <div class="mb-3" id="hourly-custom-date-range" style="display: none;">
                                 <label for="hourly-start-date" class="form-label">Start Date:</label>
-                                <input type="date" class="form-control" id="hourly-start-date" required>
+                                <input type="date" class="form-control" id="hourly-start-date">
                                 <label for="hourly-end-date" class="form-label">End Date:</label>
-                                <input type="date" class="form-control" id="hourly-end-date" required>
+                                <input type="date" class="form-control" id="hourly-end-date">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -769,8 +769,9 @@
                                 <h6>Page Preview</h6>
                                 <div class="property-preview mb-3">
                                     <div class="preview-image">
-                                        <img src="https://via.placeholder.com/300x200/007cba/ffffff?text=Property+Image" 
-                                             alt="Property Preview" class="img-fluid rounded" style="width: 100%; max-height: 200px; object-fit: cover;">
+                                        <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #007cba 0%, #005a87 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
+                                            🏠 Property Image
+                                        </div>
                                     </div>
                                     <div class="preview-details mt-2">
                                         <h6 class="mb-1">St Helier Two Bedroom House with Patio & Garden</h6>
@@ -863,11 +864,17 @@
                 // Handle time period selection
                 const analysisDaysSelect = document.getElementById('analysis-days');
                 const customDateRange = document.getElementById('custom-date-range');
+                const startDateInput = document.getElementById('start-date');
+                const endDateInput = document.getElementById('end-date');
                 analysisDaysSelect.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         customDateRange.style.display = 'block';
+                        startDateInput.setAttribute('required', 'required');
+                        endDateInput.setAttribute('required', 'required');
                     } else {
                         customDateRange.style.display = 'none';
+                        startDateInput.removeAttribute('required');
+                        endDateInput.removeAttribute('required');
                     }
                 });
 
@@ -912,11 +919,17 @@
                 // Handle time period selection
                 const hourlyAnalysisDaysSelect = document.getElementById('hourly-analysis-days');
                 const hourlyCustomDateRange = document.getElementById('hourly-custom-date-range');
+                const hourlyStartDateInput = document.getElementById('hourly-start-date');
+                const hourlyEndDateInput = document.getElementById('hourly-end-date');
                 hourlyAnalysisDaysSelect.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         hourlyCustomDateRange.style.display = 'block';
+                        hourlyStartDateInput.setAttribute('required', 'required');
+                        hourlyEndDateInput.setAttribute('required', 'required');
                     } else {
                         hourlyCustomDateRange.style.display = 'none';
+                        hourlyStartDateInput.removeAttribute('required');
+                        hourlyEndDateInput.removeAttribute('required');
                     }
                 });
 
