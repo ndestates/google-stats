@@ -71,6 +71,7 @@ ddev exec python3 get_google_ads_refresh_token.py
 
 # Mailchimp reports
 ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday
+ddev exec python3 scripts/mailchimp_performance.py --report-type date-range --start-date 2025-11-01 --end-date 2025-11-15
 ```
 
 ## 📖 Documentation

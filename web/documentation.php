@@ -166,14 +166,16 @@
                             <ol>
                                 <li>Select "Hourly Traffic Analysis" card</li>
                                 <li>Enter page URL or path (e.g., /valuations)</li>
-                                <li>Choose time period (7, 30, or 90 days)</li>
+                                <li>Choose time period (7, 30, 90 days or Custom Range)</li>
+                                <li>For Custom Range, select start and end dates</li>
                                 <li>Click "Load Popular Pages" for suggestions</li>
                                 <li>Click "Run Analysis"</li>
                             </ol>
 
                             <h5>Command Line</h5>
                             <div class="code-block">
-                                <code>ddev exec python3 scripts/hourly_traffic_analysis.py /valuations 7</code>
+                                <code>ddev exec python3 scripts/hourly_traffic_analysis.py /valuations 7</code><br>
+                                <code>ddev exec python3 scripts/hourly_traffic_analysis.py /valuations --start-date 2025-11-01 --end-date 2025-11-15</code>
                             </div>
 
                             <h5>Sample Output</h5>
@@ -215,13 +217,15 @@
                             <ol>
                                 <li>Select "Page Traffic Analysis" card</li>
                                 <li>Enter page URL or path</li>
-                                <li>Choose time period</li>
+                                <li>Choose time period (Last 30/7/90 days or Custom Range)</li>
+                                <li>For Custom Range, select start and end dates</li>
                                 <li>Click "Run Analysis"</li>
                             </ol>
 
                             <h5>Command Line</h5>
                             <div class="code-block">
-                                <code>ddev exec python3 scripts/page_traffic_analysis.py /valuations 30</code>
+                                <code>ddev exec python3 scripts/page_traffic_analysis.py /valuations 30</code><br>
+                                <code>ddev exec python3 scripts/page_traffic_analysis.py /valuations --start-date 2025-11-01 --end-date 2025-11-15</code>
                             </div>
                         </div>
                     </div>
@@ -295,14 +299,18 @@
                                 <li><strong>Yesterday's Report</strong> - Daily email performance</li>
                                 <li><strong>Monthly Report</strong> - Monthly campaign summary</li>
                                 <li><strong>Email Sources</strong> - Subscriber source analysis</li>
+                                <li><strong>Date Range</strong> - Custom date range analysis</li>
+                                <li><strong>By Date</strong> - Specific date analysis</li>
+                                <li><strong>24-Hour</strong> - Hourly breakdown for specific date</li>
                             </ul>
 
                             <h5>Web Usage</h5>
-                            <p>Select the desired report type from the Mailchimp Performance card.</p>
+                            <p>Select the desired report type from the Mailchimp Performance card. For date range reports, use the web interface form with start and end date inputs.</p>
 
                             <h5>Command Line</h5>
                             <div class="code-block">
-                                <code>ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday</code>
+                                <code>ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday</code><br>
+                                <code>ddev exec python3 scripts/mailchimp_performance.py --report-type date-range --start-date 2025-11-01 --end-date 2025-11-15</code>
                             </div>
                         </div>
                     </div>
@@ -711,6 +719,16 @@
                                 <td><code>--report-type</code></td>
                                 <td>Report type for multi-option scripts</td>
                                 <td><code>--report-type yesterday</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>--start-date</code></td>
+                                <td>Start date for custom range (YYYY-MM-DD)</td>
+                                <td><code>--start-date 2025-11-01</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>--end-date</code></td>
+                                <td>End date for custom range (YYYY-MM-DD)</td>
+                                <td><code>--end-date 2025-11-15</code></td>
                             </tr>
                         </tbody>
                     </table>
