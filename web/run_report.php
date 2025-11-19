@@ -28,9 +28,13 @@ function loadEnv($path) {
     return true;
 }
 
-// Load .env file from project root
+// Load .env file from project root (fallback)
 $envPath = dirname(__DIR__) . '/.env';
 loadEnv($envPath);
+
+// Load encrypted credentials (primary)
+require_once 'credentials.php';
+load_credentials_to_env();
 
 // Get credentials path from environment
 $ga4KeyPath = getenv('GA4_KEY_PATH') ?: '/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json';

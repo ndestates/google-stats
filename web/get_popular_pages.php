@@ -28,9 +28,13 @@ function loadEnv($path) {
     return true;
 }
 
-// Load .env file from project root
+// Load .env file from project root (fallback)
 $envPath = dirname(__DIR__) . '/.env';
 loadEnv($envPath);
+
+// Load encrypted credentials (primary)
+require_once 'credentials.php';
+load_credentials_to_env();
 
 // Set the working directory to the project root
 $project_root = dirname(__DIR__);

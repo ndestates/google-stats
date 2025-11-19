@@ -47,6 +47,8 @@
                             <a class="nav-link" href="#user-behavior"><i class="fas fa-route"></i> User Behavior</a>
                             <a class="nav-link" href="#content-performance"><i class="fas fa-file-alt"></i> Content Performance</a>
                             <a class="nav-link" href="#seo-analysis"><i class="fas fa-search"></i> SEO Analysis</a>
+                            <a class="nav-link" href="#credentials-setup"><i class="fas fa-key"></i> Google Credentials Setup</a>
+                            <a class="nav-link" href="#security"><i class="fas fa-shield-alt"></i> Security & Best Practices</a>
                             <a class="nav-link" href="#command-line"><i class="fas fa-terminal"></i> Command Line Usage</a>
                             <a class="nav-link" href="#data-export"><i class="fas fa-download"></i> Data Export</a>
                             <a class="nav-link" href="#api-reference"><i class="fas fa-code"></i> API Reference</a>
@@ -683,6 +685,175 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Google Credentials Setup -->
+                <div id="credentials-setup" class="doc-section">
+                    <h2><i class="fas fa-key"></i> Google Credentials Setup</h2>
+                    <p>Step-by-step guide to configure Google API credentials for GA4, Google Ads, and Search Console.</p>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Security Note:</strong> Credentials are encrypted and stored securely. Never commit credential files to version control.
+                    </div>
+
+                    <h4>GA4 Analytics Setup</h4>
+                    <ol>
+                        <li><strong>Create Google Cloud Project</strong>
+                            <ul>
+                                <li>Go to <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                                <li>Create a new project or select existing</li>
+                                <li>Enable Google Analytics Data API</li>
+                            </ul>
+                        </li>
+                        <li><strong>Create Service Account</strong>
+                            <ul>
+                                <li>Go to "IAM & Admin" > "Service Accounts"</li>
+                                <li>Create service account with appropriate name</li>
+                                <li>Generate JSON key and download</li>
+                            </ul>
+                        </li>
+                        <li><strong>Grant GA4 Access</strong>
+                            <ul>
+                                <li>Go to your GA4 property</li>
+                                <li>Add service account email as "Viewer" or "Editor"</li>
+                                <li>Note the Property ID from GA4 admin</li>
+                            </ul>
+                        </li>
+                        <li><strong>Configure in Admin Panel</strong>
+                            <ul>
+                                <li>Login to admin panel</li>
+                                <li>Go to "Google API Credentials" section</li>
+                                <li>Enter Property ID and upload key file path</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <h4>Google Ads Setup</h4>
+                    <ol>
+                        <li><strong>Get Customer ID</strong>
+                            <ul>
+                                <li>Login to <a href="https://ads.google.com" target="_blank">Google Ads</a></li>
+                                <li>Find Customer ID in top-right corner (remove dashes)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Create OAuth Credentials</strong>
+                            <ul>
+                                <li>In Google Cloud Console, go to "APIs & Services" > "Credentials"</li>
+                                <li>Create "OAuth 2.0 Client ID" as "Desktop application"</li>
+                                <li>Note Client ID and Client Secret</li>
+                            </ul>
+                        </li>
+                        <li><strong>Get Developer Token</strong>
+                            <ul>
+                                <li>Apply at <a href="https://developers.google.com/google-ads/api/docs/get-started/dev-token" target="_blank">Developer Token page</a></li>
+                                <li>Basic access usually approved quickly</li>
+                            </ul>
+                        </li>
+                        <li><strong>Generate Refresh Token</strong>
+                            <ul>
+                                <li>Use <a href="https://developers.google.com/oauthplayground" target="_blank">OAuth Playground</a></li>
+                                <li>Set scope: <code>https://www.googleapis.com/auth/adwords</code></li>
+                                <li>Exchange for refresh token</li>
+                            </ul>
+                        </li>
+                        <li><strong>Configure in Admin Panel</strong>
+                            <ul>
+                                <li>Enter all credentials in the admin interface</li>
+                                <li>Test connection before saving</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <h4>Search Console Setup</h4>
+                    <ol>
+                        <li><strong>Verify Site Ownership</strong>
+                            <ul>
+                                <li>Go to <a href="https://search.google.com/search-console" target="_blank">Google Search Console</a></li>
+                                <li>Add your website property</li>
+                                <li>Verify ownership using HTML file or DNS</li>
+                            </ul>
+                        </li>
+                        <li><strong>Use Same Service Account</strong>
+                            <ul>
+                                <li>Add service account email to Search Console users</li>
+                                <li>Grant "Full" access level</li>
+                            </ul>
+                        </li>
+                        <li><strong>Configure in Admin Panel</strong>
+                            <ul>
+                                <li>Enter site URL and key path</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <h4>Troubleshooting</h4>
+                    <ul>
+                        <li><strong>"Access denied" errors</strong> - Check service account permissions</li>
+                        <li><strong>"Invalid credentials" </strong> - Verify JSON key format and paths</li>
+                        <li><strong>"Quota exceeded"</strong> - Check API limits and billing</li>
+                        <li><strong>"Property not found"</strong> - Verify GA4 Property ID</li>
+                    </ul>
+                </div>
+
+                <!-- Security & Best Practices -->
+                <div id="security" class="doc-section">
+                    <h2><i class="fas fa-shield-alt"></i> Security & Best Practices</h2>
+                    <p>Security measures and best practices for the Google Analytics Platform.</p>
+
+                    <h4>Authentication</h4>
+                    <ul>
+                        <li><strong>Session-based Auth</strong> - Secure session management with automatic timeouts</li>
+                        <li><strong>Bcrypt Passwords</strong> - All passwords hashed with bcrypt algorithm</li>
+                        <li><strong>Account Lockout</strong> - Accounts locked after 5 failed attempts for 15 minutes</li>
+                        <li><strong>Rate Limiting</strong> - Login attempts limited to 10 per 10 minutes per IP</li>
+                    </ul>
+
+                    <h4>Credential Security</h4>
+                    <ul>
+                        <li><strong>Encrypted Storage</strong> - All credentials encrypted with AES-256</li>
+                        <li><strong>Environment Variables</strong> - Master encryption key stored securely</li>
+                        <li><strong>Access Control</strong> - Credentials only accessible to authenticated admin users</li>
+                        <li><strong>No Plain Text</strong> - Never store or log credentials in plain text</li>
+                    </ul>
+
+                    <h4>Monitoring & Alerts</h4>
+                    <ul>
+                        <li><strong>Security Logging</strong> - All authentication and security events logged</li>
+                        <li><strong>IP Blocking</strong> - Automatic IP blocking for brute force attacks</li>
+                        <li><strong>Failed Login Tracking</strong> - Monitor and alert on suspicious login patterns</li>
+                        <li><strong>Session Monitoring</strong> - Track active sessions and unusual activity</li>
+                    </ul>
+
+                    <h4>Best Practices</h4>
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-lightbulb"></i> Recommendations</h5>
+                        <ul class="mb-0">
+                            <li>Use strong, unique passwords for all accounts</li>
+                            <li>Enable HTTPS for production deployments</li>
+                            <li>Regularly rotate API keys and tokens</li>
+                            <li>Monitor logs for suspicious activity</li>
+                            <li>Keep software and dependencies updated</li>
+                            <li>Use principle of least privilege for service accounts</li>
+                            <li>Backup encrypted credentials securely</li>
+                        </ul>
+                    </div>
+
+                    <h4>Security Logs</h4>
+                    <p>Security events are logged to <code>logs/security.log</code>. Monitor for:</p>
+                    <ul>
+                        <li>Failed authentication attempts</li>
+                        <li>Rate limit violations</li>
+                        <li>IP blocking events</li>
+                        <li>Suspicious activity patterns</li>
+                    </ul>
+
+                    <h4>Emergency Procedures</h4>
+                    <ul>
+                        <li><strong>Block IP</strong> - Use admin interface to block suspicious IPs</li>
+                        <li><strong>Reset Passwords</strong> - Force password changes for compromised accounts</li>
+                        <li><strong>Rotate Keys</strong> - Generate new API keys if credentials are compromised</li>
+                        <li><strong>Review Logs</strong> - Check security logs for breach indicators</li>
+                    </ul>
                 </div>
 
                 <!-- Command Line Usage -->

@@ -6,6 +6,98 @@
     <title>Google Analytics Reports</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <?php
+    // Start session for authentication
+    session_start();
+
+    // Include authentication functions
+    require_once 'auth.php';
+
+    // Check if user is logged in
+    if (!is_logged_in()) {
+        // Check if IP is blocked
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        if ($web_logger->is_ip_blocked($ip)) {
+            http_response_code(403);
+            ?>
+            </head>
+            <body>
+                <div class="container mt-5">
+                    <div class="alert alert-danger">
+                        <h4>Access Denied</h4>
+                        <p>Your IP address has been blocked due to security policy.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            <?php
+            exit;
+        }
+
+        // Show login form
+        ?>
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0"><i class="fas fa-lock"></i> Login Required</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Please log in to access the Google Analytics Reports.</p>
+                            <?php if (isset($_GET['error'])): ?>
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <?php
+                                    switch ($_GET['error']) {
+                                        case 'invalid':
+                                            echo 'Invalid username or password.';
+                                            break;
+                                        case 'locked':
+                                            echo 'Account is temporarily locked due to too many failed attempts.';
+                                            break;
+                                        default:
+                                            echo 'Login failed.';
+                                    }
+                                    ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <form method="POST" action="auth.php?action=login&redirect=index.php">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-sign-in-alt"></i> Login
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="mt-3 text-center">
+                                <a href="admin.php">Admin Login</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+    </html>
+        <?php
+        exit;
+    }
+
+    // User is logged in, show main interface
+    $current_user = get_logged_in_user();
+    ?>
     <style>
         .report-card { margin-bottom: 20px; }
         .output { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; }
@@ -94,8 +186,15 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">Google Analytics Reports</h1>
             <nav>
-                <a href="documentation.php" class="btn btn-outline-primary">
+                <span class="me-3">Welcome, <?php echo htmlspecialchars($current_user['username']); ?></span>
+                <a href="documentation.php" class="btn btn-outline-primary me-2">
                     <i class="fas fa-book"></i> Documentation
+                </a>
+                <a href="admin.php" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-cog"></i> Admin
+                </a>
+                <a href="auth.php?action=logout" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
             </nav>
         </div>

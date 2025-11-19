@@ -7,6 +7,8 @@
 class WebLogger {
     private $log_file;
     private $log_level;
+    private $security_file;
+    private $rate_limit_file;
 
     const LEVEL_DEBUG = 'DEBUG';
     const LEVEL_INFO = 'INFO';
@@ -23,8 +25,12 @@ class WebLogger {
                 mkdir($log_dir, 0755, true);
             }
             $this->log_file = $log_dir . '/web_interface.log';
+            $this->security_file = $log_dir . '/security.log';
+            $this->rate_limit_file = $log_dir . '/rate_limits.json';
         } else {
             $this->log_file = $log_file;
+            $this->security_file = dirname($log_file) . '/security.log';
+            $this->rate_limit_file = dirname($log_file) . '/rate_limits.json';
         }
 
         // Determine log level from environment variable or parameter
@@ -137,6 +143,133 @@ class WebLogger {
         ]);
     }
 
+    // Security monitoring methods
+    public function log_security_event($event, $details = []) {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+
+        $this->log_to_file($this->security_file, 'SECURITY', $event, array_merge($details, [
+            'ip' => $ip,
+            'user_agent' => $user_agent,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]));
+    }
+
+    public function check_rate_limit($identifier, $max_attempts = 10, $time_window = 300) {
+        $rate_limits = $this->load_rate_limits();
+        $now = time();
+        $window_start = $now - $time_window;
+
+        if (!isset($rate_limits[$identifier])) {
+            $rate_limits[$identifier] = [];
+        }
+
+        // Remove old attempts outside the time window
+        $rate_limits[$identifier] = array_filter($rate_limits[$identifier], function($timestamp) use ($window_start) {
+            return $timestamp > $window_start;
+        });
+
+        // Check if rate limit exceeded
+        if (count($rate_limits[$identifier]) >= $max_attempts) {
+            $this->log_security_event('RATE_LIMIT_EXCEEDED', [
+                'identifier' => $identifier,
+                'attempts' => count($rate_limits[$identifier]),
+                'max_attempts' => $max_attempts
+            ]);
+            return false;
+        }
+
+        // Add current attempt
+        $rate_limits[$identifier][] = $now;
+        $this->save_rate_limits($rate_limits);
+
+        return true;
+    }
+
+    public function block_ip($ip, $reason = 'manual') {
+        $blocked_ips = $this->load_blocked_ips();
+        $blocked_ips[$ip] = [
+            'blocked_at' => time(),
+            'reason' => $reason
+        ];
+        $this->save_blocked_ips($blocked_ips);
+        $this->log_security_event('IP_BLOCKED', ['ip' => $ip, 'reason' => $reason]);
+    }
+
+    public function is_ip_blocked($ip) {
+        $blocked_ips = $this->load_blocked_ips();
+        return isset($blocked_ips[$ip]);
+    }
+
+    public function log_failed_login($username, $ip) {
+        $this->log_security_event('FAILED_LOGIN', [
+            'username' => $username,
+            'ip' => $ip
+        ]);
+
+        // Check for brute force attack
+        $identifier = 'login_' . $ip;
+        if (!$this->check_rate_limit($identifier, 5, 900)) { // 5 attempts per 15 minutes
+            $this->block_ip($ip, 'brute_force_login');
+        }
+    }
+
+    public function log_suspicious_activity($activity, $details = []) {
+        $this->log_security_event('SUSPICIOUS_ACTIVITY', array_merge($details, [
+            'activity' => $activity
+        ]));
+    }
+
+    private function load_rate_limits() {
+        if (!file_exists($this->rate_limit_file)) {
+            return [];
+        }
+        $data = json_decode(file_get_contents($this->rate_limit_file), true);
+        return $data ?: [];
+    }
+
+    private function save_rate_limits($rate_limits) {
+        file_put_contents($this->rate_limit_file, json_encode($rate_limits));
+    }
+
+    private function load_blocked_ips() {
+        $blocked_file = dirname($this->security_file) . '/blocked_ips.json';
+        if (!file_exists($blocked_file)) {
+            return [];
+        }
+        $data = json_decode(file_get_contents($blocked_file), true);
+        return $data ?: [];
+    }
+
+    private function save_blocked_ips($blocked_ips) {
+        $blocked_file = dirname($this->security_file) . '/blocked_ips.json';
+        file_put_contents($blocked_file, json_encode($blocked_ips));
+    }
+
+    private function log_to_file($file, $level, $message, $context = []) {
+        if ($this->log_level === 'OFF') {
+            return;
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'unknown';
+        $request_uri = $_SERVER['REQUEST_URI'] ?? 'unknown';
+
+        $log_entry = sprintf(
+            "[%s] %s [%s] %s %s - %s",
+            $timestamp, $level, $ip, $method, $request_uri, $message
+        );
+
+        if (!empty($context)) {
+            $log_entry .= ' ' . json_encode($context);
+        }
+
+        $log_entry .= "\n";
+
+        file_put_contents($file, $log_entry, FILE_APPEND);
+    }
+
     public function log_authentication($success, $username = null) {
         if ($success) {
             $this->info("Authentication successful", ['username' => $username]);
@@ -145,6 +278,7 @@ class WebLogger {
                 'username' => $username,
                 'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
             ]);
+            $this->log_failed_login($username, $_SERVER['REMOTE_ADDR'] ?? 'unknown');
         }
     }
 
