@@ -20,6 +20,9 @@
     // Include authentication functions
     require_once 'auth.php';
 
+    // Include version information
+    require_once 'version.php';
+
     // Check if user is logged in
     if (!is_logged_in()) {
         // Check if IP is blocked
@@ -554,5 +557,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <footer class="text-center text-muted mt-5 py-3 border-top">
+        <p>&copy; <?php echo APP_COPYRIGHT; ?> | Version <?php echo APP_VERSION; ?> | Powered by Google Analytics 4</p>
+    </footer>
 </body>
 </html>

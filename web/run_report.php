@@ -34,6 +34,7 @@ loadEnv($envPath);
 
 // Load encrypted credentials (primary)
 require_once 'credentials.php';
+require_once 'version.php';
 load_credentials_to_env();
 
 // Get credentials path from environment
@@ -616,7 +617,7 @@ if (is_resource($process)) {
                 </div>
 
                 <div class="footer">
-                    <p>Report generated on <?php echo date('F j, Y \a\t g:i A'); ?> | NDEstates Analytics | Powered by Google Analytics 4</p>
+                    <p>Report generated on <?php echo date('F j, Y \a\t g:i A'); ?> | Version <?php echo APP_VERSION; ?> | <?php echo APP_COPYRIGHT; ?> | Powered by Google Analytics 4</p>
                 </div>
             </div>
         </body>
