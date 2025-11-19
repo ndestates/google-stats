@@ -113,12 +113,23 @@
                 <?php
                 // Load current settings
                 $settings_file = __DIR__ . '/uploads/settings.json';
-                $settings = json_decode(file_get_contents($settings_file), true);
+                $settings = [];
+                if (file_exists($settings_file)) {
+                    $settings_content = file_get_contents($settings_file);
+                    if ($settings_content !== false) {
+                        $settings = json_decode($settings_content, true) ?: [];
+                    }
+                } else {
+                    // Initialize empty settings file
+                    file_put_contents($settings_file, '{}');
+                }
+
+                // Initialize message variables
+                $success_message = null;
+                $error_message = null;
 
                 // Handle form submission
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $success_message = null;
-                    $error_message = null;
 
                     // Handle logo upload
                     if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
@@ -245,7 +256,7 @@
                         <div class="card-body">
                             <p class="text-muted">Upload your company logo to appear on all PDF reports. Recommended size: 300x150 pixels.</p>
 
-                            <?php if ($settings['company_logo'] && file_exists(__DIR__ . '/' . $settings['company_logo'])): ?>
+                            <?php if (!empty($settings['company_logo']) && file_exists(__DIR__ . '/' . $settings['company_logo'])): ?>
                                 <div class="logo-preview mb-3">
                                     <p><strong>Current Logo:</strong></p>
                                     <img src="<?php echo $settings['company_logo']; ?>" alt="Company Logo" class="current-logo">
@@ -292,7 +303,7 @@
                     </div>
                 </form>
 
-                <?php if ($settings['updated_at']): ?>
+                <?php if (!empty($settings['updated_at'])): ?>
                     <div class="mt-3 text-muted">
                         <small>Last updated: <?php echo $settings['updated_at']; ?></small>
                     </div>
