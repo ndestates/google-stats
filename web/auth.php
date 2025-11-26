@@ -402,10 +402,8 @@ function validate_csrf_token() {
         // Check if token is older than 1 hour and regenerate if needed
         if ((time() - $token_time) > 3600) {
             generate_csrf_token();
-        } else {
-            // Regenerate token after successful validation for security
-            generate_csrf_token();
         }
+        // Don't regenerate after every validation to avoid breaking concurrent requests
         return true;
     }
     
@@ -439,6 +437,8 @@ if (isset($_GET['action'])) {
                 $password = $_POST['password'] ?? '';
 
                 if (authenticate_user($username, $password)) {
+                    // Regenerate CSRF token after successful login for security
+                    generate_csrf_token();
                     $redirect = $_GET['redirect'] ?? 'admin.php';
                     header('Location: ' . $redirect);
                     exit;
