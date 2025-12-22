@@ -169,7 +169,7 @@ from src.config import GA4_PROPERTY_ID, REPORTS_DIR
 - Service account keys in `.ddev/keys/`
 - Property IDs and credentials validated in `src/config.py`
 
-- Google Ads credentials: `GOOGLE_ADS_CUSTOMER_ID`, `GOOGLE_ADS_CLIENT_ID`, etc.
+ddev stop- Google Ads credentials: `GOOGLE_ADS_CUSTOMER_ID`, `GOOGLE_ADS_CLIENT_ID`, etc.
 
 ## Logging Control
 
