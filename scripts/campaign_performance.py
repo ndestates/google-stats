@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/campaign_performance.py
+"""
+
 import os
 from datetime import datetime, timedelta
 import pandas as pd

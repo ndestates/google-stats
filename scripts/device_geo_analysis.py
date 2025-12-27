@@ -12,7 +12,12 @@ Examples:
 """
 
 import os
-import sys
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/device_geo_analysis.py
+"""
+
+import os
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
