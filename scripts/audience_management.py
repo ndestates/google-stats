@@ -1,6 +1,8 @@
 """
 Google Analytics 4 Audience Management Script
 Create, list, and manage audiences programmatically via the Admin API
+
+Run with: ddev exec python scripts/audience_management.py
 """
 
 import os

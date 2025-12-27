@@ -1,6 +1,8 @@
 """
 Automated GA4 Audience Creation Script
 Creates recommended audiences based on user behavior analysis and performance data
+
+Run with: ddev exec python scripts/auto_audience_creation.py
 """
 
 import os

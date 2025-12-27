@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/all_pages_sources_report.py
+"""
+
 import os
 from datetime import datetime, timedelta
 import pandas as pd

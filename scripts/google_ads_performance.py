@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Google Ads Performance Analysis and Optimization Report
+Analyze campaign performance, hourly trends, and ad network performance
+
+Run with: ddev exec python scripts/google_ads_performance.py
+Options:  --date yesterday|today|last30|last90 (default: last 365 days)
+          --start YYYY-MM-DD --end YYYY-MM-DD
+"""
+
 import os
 import sys
 from datetime import datetime, timedelta
