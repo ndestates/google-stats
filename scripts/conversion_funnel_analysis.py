@@ -2,13 +2,12 @@
 Conversion Funnel Analysis Script
 Analyze user conversion paths and funnel performance
 
-Usage:
-    python conversion_funnel_analysis.py [goal_type] [days]
+Run with: ddev exec python scripts/conversion_funnel_analysis.py [goal_type] [days]
 
 Examples:
-    python conversion_funnel_analysis.py contact_form 30
-    python conversion_funnel_analysis.py property_inquiry 7
-    python conversion_funnel_analysis.py all_goals 90
+    ddev exec python scripts/conversion_funnel_analysis.py contact_form 30
+    ddev exec python scripts/conversion_funnel_analysis.py property_inquiry 7
+    ddev exec python scripts/conversion_funnel_analysis.py all_goals 90
 """
 
 import os

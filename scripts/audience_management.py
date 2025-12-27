@@ -2,7 +2,14 @@
 Google Analytics 4 Audience Management Script
 Create, list, and manage audiences programmatically via the Admin API
 
-Run with: ddev exec python scripts/audience_management.py
+Run with: ddev exec python scripts/audience_management.py --action [create|list|delete|analyze] [OPTIONS]
+
+Examples:
+    ddev exec python scripts/audience_management.py --action list
+    ddev exec python scripts/audience_management.py --action create --type basic --name "All Users" --duration 30
+    ddev exec python scripts/audience_management.py --action create --type page --name "Pricing Viewers" --page-path /pricing
+    ddev exec python scripts/audience_management.py --action delete --audience-id AUDIENCE_ID
+    ddev exec python scripts/audience_management.py --action analyze --include-metrics
 """
 
 import os
