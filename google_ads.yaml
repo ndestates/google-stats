@@ -1,0 +1,12 @@
+developer_token: eaHQRTqu7i-vpQZ_NCR3oA
+use_proto_plus: True
+
+# Service account authentication (remove any client_id, client_secret, or refresh_token lines if present)
+json_key_file_path: /home/nickd/projects/google-stats/keys/ndestates-websit-1764495112771-73cdb6c929b4.json   # e.g., /home/user/Documents/my-project-key.json or C:/Users/YourName/Documents/my-project-key.json
+
+# Required if using a manager account (MCC) - highly recommended
+login_customer_id: 2445831419   # 10-digit ID without hyphens, e.g., 1234567890
+
+# Optional: If your customer account is different from the manager (most cases)
+GOOGLE_ADS_CUSTOMER_ID: 5933984170
+# Then in queries, use customer_id = YOUR_TARGET_CUSTOMER_ID (which you already have in GOOGLE_ADS_CUSTOMER_ID)

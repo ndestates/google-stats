@@ -1,3 +1,22 @@
+"""
+Campaign Performance Report Generator
+
+Generates detailed campaign performance reports from Google Analytics 4 data.
+
+DDEV Usage:
+    ddev exec python3 scripts/campaign_performance.py
+
+Direct Usage:
+    python3 scripts/campaign_performance.py
+
+Features:
+    - Yesterday's campaign report
+    - 30-day monthly campaign report
+    - CSV and PDF export
+    - Top pages per campaign
+    - Daily performance breakdowns
+"""
+
 import os
 from datetime import datetime, timedelta
 import pandas as pd
