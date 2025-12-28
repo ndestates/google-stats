@@ -101,6 +101,23 @@ python run_tests.py --script manage_google_ads
 4. **Check the account structure**: In Google Ads settings, verify the target customer account is visible
 5. **Confirm role permissions**: The service account role needs "Admin" access
 
+### Developer token approved for test accounts only
+
+If you see the error:
+
+The developer token is only approved for use with test accounts. To access non-test accounts, apply for Basic or Standard access.
+
+Do one of the following:
+- **Use test accounts**: Point `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_CUSTOMER_ID` to test accounts that your token can access. Test accounts are separate from production accounts and only work with tokens approved for test use.
+- **Apply for Basic or Standard access**: In Google Ads, go to `Tools & Settings` → `Setup` → `API Center`, and submit an application to upgrade your developer token. Provide your use case, compliance details, and agree to policies. Approval may take a few days.
+
+After upgrading or switching to test accounts, re-run:
+```bash
+ddev exec python3 test_google_ads_connection.py
+```
+
+If the token remains test-only, ensure all IDs in `.env` reference test accounts.
+
 ### Need to change account IDs?
 
 Edit `.env`:

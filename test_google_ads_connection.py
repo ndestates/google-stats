@@ -157,6 +157,13 @@ def test_customer_list_access(client):
             
     except Exception as e:
         error_str = str(e)
+        if "developer token is only approved for use with test accounts" in error_str.lower():
+            print("❌ DEVELOPER TOKEN TEST-ONLY")
+            print("   Your developer token can only access test accounts.")
+            print("   Options:")
+            print("   - Use test accounts for both login and customer IDs")
+            print("   - Apply for Basic or Standard access in API Center")
+            return False
         if "USER_PERMISSION_DENIED" in error_str or "permission" in error_str.lower():
             print("❌ PERMISSION DENIED")
             print("   The service account cannot access the manager account")
@@ -202,6 +209,13 @@ def test_target_customer_access(client):
         
     except Exception as e:
         error_str = str(e)
+        if "developer token is only approved for use with test accounts" in error_str.lower():
+            print("❌ DEVELOPER TOKEN TEST-ONLY")
+            print("   The token is limited to test accounts and cannot access this customer.")
+            print("\n   To proceed:")
+            print("   - Switch `.env` IDs to test accounts; or")
+            print("   - Upgrade token in Google Ads API Center (Basic/Standard)")
+            return False
         if "USER_PERMISSION_DENIED" in error_str or "permission" in error_str.lower():
             print(f"❌ PERMISSION DENIED for customer {GOOGLE_ADS_CUSTOMER_ID}")
             print("\n   Possible causes:")
