@@ -21,7 +21,7 @@ import json
 # Add the parent directory to sys.path to import src modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.config import REPORTS_DIR, get_google_ads_client, GOOGLE_ADS_CUSTOMER_ID
+from src.config import REPORTS_DIR, get_google_ads_client, GOOGLE_ADS_CUSTOMER_ID, GOOGLE_ADS_JSON_KEY_PATH
 
 def list_campaigns(client, customer_id):
     """List all active campaigns"""
@@ -40,7 +40,7 @@ def list_campaigns(client, customer_id):
     """
     
     request = client.get_type("SearchGoogleAdsRequest")
-    request.customer_id = customer_id
+    request.customer_id = str(customer_id).replace("-", "")
     request.query = query
     
     response = googleads_service.search(request=request)
@@ -60,6 +60,8 @@ def list_ad_groups(client, customer_id, campaign_id):
     """List ad groups in a specific campaign"""
     
     googleads_service = client.get_service("GoogleAdsService")
+    
+    customer_id = str(customer_id).replace("-", "")
     
     query = f"""
         SELECT
@@ -96,6 +98,8 @@ def list_ads_in_ad_group(client, customer_id, ad_group_id):
     """List all ads in a specific ad group with detailed information"""
     
     googleads_service = client.get_service("GoogleAdsService")
+    
+    customer_id = str(customer_id).replace("-", "")
     
     query = f"""
         SELECT
@@ -306,6 +310,7 @@ def interactive_menu():
     
     try:
         client = get_google_ads_client()
+        print(f"✅ Client initialized with login_customer_id: {client.login_customer_id}")
         
         while True:
             print("\n" + "-"*80)
@@ -329,17 +334,32 @@ def interactive_menu():
             elif choice == "1":
                 # List campaigns
                 print("\n📊 Fetching campaigns...")
-                campaigns = list_campaigns(client, customer_id)
-                
-                if not campaigns:
-                    print("❌ No active campaigns found.")
-                    continue
-                
-                print(f"\n✅ Found {len(campaigns)} active campaigns:")
-                print(f"{'ID':<15} {'Name':<40} {'Type':<20}")
-                print("-"*80)
-                for campaign in campaigns:
-                    print(f"{campaign['id']:<15} {campaign['name']:<40} {campaign['type']:<20}")
+                try:
+                    campaigns = list_campaigns(client, customer_id)
+                    
+                    if not campaigns:
+                        print("❌ No active campaigns found.")
+                        continue
+                    
+                    print(f"\n✅ Found {len(campaigns)} active campaigns:")
+                    print(f"{'ID':<15} {'Name':<40} {'Type':<20}")
+                    print("-"*80)
+                    for campaign in campaigns:
+                        print(f"{campaign['id']:<15} {campaign['name']:<40} {campaign['type']:<20}")
+                except Exception as e:
+                    error_str = str(e)
+                    if "USER_PERMISSION_DENIED" in error_str or "permission" in error_str.lower():
+                        print("\n❌ PERMISSION ERROR")
+                        print("Your service account doesn't have permission to access this customer account.")
+                        print("\nTo fix this:")
+                        print(f"1. Verify customer ID {customer_id} is accessible from manager account {client.login_customer_id}")
+                        print(f"2. Check that the service account is added to the customer account in Google Ads")
+                        print(f"3. Ensure the customer account is linked to your manager account")
+                        print(f"\nService Account: {os.path.basename(GOOGLE_ADS_JSON_KEY_PATH)}")
+                        print(f"Login Customer ID: {client.login_customer_id}")
+                        print(f"Target Customer ID: {customer_id}")
+                    else:
+                        print(f"❌ Error: {error_str[:200]}")
             
             elif choice == "2":
                 # List ad groups
