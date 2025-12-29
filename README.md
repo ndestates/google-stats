@@ -77,6 +77,10 @@ ddev exec python3 get_google_ads_refresh_token.py
 # OR use OAuth Playground (recommended): see GOOGLE_ADS_OAUTH_PLAYGROUND.md
 # OR use manual script: python3 manual_google_ads_oauth.py
 
+# Audience management (GA4 Admin API)
+ddev exec python3 scripts/audience_management.py --action list --include-metrics
+ddev exec python3 scripts/audience_management.py --action create --type page --name "Pricing Viewers" --page-path "/pricing"
+
 # Mailchimp reports
 ddev exec python3 scripts/mailchimp_performance.py --report-type yesterday
 ddev exec python3 scripts/mailchimp_performance.py --report-type date-range --start-date 2025-11-01 --end-date 2025-11-15

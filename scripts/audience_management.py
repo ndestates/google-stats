@@ -17,6 +17,131 @@ from src.ga4_client import run_report, create_date_range, get_last_30_days_range
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import pandas as pd
+import urllib.request
+import xml.etree.ElementTree as ET
+
+
+def fetch_feed(feed_url: str) -> str:
+    """Fetch XML feed content (standard library only)."""
+    with urllib.request.urlopen(feed_url) as resp:
+        return resp.read().decode("utf-8")
+
+
+def parse_feed(xml_text: str):
+    """Parse XML feed into a list of listings with key fields."""
+    root = ET.fromstring(xml_text)
+    listings = []
+    # Expected structure: <xml><property>...</property></xml>
+    for prop in root.findall(".//property"):
+        get = lambda tag: (prop.find(tag).text.strip() if prop.find(tag) is not None and prop.find(tag).text else "")
+        url = get("url")
+        price_raw = get("price")
+        type_ = get("type")  # 'buy' or 'rent'
+        status = get("status")
+        reference = get("reference")
+        name = get("propertyname")
+        try:
+            price = int(price_raw) if price_raw else None
+        except ValueError:
+            price = None
+        listings.append({
+            "url": url,
+            "price": price,
+            "type": type_.lower() if type_ else "",
+            "status": status.lower() if status else "",
+            "reference": reference,
+            "name": name
+        })
+    return listings
+
+
+def list_existing_audience_names():
+    """Return a set of existing audience display names for dedupe."""
+    service = get_admin_service()
+    result = service.properties().audiences().list(parent=f"properties/{GA4_PROPERTY_ID}").execute()
+    names = set()
+    for a in result.get("audiences", []):
+        dn = a.get("displayName")
+        if dn:
+            names.add(dn)
+    return names
+
+
+def create_page_view_audience_for_urls(display_name: str, urls: list, membership_duration_days: int = 30, description: str = ""):
+    """Create an audience matching page_view on any of the given URLs (OR logic)."""
+    if not description:
+        description = f"Users who viewed any of {len(urls)} listing URLs"
+
+    service = get_admin_service()
+    url_filters = [{
+        'dimensionOrMetricFilter': {
+            'fieldName': 'pageLocation',
+            'stringFilter': {
+                'matchType': 'CONTAINS',
+                'value': u
+            }
+        }
+    } for u in urls]
+
+    audience = {
+        'displayName': display_name,
+        'description': description,
+        'membershipDurationDays': membership_duration_days,
+        'filterClauses': [{
+            'clauseType': 'INCLUDE',
+            'simpleFilter': {
+                'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+                'filterExpression': {
+                    'andGroup': {
+                        'filterExpressions': [{
+                            'orGroup': {
+                                'filterExpressions': [{
+                                    'eventFilter': {
+                                        'eventName': 'page_view',
+                                        'eventParameterFilterExpression': {
+                                            'andGroup': {
+                                                'filterExpressions': [{
+                                                    'orGroup': {
+                                                        'filterExpressions': url_filters
+                                                    }
+                                                }]
+                                            }
+                                        }
+                                    }
+                                }]
+                            }
+                        }]
+                    }
+                }
+            }
+        }]
+    }
+
+    request = service.properties().audiences().create(
+        parent=f'properties/{GA4_PROPERTY_ID}',
+        body=audience
+    ).execute()
+
+    print(f"✅ Created audience: {request['displayName']} (ID: {request['name'].split('/')[-1]})")
+    return request
+
+
+def assign_price_band(price: int):
+    """Return a canonical price band label for buy listings."""
+    if price is None:
+        return None
+    bands = [
+        (200_000, 400_000, "Price Range - £200k–£400k"),
+        (400_000, 600_000, "Price Range - £400k–£600k"),
+        (600_000, 800_000, "Price Range - £600k–£800k"),
+        (800_000, 1_000_000, "Price Range - £800k–£1m"),
+    ]
+    for lo, hi, label in bands:
+        if lo <= price < hi:
+            return label
+    if price >= 1_000_000:
+        return "Price Range - £1m+"
+    return None
 
 
 def get_admin_service():
@@ -435,9 +560,86 @@ def delete_audience(audience_id: str):
     print(f"🗑️ Deleted audience: {audience_id}")
 
 
+def generate_audiences_from_feed(
+    feed_url: str,
+    scope: str = "both",
+    include_rent: bool = False,
+    limit: int = 0,
+    duration: int = 30,
+    dry_run: bool = True,
+):
+    """Generate audiences from external XML feed per listing and price bands."""
+    xml_text = fetch_feed(feed_url)
+    listings = parse_feed(xml_text)
+
+    # Filter available listings and, optionally, type
+    available = [
+        l for l in listings
+        if (l.get("status") == "available") and (include_rent or l.get("type") == "buy")
+    ]
+
+    existing_names = list_existing_audience_names()
+    created_count = 0
+
+    def can_create_more():
+        return (limit <= 0) or (created_count < limit)
+
+    # Per-listing audiences
+    if scope in ("listing", "both"):
+        for l in available:
+            if not can_create_more():
+                break
+            url = l.get("url") or ""
+            if not url:
+                continue
+            ref = l.get("reference") or ""
+            base_name = l.get("name") or ref or url
+            display_name = f"Listing - {ref}" if ref else f"Listing - {base_name[:80]}"
+            if display_name in existing_names:
+                print(f"⏭️ Skip existing audience: {display_name}")
+                continue
+            if dry_run:
+                print(f"DRY-RUN: Would create audience '{display_name}' for URL: {url}")
+            else:
+                create_page_view_audience(display_name, url, membership_duration_days=duration)
+            created_count += 1
+
+    # Price band audiences (buy only)
+    if scope in ("price-bands", "both"):
+        band_to_urls = {}
+        for l in available:
+            if l.get("type") != "buy":
+                continue
+            band = assign_price_band(l.get("price"))
+            if not band:
+                continue
+            url = l.get("url") or ""
+            if not url:
+                continue
+            band_to_urls.setdefault(band, []).append(url)
+
+        for band_label, urls in band_to_urls.items():
+            if not can_create_more():
+                break
+            display_name = band_label
+            if display_name in existing_names:
+                print(f"⏭️ Skip existing audience: {display_name}")
+                continue
+            # Cap to reasonable number of URLs per audience to avoid overly large filters
+            capped_urls = urls[:200]
+            if dry_run:
+                print(f"DRY-RUN: Would create audience '{display_name}' for {len(capped_urls)} URLs (band total: {len(urls)})")
+            else:
+                create_page_view_audience_for_urls(display_name, capped_urls, membership_duration_days=duration,
+                                                   description=f"Buy listings in {band_label}")
+            created_count += 1
+
+    print(f"✅ Generation complete. Audiences processed: {created_count}")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'analyze'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'analyze', 'generate-from-feed'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
@@ -451,6 +653,17 @@ def main():
                        help='Include user count metrics when listing audiences')
     parser.add_argument('--analyze-performance', action='store_true',
                        help='Analyze audience performance and provide recommendations')
+    # Feed generation flags
+    parser.add_argument('--feed-url', default='https://api.ndestates.com/feeds/ndefeed.xml',
+                        help='XML feed URL for listings (default: ND Estates feed)')
+    parser.add_argument('--scope', choices=['listing', 'price-bands', 'both'], default='both',
+                        help='Which audiences to generate from feed')
+    parser.add_argument('--include-rent', action='store_true',
+                        help='Include rent listings (default: only buy)')
+    parser.add_argument('--limit', type=int, default=0,
+                        help='Maximum audiences to create in this run (0 = no limit)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Print actions without creating audiences')
 
     args = parser.parse_args()
 
@@ -498,6 +711,16 @@ def main():
                 print("❌ --audience-id is required for delete action")
                 return
             delete_audience(args.audience_id)
+
+        elif args.action == 'generate-from-feed':
+            generate_audiences_from_feed(
+                feed_url=args.feed_url,
+                scope=args.scope,
+                include_rent=args.include_rent,
+                limit=args.limit,
+                duration=args.duration,
+                dry_run=args.dry_run or False,
+            )
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
