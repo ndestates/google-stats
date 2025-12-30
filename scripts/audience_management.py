@@ -1,6 +1,36 @@
 """
 Google Analytics 4 Audience Management Script
 Create, list, and manage audiences programmatically via the Admin API
+
+DDEV Usage:
+    # Generate audiences from XML feed
+    ddev exec python3 scripts/audience_management.py --action generate-from-feed --dry-run
+    
+    # Create audiences for all listings
+    ddev exec python3 scripts/audience_management.py --action generate-from-feed --scope listing
+    
+    # Create price-band audiences only
+    ddev exec python3 scripts/audience_management.py --action generate-from-feed --scope price-bands
+    
+    # Create both listing and price-band audiences
+    ddev exec python3 scripts/audience_management.py --action generate-from-feed --scope both
+    
+    # List all audiences
+    ddev exec python3 scripts/audience_management.py --action list
+    
+    # Analyze audience performance
+    ddev exec python3 scripts/audience_management.py --action analyze
+
+Direct Usage:
+    python3 scripts/audience_management.py --action generate-from-feed --dry-run
+
+Features:
+    - Generate listing audiences from XML feed
+    - Generate price-band combination audiences (£200K-400K, etc.)
+    - Idempotent creation (skips duplicates)
+    - Dry-run mode for testing
+    - Configurable batch limits
+    - Uses pagePath for accurate GA4 matching
 """
 
 import os
