@@ -39,7 +39,7 @@ def parse_feed(xml_text: str):
         type_ = get("type")  # 'buy' or 'rent'
         status = get("status")
         reference = get("reference")
-        name = get("HouseName")
+        name = get("houseName")
         try:
             price = int(price_raw) if price_raw else None
         except ValueError:
