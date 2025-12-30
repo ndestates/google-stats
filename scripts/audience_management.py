@@ -18,7 +18,17 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import pandas as pd
 import urllib.request
+import urllib.parse
 import xml.etree.ElementTree as ET
+
+
+def extract_url_path(full_url: str) -> str:
+    """Extract just the path from a full URL, omitting the domain."""
+    try:
+        parsed = urllib.parse.urlparse(full_url)
+        return parsed.path
+    except:
+        return full_url
 
 
 def fetch_feed(feed_url: str) -> str:
@@ -592,18 +602,20 @@ def generate_audiences_from_feed(
             url = l.get("url") or ""
             if not url:
                 continue
+            # Extract just the path, omitting domain
+            url_path = extract_url_path(url)
             property_name = l.get("name") or ""
             ref = l.get("reference") or ""
             # Use property name if available, otherwise fall back to reference
             base_name = property_name if property_name else ref
-            display_name = f"[Listing] - {base_name}" if base_name else f"[Listing] - {url[:80]}"
+            display_name = f"[Listing] - {base_name}" if base_name else f"[Listing] - {url_path[:80]}"
             if display_name in existing_names:
                 print(f"⏭️ Skip existing audience: {display_name}")
                 continue
             if dry_run:
-                print(f"DRY-RUN: Would create audience '{display_name}' for URL: {url}")
+                print(f"DRY-RUN: Would create audience '{display_name}' for URL: {url_path}")
             else:
-                create_page_view_audience(display_name, url, membership_duration_days=duration)
+                create_page_view_audience(display_name, url_path, membership_duration_days=duration)
             created_count += 1
 
     # Price band audiences (buy only)
@@ -618,7 +630,9 @@ def generate_audiences_from_feed(
             url = l.get("url") or ""
             if not url:
                 continue
-            band_to_urls.setdefault(band, []).append(url)
+            # Extract just the path, omitting domain
+            url_path = extract_url_path(url)
+            band_to_urls.setdefault(band, []).append(url_path)
 
         for band_label, urls in band_to_urls.items():
             if not can_create_more():
