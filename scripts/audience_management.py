@@ -592,9 +592,11 @@ def generate_audiences_from_feed(
             url = l.get("url") or ""
             if not url:
                 continue
+            property_name = l.get("name") or ""
             ref = l.get("reference") or ""
-            base_name = l.get("name") or ref or url
-            display_name = f"Listing - {ref}" if ref else f"Listing - {base_name[:80]}"
+            # Use property name if available, otherwise fall back to reference
+            base_name = property_name if property_name else ref
+            display_name = f"[Listing] - {base_name}" if base_name else f"[Listing] - {url[:80]}"
             if display_name in existing_names:
                 print(f"⏭️ Skip existing audience: {display_name}")
                 continue
