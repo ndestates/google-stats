@@ -136,26 +136,22 @@ def list_existing_audience_names():
 
 
 def create_page_view_audience_for_urls(display_name: str, urls: list, membership_duration_days: int = 30, description: str = ""):
-    """Create an audience matching page_view on any of the given URLs (OR logic)."""
+    """Create an audience matching page_view on any of the given URLs (OR logic).
+    Note: GA4 has limitations on complex OR filters, so this creates multiple filter clauses."""
     if not description:
         description = f"Users who viewed any of {len(urls)} listing URLs"
+    
+    # Truncate description to stay within GA4 limits (256 characters)
+    if len(description) > 256:
+        description = description[:253] + "..."
 
     service = get_admin_service()
-    url_filters = [{
-        'dimensionOrMetricFilter': {
-            'fieldName': 'pagePath',
-            'stringFilter': {
-                'matchType': 'CONTAINS',
-                'value': u
-            }
-        }
-    } for u in urls]
-
-    audience = {
-        'displayName': display_name,
-        'description': description,
-        'membershipDurationDays': membership_duration_days,
-        'filterClauses': [{
+    
+    # Create multiple filter clauses (one per URL) - each is OR'd at the clause level
+    # This works around GA4's limitation on complex nested OR groups
+    filter_clauses = []
+    for url in urls:
+        filter_clauses.append({
             'clauseType': 'INCLUDE',
             'simpleFilter': {
                 'scope': 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
@@ -167,10 +163,14 @@ def create_page_view_audience_for_urls(display_name: str, urls: list, membership
                                     'eventFilter': {
                                         'eventName': 'page_view',
                                         'eventParameterFilterExpression': {
-                                            'andGroup': {
+                                            'orGroup': {
                                                 'filterExpressions': [{
-                                                    'orGroup': {
-                                                        'filterExpressions': url_filters
+                                                    'dimensionOrMetricFilter': {
+                                                        'fieldName': 'pageLocation',
+                                                        'stringFilter': {
+                                                            'matchType': 'CONTAINS',
+                                                            'value': url
+                                                        }
                                                     }
                                                 }]
                                             }
@@ -182,7 +182,13 @@ def create_page_view_audience_for_urls(display_name: str, urls: list, membership
                     }
                 }
             }
-        }]
+        })
+
+    audience = {
+        'displayName': display_name,
+        'description': description,
+        'membershipDurationDays': membership_duration_days,
+        'filterClauses': filter_clauses
     }
 
     request = service.properties().audiences().create(
@@ -349,10 +355,15 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
     """Create an audience based on page views"""
 
     service = get_admin_service()
+    
+    # Truncate description to stay within GA4 limits (256 characters)
+    description = f"Viewed {page_path}"
+    if len(description) > 256:
+        description = description[:253] + "..."
 
     audience = {
         'displayName': display_name,
-        'description': f"Users who viewed {page_path}",
+        'description': description,
         'membershipDurationDays': membership_duration_days,
         'filterClauses': [{
             'clauseType': 'INCLUDE',
@@ -371,10 +382,10 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
                                                     'orGroup': {
                                                         'filterExpressions': [{
                                                             'dimensionOrMetricFilter': {
-                                                                'fieldName': 'pagePath',
+                                                                'fieldName': 'pageLocation',
                                                                 'stringFilter': {
                                                                     'matchType': 'CONTAINS',
-                                                                    'value': page_path
+                                                                    'value': page_location
                                                                 }
                                                             }
                                                         }]
@@ -620,31 +631,49 @@ def list_audiences(include_metrics=False, analyze_performance=False):
 
 
 def list_segments_with_audiences():
-    """List all segments and show which audiences are included"""
+    """List all audiences (GA4 calls them 'segments' in the UI) with membership sizes"""
     
     service = get_admin_service()
     
-    # Get all custom segments for the property
+    # Get all audiences for the property
     try:
-        result = service.properties().customDimensions().list(
+        result = service.properties().audiences().list(
             parent=f'properties/{GA4_PROPERTY_ID}'
         ).execute()
         
-        print("\n📊 Custom Segments:")
+        print("\n📊 Audiences/Segments with Membership Sizes:")
         print("=" * 100)
         
-        if 'customDimensions' not in result or len(result['customDimensions']) == 0:
-            print("No custom segments found.")
+        if 'audiences' not in result or len(result['audiences']) == 0:
+            print("No audiences found.")
             return
         
-        for segment in result['customDimensions']:
-            print(f"ID: {segment['name'].split('/')[-1]}")
-            print(f"Name: {segment['displayName']}")
-            print(f"Description: {segment.get('description', 'N/A')}")
+        # Get audience sizes for all audiences
+        print("Fetching audience membership data (last 30 days)...\n")
+        audience_sizes = get_audience_sizes()
+        
+        for audience in result['audiences']:
+            audience_id = audience['name'].split('/')[-1]
+            status = "Active" if audience.get('state') == 'ACTIVE' else "Inactive"
+            print(f"ID: {audience_id}")
+            print(f"Name: {audience['displayName']}")
+            print(f"Description: {audience.get('description', 'No description')}")
+            print(f"Status: {status}")
+            print(f"Membership Duration: {audience.get('membershipDurationDays', 'N/A')} days")
+            
+            # Show membership metrics if available
+            if audience_id in audience_sizes:
+                metrics = audience_sizes[audience_id]
+                print(f"Members (30d): {metrics['users']:,} users")
+                print(f"Sessions (30d): {metrics['sessions']:,}")
+                print(f"Pageviews (30d): {metrics['pageviews']:,}")
+            else:
+                print(f"Members (30d): No data (audience may be new or have no activity)")
+            
             print("-" * 60)
             
     except Exception as e:
-        print(f"❌ Error listing segments: {e}")
+        print(f"❌ Error listing audiences: {e}")
 
 
 def show_segment_usage():
@@ -879,6 +908,21 @@ def find_audience_in_campaigns(audience_id: str):
         print(f"❌ Error searching campaigns: {e}")
 
 
+def delete_audience(audience_id: str):
+    """Delete a specific audience by ID (archives it in GA4)"""
+    
+    service = get_admin_service()
+    
+    try:
+        # GA4 API uses archive/patch to set audience state to ARCHIVED
+        service.properties().audiences().archive(
+            name=f'properties/{GA4_PROPERTY_ID}/audiences/{audience_id}'
+        ).execute()
+        print(f"✅ Archived audience ID: {audience_id}")
+    except Exception as e:
+        raise Exception(f"Failed to archive audience {audience_id}: {e}")
+
+
 def list_audiences_with_segment_info():
     """List all audiences and show which segments they belong to"""
     
@@ -936,7 +980,7 @@ def delete_audiences_interactive():
     print("\n" + "=" * 100)
     
     # Get user input for which audiences to delete
-    selection = input("\nEnter audience numbers to delete (comma-separated, e.g., 1,3,5)\nOr press Enter to exit: ").strip()
+    selection = input("\nEnter audience numbers to delete (comma-separated or ranges, e.g., 1,3,5 or 17-50)\nOr press Enter to exit: ").strip()
     
     if not selection:
         print("❌ Exiting without making changes.")
@@ -947,7 +991,22 @@ def delete_audiences_interactive():
         return
     
     try:
-        indices = [int(x.strip()) - 1 for x in selection.split(',')]
+        indices = []
+        # Parse comma-separated values and ranges
+        for part in selection.split(','):
+            part = part.strip()
+            if '-' in part:
+                # Handle range (e.g., "17-50")
+                start, end = part.split('-')
+                start_idx = int(start.strip()) - 1
+                end_idx = int(end.strip()) - 1
+                indices.extend(range(start_idx, end_idx + 1))
+            else:
+                # Handle single number
+                indices.append(int(part) - 1)
+        
+        # Remove duplicates and sort
+        indices = sorted(set(indices))
         
         # Validate indices
         invalid = [i+1 for i in indices if i < 0 or i >= len(audiences)]
