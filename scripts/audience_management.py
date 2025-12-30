@@ -39,7 +39,7 @@ def parse_feed(xml_text: str):
         type_ = get("type")  # 'buy' or 'rent'
         status = get("status")
         reference = get("reference")
-        name = get("propertyname")
+        name = get("HouseName")
         try:
             price = int(price_raw) if price_raw else None
         except ValueError:
@@ -131,16 +131,16 @@ def assign_price_band(price: int):
     if price is None:
         return None
     bands = [
-        (200_000, 400_000, "Price Range - £200k–£400k"),
-        (400_000, 600_000, "Price Range - £400k–£600k"),
-        (600_000, 800_000, "Price Range - £600k–£800k"),
-        (800_000, 1_000_000, "Price Range - £800k–£1m"),
+        (200_000, 400_000, "[Combination] - £200K-400K"),
+        (400_000, 600_000, "[Combination] - £400K-600K"),
+        (600_000, 800_000, "[Combination] - £600K-800K"),
+        (800_000, 1_000_000, "[Combination] - £800K-1M"),
     ]
     for lo, hi, label in bands:
         if lo <= price < hi:
             return label
     if price >= 1_000_000:
-        return "Price Range - £1m+"
+        return "[Combination] - £1M+"
     return None
 
 
