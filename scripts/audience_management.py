@@ -18,6 +18,12 @@ DDEV Usage:
     # List all audiences
     ddev exec python3 scripts/audience_management.py --action list
     
+    # Delete audience by ID
+    ddev exec python3 scripts/audience_management.py --action delete --audience-id 13216330243
+    
+    # Interactively select and delete audiences
+    ddev exec python3 scripts/audience_management.py --action delete-interactive
+    
     # Analyze audience performance
     ddev exec python3 scripts/audience_management.py --action analyze
 
@@ -31,6 +37,7 @@ Features:
     - Dry-run mode for testing
     - Configurable batch limits
     - Uses pagePath for accurate GA4 matching
+    - Interactive deletion for easy audience management
 """
 
 import os
@@ -605,6 +612,73 @@ def delete_audience(audience_id: str):
     print(f"🗑️ Deleted audience: {audience_id}")
 
 
+def delete_audiences_interactive():
+    """Interactively select and delete audiences"""
+    
+    service = get_admin_service()
+    result = service.properties().audiences().list(parent=f"properties/{GA4_PROPERTY_ID}").execute()
+    
+    if 'audiences' not in result or len(result['audiences']) == 0:
+        print("No audiences found.")
+        return
+    
+    audiences = result['audiences']
+    
+    print("\n📋 Available Audiences:")
+    print("=" * 100)
+    
+    for idx, audience in enumerate(audiences, 1):
+        audience_id = audience['name'].split('/')[-1]
+        display_name = audience['displayName']
+        status = "Active" if audience.get('state') == 'ACTIVE' else "Inactive"
+        print(f"{idx}. [{audience_id}] {display_name} ({status})")
+    
+    print("\n" + "=" * 100)
+    
+    # Get user input for which audiences to delete
+    selection = input("\nEnter audience numbers to delete (comma-separated, e.g., 1,3,5): ").strip()
+    
+    if not selection:
+        print("No audiences selected. Exiting.")
+        return
+    
+    try:
+        indices = [int(x.strip()) - 1 for x in selection.split(',')]
+        
+        # Validate indices
+        invalid = [i+1 for i in indices if i < 0 or i >= len(audiences)]
+        if invalid:
+            print(f"❌ Invalid selections: {invalid}. Please try again.")
+            return
+        
+        selected_audiences = [audiences[i] for i in indices]
+        
+        print(f"\n🗑️ Will delete {len(selected_audiences)} audience(s):")
+        for audience in selected_audiences:
+            print(f"   - [{audience['name'].split('/')[-1]}] {audience['displayName']}")
+        
+        confirm = input("\nAre you sure? Type 'yes' to confirm: ").strip().lower()
+        
+        if confirm != 'yes':
+            print("Deletion cancelled.")
+            return
+        
+        # Delete selected audiences
+        deleted_count = 0
+        for audience in selected_audiences:
+            audience_id = audience['name'].split('/')[-1]
+            try:
+                delete_audience(audience_id)
+                deleted_count += 1
+            except Exception as e:
+                print(f"❌ Failed to delete {audience_id}: {e}")
+        
+        print(f"\n✅ Successfully deleted {deleted_count} audience(s)")
+        
+    except ValueError:
+        print("❌ Invalid input. Please enter numbers separated by commas.")
+
+
 def generate_audiences_from_feed(
     feed_url: str,
     scope: str = "both",
@@ -690,7 +764,7 @@ def generate_audiences_from_feed(
 
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'analyze', 'generate-from-feed'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'generate-from-feed'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
@@ -762,6 +836,9 @@ def main():
                 print("❌ --audience-id is required for delete action")
                 return
             delete_audience(args.audience_id)
+
+        elif args.action == 'delete-interactive':
+            delete_audiences_interactive()
 
         elif args.action == 'generate-from-feed':
             generate_audiences_from_feed(
