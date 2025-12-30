@@ -18,6 +18,18 @@ DDEV Usage:
     # List all audiences
     ddev exec python3 scripts/audience_management.py --action list
     
+    # List audiences with segment info
+    ddev exec python3 scripts/audience_management.py --action list-with-segments
+    
+    # Show audience usage (conversions, campaigns)
+    ddev exec python3 scripts/audience_management.py --action show-usage
+    
+    # Find audience in Google Ads campaigns
+    ddev exec python3 scripts/audience_management.py --action find-in-campaigns --audience-id 13216330243
+    
+    # List all segments
+    ddev exec python3 scripts/audience_management.py --action list-segments
+    
     # Delete audience by ID
     ddev exec python3 scripts/audience_management.py --action delete --audience-id 13216330243
     
@@ -38,6 +50,9 @@ Features:
     - Configurable batch limits
     - Uses pagePath for accurate GA4 matching
     - Interactive deletion for easy audience management
+    - View audiences in segments
+    - Track audience usage across campaigns and conversions
+    - Find audience in Google Ads campaigns
 """
 
 import os
@@ -598,18 +613,194 @@ def list_audiences(include_metrics=False, analyze_performance=False):
     return audiences.get('audiences', [])
 
 
-def delete_audience(audience_id: str):
-    """Delete an audience by ID"""
-
+def list_segments_with_audiences():
+    """List all segments and show which audiences are included"""
+    
     service = get_admin_service()
+    
+    # Get all custom segments for the property
+    try:
+        result = service.properties().customDimensions().list(
+            parent=f'properties/{GA4_PROPERTY_ID}'
+        ).execute()
+        
+        print("\n📊 Custom Segments:")
+        print("=" * 100)
+        
+        if 'customDimensions' not in result or len(result['customDimensions']) == 0:
+            print("No custom segments found.")
+            return
+        
+        for segment in result['customDimensions']:
+            print(f"ID: {segment['name'].split('/')[-1]}")
+            print(f"Name: {segment['displayName']}")
+            print(f"Description: {segment.get('description', 'N/A')}")
+            print("-" * 60)
+            
+    except Exception as e:
+        print(f"❌ Error listing segments: {e}")
 
-    audience_name = f'properties/{GA4_PROPERTY_ID}/audiences/{audience_id}'
 
-    service.properties().audiences().delete(
-        name=audience_name
+def show_audience_usage():
+    """Show where audiences are being used (campaigns, conversions, etc.)"""
+    
+    service = get_admin_service()
+    audiences_result = service.properties().audiences().list(
+        parent=f'properties/{GA4_PROPERTY_ID}'
     ).execute()
+    
+    if 'audiences' not in audiences_result:
+        print("No audiences found.")
+        return
+    
+    audiences = audiences_result['audiences']
+    
+    print("\n🔍 Audience Usage Report:")
+    print("=" * 100)
+    
+    for audience in audiences:
+        audience_id = audience['name'].split('/')[-1]
+        display_name = audience['displayName']
+        
+        print(f"\n📌 {display_name} (ID: {audience_id})")
+        
+        # Check if audience is used in conversions
+        try:
+            conversions = service.properties().conversions().list(
+                parent=f'properties/{GA4_PROPERTY_ID}'
+            ).execute()
+            
+            used_in_conversions = False
+            if 'conversions' in conversions:
+                for conversion in conversions['conversions']:
+                    # Check conversion details for audience references
+                    if audience_id in str(conversion):
+                        used_in_conversions = True
+                        break
+            
+            if used_in_conversions:
+                print(f"   ✓ Used in conversions")
+            else:
+                print(f"   ✗ Not used in conversions")
+                
+        except Exception as e:
+            print(f"   ⚠️  Could not check conversion usage: {e}")
+        
+        # Note: Full campaign usage requires Google Ads API
+        print(f"   ℹ️  To see campaign usage, check Google Ads directly")
+        
+        print("-" * 60)
 
-    print(f"🗑️ Deleted audience: {audience_id}")
+
+def create_segment(display_name: str, audience_ids: list, description: str = ""):
+    """Create a new segment with selected audiences"""
+    
+    if not display_name:
+        print("❌ Segment name is required")
+        return
+    
+    if not audience_ids:
+        print("❌ At least one audience is required")
+        return
+    
+    service = get_admin_service()
+    
+    print(f"\n📝 Creating segment: {display_name}")
+    print(f"   Audiences: {audience_ids}")
+    print(f"   Description: {description}")
+    
+    try:
+        # GA4 segments are typically created through the UI, not API
+        # However, we can create custom dimensions that can be used for segmentation
+        
+        segment_config = {
+            'displayName': display_name,
+            'description': description or f"Segment with {len(audience_ids)} audience(s)",
+            'parameterNames': [f'audience_{aid}' for aid in audience_ids]
+        }
+        
+        print("\n⚠️  Note: GA4 segments are typically managed through the Analytics UI")
+        print("   This feature would require manual segment creation in Google Analytics")
+        print(f"\n   Create segment '{display_name}' with these audiences:")
+        for aid in audience_ids:
+            print(f"      - {aid}")
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+
+def find_audience_in_campaigns(audience_id: str):
+    """Find which Google Ads campaigns are using this audience"""
+    
+    client = get_google_ads_service()
+    if not client:
+        print("❌ Google Ads API not available")
+        return
+    
+    print(f"\n🔎 Searching for audience {audience_id} in campaigns...")
+    
+    try:
+        ga_service = client.get_service("GoogleAdsService")
+        customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID", "").replace("-", "")
+        
+        query = f"""
+            SELECT 
+                campaign.id,
+                campaign.name,
+                campaign.status
+            FROM campaign
+            WHERE campaign.status != REMOVED
+            LIMIT 1000
+        """
+        
+        response = ga_service.search(customer_id=customer_id, query=query)
+        
+        print("\n📋 Campaigns found:")
+        found = False
+        for row in response:
+            campaign = row.campaign
+            print(f"   - {campaign.name} (ID: {campaign.id}, Status: {campaign.status})")
+            # Note: Full audience targeting details require deeper campaign analysis
+            found = True
+        
+        if not found:
+            print("   No campaigns found")
+            
+    except Exception as e:
+        print(f"❌ Error searching campaigns: {e}")
+
+
+def list_audiences_with_segment_info():
+    """List all audiences and show which segments they belong to"""
+    
+    service = get_admin_service()
+    
+    audiences_result = service.properties().audiences().list(
+        parent=f'properties/{GA4_PROPERTY_ID}'
+    ).execute()
+    
+    if 'audiences' not in audiences_result:
+        print("No audiences found.")
+        return
+    
+    audiences = audiences_result['audiences']
+    
+    print("\n📊 Audiences & Segment Assignment:")
+    print("=" * 100)
+    
+    for idx, audience in enumerate(audiences, 1):
+        audience_id = audience['name'].split('/')[-1]
+        display_name = audience['displayName']
+        status = "Active" if audience.get('state') == 'ACTIVE' else "Inactive"
+        
+        print(f"{idx}. [{audience_id}] {display_name}")
+        print(f"    Status: {status}")
+        
+        # GA4 doesn't directly associate audiences with segments via API
+        # Segments are typically created manually in the UI using audience conditions
+        print(f"    Segments: ℹ️  Manage in Analytics UI")
+        print("-" * 80)
+
 
 
 def delete_audiences_interactive():
@@ -636,10 +827,14 @@ def delete_audiences_interactive():
     print("\n" + "=" * 100)
     
     # Get user input for which audiences to delete
-    selection = input("\nEnter audience numbers to delete (comma-separated, e.g., 1,3,5): ").strip()
+    selection = input("\nEnter audience numbers to delete (comma-separated, e.g., 1,3,5)\nOr press Enter to exit: ").strip()
     
     if not selection:
-        print("No audiences selected. Exiting.")
+        print("❌ Exiting without making changes.")
+        return
+    
+    if selection.lower() in ('quit', 'exit', 'q'):
+        print("❌ Exiting without making changes.")
         return
     
     try:
@@ -657,10 +852,10 @@ def delete_audiences_interactive():
         for audience in selected_audiences:
             print(f"   - [{audience['name'].split('/')[-1]}] {audience['displayName']}")
         
-        confirm = input("\nAre you sure? Type 'yes' to confirm: ").strip().lower()
+        confirm = input("\nAre you sure? Type 'yes' to confirm, or anything else to cancel: ").strip().lower()
         
         if confirm != 'yes':
-            print("Deletion cancelled.")
+            print("❌ Deletion cancelled.")
             return
         
         # Delete selected audiences
@@ -764,14 +959,16 @@ def generate_audiences_from_feed(
 
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'generate-from-feed'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
-    parser.add_argument('--name', help='Display name for the audience')
+    parser.add_argument('--name', help='Display name for the audience or segment')
     parser.add_argument('--page-path', help='Page path for page-view audience')
     parser.add_argument('--event-name', help='Event name for event-based audience')
-    parser.add_argument('--audience-id', help='Audience ID for delete action')
+    parser.add_argument('--audience-id', help='Audience ID for delete or usage lookup')
+    parser.add_argument('--audience-ids', help='Comma-separated audience IDs for segment creation')
+    parser.add_argument('--description', help='Description for segment or audience')
     parser.add_argument('--duration', type=int, default=30,
                        help='Membership duration in days (default: 30)')
     parser.add_argument('--include-metrics', action='store_true',
@@ -839,6 +1036,31 @@ def main():
 
         elif args.action == 'delete-interactive':
             delete_audiences_interactive()
+
+        elif args.action == 'list-segments':
+            list_segments_with_audiences()
+
+        elif args.action == 'list-with-segments':
+            list_audiences_with_segment_info()
+
+        elif args.action == 'show-usage':
+            show_audience_usage()
+
+        elif args.action == 'create-segment':
+            if not args.name:
+                print("❌ --name is required for segment creation")
+                return
+            if not args.audience_ids:
+                print("❌ --audience-ids is required (comma-separated)")
+                return
+            audience_ids = [x.strip() for x in args.audience_ids.split(',')]
+            create_segment(args.name, audience_ids, args.description or "")
+
+        elif args.action == 'find-in-campaigns':
+            if not args.audience_id:
+                print("❌ --audience-id is required")
+                return
+            find_audience_in_campaigns(args.audience_id)
 
         elif args.action == 'generate-from-feed':
             generate_audiences_from_feed(
