@@ -85,9 +85,9 @@ def create_page_view_audience_for_urls(display_name: str, urls: list, membership
     service = get_admin_service()
     url_filters = [{
         'dimensionOrMetricFilter': {
-            'fieldName': 'pageLocation',
+            'fieldName': 'pagePath',
             'stringFilter': {
-                'matchType': 'CONTAINS',
+                'matchType': 'EXACT',
                 'value': u
             }
         }
@@ -157,9 +157,14 @@ def assign_price_band(price: int):
 def get_admin_service():
     """Get authenticated Google Analytics Admin API service"""
 
-    # Load credentials
+    # Load credentials - try GA4_KEY_PATH first, then fall back to GOOGLE_APPLICATION_CREDENTIALS
+    key_path = os.getenv("GA4_KEY_PATH") or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    
+    if not key_path:
+        raise ValueError("Neither GA4_KEY_PATH nor GOOGLE_APPLICATION_CREDENTIALS is set")
+    
     credentials = service_account.Credentials.from_service_account_file(
-        os.getenv("GA4_KEY_PATH"),
+        key_path,
         scopes=['https://www.googleapis.com/auth/analytics.edit']
     )
 
@@ -308,9 +313,9 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
                                                     'orGroup': {
                                                         'filterExpressions': [{
                                                             'dimensionOrMetricFilter': {
-                                                                'fieldName': 'pageLocation',
+                                                                'fieldName': 'pagePath',
                                                                 'stringFilter': {
-                                                                    'matchType': 'CONTAINS',
+                                                                    'matchType': 'EXACT',
                                                                     'value': page_path
                                                                 }
                                                             }
