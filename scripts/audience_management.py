@@ -87,7 +87,7 @@ def create_page_view_audience_for_urls(display_name: str, urls: list, membership
         'dimensionOrMetricFilter': {
             'fieldName': 'pagePath',
             'stringFilter': {
-                'matchType': 'EXACT',
+                'matchType': 'CONTAINS',
                 'value': u
             }
         }
@@ -315,7 +315,7 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
                                                             'dimensionOrMetricFilter': {
                                                                 'fieldName': 'pagePath',
                                                                 'stringFilter': {
-                                                                    'matchType': 'EXACT',
+                                                                    'matchType': 'CONTAINS',
                                                                     'value': page_path
                                                                 }
                                                             }
