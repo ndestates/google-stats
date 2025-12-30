@@ -24,6 +24,12 @@ DDEV Usage:
     # Show audience usage (conversions, campaigns)
     ddev exec python3 scripts/audience_management.py --action show-usage
     
+    # Show segment usage (reports, campaigns)
+    ddev exec python3 scripts/audience_management.py --action show-segment-usage
+    
+    # Show comprehensive usage report for all audiences and segments
+    ddev exec python3 scripts/audience_management.py --action show-all-usage
+    
     # Find audience in Google Ads campaigns
     ddev exec python3 scripts/audience_management.py --action find-in-campaigns --audience-id 13216330243
     
@@ -641,6 +647,109 @@ def list_segments_with_audiences():
         print(f"❌ Error listing segments: {e}")
 
 
+def show_segment_usage():
+    """Show where segments are being used (campaigns, reports, dashboards)"""
+    
+    service = get_admin_service()
+    
+    print("\n🔍 Segment Usage Report:")
+    print("=" * 100)
+    
+    try:
+        # Get all custom dimensions (which include segments)
+        result = service.properties().customDimensions().list(
+            parent=f'properties/{GA4_PROPERTY_ID}'
+        ).execute()
+        
+        if 'customDimensions' not in result or len(result['customDimensions']) == 0:
+            print("No custom segments found.")
+            return
+        
+        for segment in result['customDimensions']:
+            segment_id = segment['name'].split('/')[-1]
+            display_name = segment['displayName']
+            
+            print(f"\n📌 {display_name} (ID: {segment_id})")
+            print(f"   Scope: {segment.get('scope', 'N/A')}")
+            print(f"   Parameter: {segment.get('parameterName', 'N/A')}")
+            
+            # Check if segment is used in reports
+            # Note: GA4 API doesn't directly expose report/dashboard usage
+            # This would need to be checked in the GA4 UI or through other means
+            
+            # Check campaign usage via Google Ads
+            client = get_google_ads_service()
+            if client:
+                try:
+                    customer_id = os.getenv("GOOGLE_ADS_CUSTOMER_ID", "").replace("-", "")
+                    ga_service = client.get_service("GoogleAdsService")
+                    
+                    query = f"""
+                        SELECT 
+                            campaign.id,
+                            campaign.name,
+                            campaign.status
+                        FROM campaign
+                        WHERE campaign.status != REMOVED
+                        LIMIT 100
+                    """
+                    
+                    response = ga_service.search(customer_id=customer_id, query=query)
+                    
+                    campaign_count = sum(1 for _ in response)
+                    if campaign_count > 0:
+                        print(f"   ✓ Google Ads: {campaign_count} campaigns found (check targeting for segment usage)")
+                    else:
+                        print(f"   ✗ Google Ads: No active campaigns")
+                        
+                except Exception as e:
+                    print(f"   ⚠️  Could not check Google Ads usage: {e}")
+            else:
+                print(f"   ℹ️  Google Ads API not available")
+            
+            # Information note
+            print(f"   ℹ️  To see detailed usage:")
+            print(f"      - Check GA4 UI → Admin → Custom Definitions")
+            print(f"      - Review reports and explorations using this segment")
+            print(f"      - Check Google Ads campaign audience targeting")
+            
+            print("-" * 60)
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+
+def show_all_usage():
+    """Show comprehensive usage report for both audiences and segments"""
+    
+    print("\n" + "=" * 100)
+    print("🎯 COMPREHENSIVE USAGE REPORT - AUDIENCES & SEGMENTS")
+    print("=" * 100)
+    
+    # Show audience usage
+    print("\n" + "─" * 100)
+    print("📊 AUDIENCE USAGE")
+    print("─" * 100)
+    show_audience_usage()
+    
+    # Show segment usage
+    print("\n" + "─" * 100)
+    print("📊 SEGMENT USAGE")
+    print("─" * 100)
+    show_segment_usage()
+    
+    # Summary
+    print("\n" + "=" * 100)
+    print("💡 USAGE TRACKING TIPS:")
+    print("=" * 100)
+    print("1. Audiences → Check Google Ads campaigns for targeting")
+    print("2. Segments → Check GA4 reports and explorations")
+    print("3. Monitor conversions → Admin → Events → Mark as conversion")
+    print("4. Review remarketing lists → Google Ads → Audience Manager")
+    print("5. Analyze performance → Use 'analyze' action for detailed metrics")
+    print("=" * 100)
+
+
 def show_audience_usage():
     """Show where audiences are being used (campaigns, conversions, etc.)"""
     
@@ -959,7 +1068,7 @@ def generate_audiences_from_feed(
 
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'show-segment-usage', 'show-all-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
@@ -1045,6 +1154,12 @@ def main():
 
         elif args.action == 'show-usage':
             show_audience_usage()
+
+        elif args.action == 'show-segment-usage':
+            show_segment_usage()
+
+        elif args.action == 'show-all-usage':
+            show_all_usage()
 
         elif args.action == 'create-segment':
             if not args.name:
