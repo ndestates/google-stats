@@ -36,12 +36,6 @@ REPORTS = {
         'script': 'campaign_performance.py',
         'icon': '🎯'
     },
-    'mailchimp_performance': {
-        'name': 'Mailchimp Performance',
-        'description': 'Email marketing performance with source filtering',
-        'script': 'mailchimp_performance.py',
-        'icon': '📧'
-    },
     'gsc_ga_keywords': {
         'name': 'GSC-GA4 Keywords',
         'description': 'Combined GSC and GA4 keyword performance analysis',
@@ -161,7 +155,7 @@ def run_report(report_id):
             url = request.form.get('url')
             if url:
                 args = ['--url', url]
-        elif report_id in ['yesterday_report', 'campaign_performance', 'mailchimp_performance', 'gsc_ga_keywords', 'google_ads_ad_performance']:
+        elif report_id in ['yesterday_report', 'campaign_performance', 'gsc_ga_keywords', 'google_ads_ad_performance']:
             # These scripts have interactive prompts, so we'll run them directly
             pass
 
