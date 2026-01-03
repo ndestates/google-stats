@@ -14,6 +14,16 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, 
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
+def clean_markdown_formatting(text):
+    """Clean up markdown formatting for better PDF display"""
+    # Remove bold/italic markers but keep the text
+    text = text.replace('**', '').replace('*', '')
+    # Handle inline code (keep it but style differently if needed)
+    text = text.replace('`', '"')
+    # Clean up any double spaces
+    text = ' '.join(text.split())
+    return text
+
 def generate_pdf_from_markdown():
     """Convert ARCHITECTURE.md to PDF using reportlab"""
     
@@ -120,20 +130,15 @@ def generate_pdf_from_markdown():
         backColor=colors.HexColor('#f5f5f5')
     )
     
-    # Parse markdown and add to story
-    lines = markdown_content.split('\n')
-    in_code_block = False
-    code_block_lines = []
-
     # Add ND Estates logo and branding at the top
     logo_path = Path(__file__).parent / "assets" / "logo" / "stacked-colour.png"
     if logo_path.exists():
         try:
-            # Add logo (centered, 1.5 inches wide)
-            logo = Image(str(logo_path), width=1.5*inch, height=1.5*inch)
+            # Add logo (centered, 1.2 inches wide for better proportion)
+            logo = Image(str(logo_path), width=1.2*inch, height=1.2*inch)
             logo.hAlign = 'CENTER'
             story.append(logo)
-            story.append(Spacer(1, 0.2*inch))
+            story.append(Spacer(1, 0.15*inch))
         except Exception as e:
             print(f"⚠️  Could not add logo: {e}")
 
@@ -141,27 +146,35 @@ def generate_pdf_from_markdown():
     brand_style = ParagraphStyle(
         'Brand',
         parent=styles['Normal'],
-        fontSize=24,
+        fontSize=22,
         textColor=colors.HexColor('#1f4788'),
-        spaceAfter=6,
+        spaceAfter=4,
         alignment=1,  # Center
         fontName='Helvetica-Bold'
     )
     tagline_style = ParagraphStyle(
         'Tagline',
         parent=styles['Normal'],
-        fontSize=10,
+        fontSize=9,
         textColor=colors.HexColor('#2c5aa0'),
-        spaceAfter=20,
+        spaceAfter=15,
         alignment=1,  # Center
         fontName='Helvetica'
     )
 
     story.append(Paragraph("ND ESTATES", brand_style))
     story.append(Paragraph("Advanced Analytics & Marketing Intelligence", tagline_style))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Spacer(1, 0.25*inch))
+
+    # Parse markdown and add to story
+    lines = markdown_content.split('\n')
+    in_code_block = False
+    code_block_lines = []
+    in_table = False
+    table_data = []
+    table_headers = []
     
-    for line in lines:
+    for i, line in enumerate(lines):
         # Handle code blocks
         if line.startswith('```'):
             if not in_code_block:
@@ -172,55 +185,96 @@ def generate_pdf_from_markdown():
                 # Add code block
                 code_text = '\n'.join(code_block_lines)
                 if code_text.strip():
-                    story.append(Spacer(1, 0.05*inch))
+                    story.append(Spacer(1, 0.08*inch))
                     story.append(Paragraph(code_text.replace('<', '&lt;').replace('>', '&gt;'), code_style))
-                    story.append(Spacer(1, 0.05*inch))
+                    story.append(Spacer(1, 0.08*inch))
             continue
-        
+
         if in_code_block:
             code_block_lines.append(line)
             continue
-        
-        if not line.strip():
-            story.append(Spacer(1, 0.05*inch))
+
+        # Handle table rows
+        if line.startswith('|') and line.endswith('|'):
+            if not in_table:
+                in_table = True
+                table_data = []
+                # Check if next line is separator
+                if i + 1 < len(lines) and lines[i + 1].startswith('|') and '---' in lines[i + 1]:
+                    # This is a header row, skip the separator
+                    pass
+            # Parse table row
+            cells = [cell.strip() for cell in line.split('|')[1:-1]]
+            table_data.append(cells)
             continue
-        
+        elif in_table and line.strip() == '':
+            # End of table
+            if table_data:
+                from reportlab.platypus import Table, TableStyle
+                # Create table
+                table = Table(table_data, colWidths=[1.5*inch] * len(table_data[0]))
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#333333')),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('FONTSIZE', (0, 1), (-1, -1), 8),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cccccc')),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ]))
+                story.append(Spacer(1, 0.1*inch))
+                story.append(table)
+                story.append(Spacer(1, 0.15*inch))
+            in_table = False
+            table_data = []
+            continue
+
+        if not line.strip():
+            if not in_table:
+                story.append(Spacer(1, 0.06*inch))
+            continue
+
         # Headings
         if line.startswith('# '):
             text = line[2:].strip()
             story.append(Paragraph(text, title_style))
-            story.append(Spacer(1, 0.1*inch))
+            story.append(Spacer(1, 0.12*inch))
         elif line.startswith('## '):
             text = line[3:].strip()
             story.append(Paragraph(text, h1_style))
+            story.append(Spacer(1, 0.08*inch))
         elif line.startswith('### '):
             text = line[4:].strip()
             story.append(Paragraph(text, h2_style))
+            story.append(Spacer(1, 0.06*inch))
         elif line.startswith('#### '):
             text = line[5:].strip()
             story.append(Paragraph(text, h3_style))
+            story.append(Spacer(1, 0.04*inch))
         elif line.startswith('- '):
             # Bullet point
             text = line[2:].strip()
+            # Clean up markdown formatting in bullet points
+            text = clean_markdown_formatting(text)
             story.append(Paragraph('• ' + text, bullet_style))
         elif line.startswith('  - '):
             # Nested bullet
             text = line[4:].strip()
+            text = clean_markdown_formatting(text)
             story.append(Paragraph('◦ ' + text, bullet_style))
-        elif line.startswith('| '):
-            # Table line - skip for now
-            continue
         else:
             # Regular paragraph
-            if line.strip() and not line.startswith('**'):
+            if line.strip() and not line.startswith('**') and not in_table:
                 # Clean up markdown formatting
-                text = line.strip()
-                text = text.replace('**', '')
-                text = text.replace('`', '')
-                text = text.replace('*', '')
+                text = clean_markdown_formatting(line.strip())
                 if len(text) > 1:
                     story.append(Paragraph(text, normal_style))
-    
+
     # Build PDF
     try:
         doc.build(story)
