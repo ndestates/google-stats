@@ -211,8 +211,13 @@ def generate_pdf_from_markdown():
             # End of table
             if table_data:
                 from reportlab.platypus import Table, TableStyle
-                # Create table
-                table = Table(table_data, colWidths=[1.5*inch] * len(table_data[0]))
+                # Calculate flexible column widths based on content and page width
+                page_width = A4[0] - 2*inch  # Account for margins
+                num_cols = len(table_data[0])
+                col_width = page_width / num_cols
+
+                # Create table with flexible widths and word wrapping
+                table = Table(table_data, colWidths=[col_width] * num_cols)
                 table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#333333')),
@@ -226,6 +231,7 @@ def generate_pdf_from_markdown():
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
                     ('LEFTPADDING', (0, 0), (-1, -1), 6),
                     ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                    ('WORDWRAP', (0, 0), (-1, -1), True),  # Enable word wrapping
                 ]))
                 story.append(Spacer(1, 0.1*inch))
                 story.append(table)
@@ -256,15 +262,27 @@ def generate_pdf_from_markdown():
             text = line[5:].strip()
             story.append(Paragraph(text, h3_style))
             story.append(Spacer(1, 0.04*inch))
-        elif line.startswith('- '):
-            # Bullet point
-            text = line[2:].strip()
+        elif line.startswith('- ') or line.startswith('* '):
+            # Bullet point (support both - and * syntax)
+            if line.startswith('- '):
+                text = line[2:].strip()
+            else:
+                text = line[2:].strip()
             # Clean up markdown formatting in bullet points
             text = clean_markdown_formatting(text)
             story.append(Paragraph('• ' + text, bullet_style))
-        elif line.startswith('  - '):
-            # Nested bullet
-            text = line[4:].strip()
+        elif line.startswith('  - ') or line.startswith('  * ') or line.startswith('    - ') or line.startswith('    * '):
+            # Nested bullet (support multiple levels and both -/* syntax)
+            if '  - ' in line[:4]:
+                text = line[4:].strip()
+            elif '  * ' in line[:4]:
+                text = line[4:].strip()
+            elif '    - ' in line[:6]:
+                text = line[6:].strip()
+            elif '    * ' in line[:6]:
+                text = line[6:].strip()
+            else:
+                text = line.strip()
             text = clean_markdown_formatting(text)
             story.append(Paragraph('◦ ' + text, bullet_style))
         else:

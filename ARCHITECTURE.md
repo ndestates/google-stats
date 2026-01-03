@@ -1,4 +1,4 @@
-# NDE-Stats-GA - Architecture & Design Document
+# Architecture & Design Document
 
 **Version 2.1** | **January 2026** | © 2025 ND Holdings Limited. All rights reserved.
 
@@ -171,25 +171,22 @@ NDE-Stats-GA is a **comprehensive internal analytics and marketing tool** that a
 ## Core Components
 
 ### GA4 Integration Module
+
 ```
-┌─────────────────────────────────────────────────┐
-│         GA4 Data Analysis Scripts               │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  ┌─────────────────────────────────────────┐  │
-│  │    ga4_client.py (Core Module)          │  │
-│  │  - API authentication                   │  │
-│  │  - Query building                       │  │
-│  │  - Response parsing                     │  │
-│  │  - Error handling & retries             │  │
-│  └─────────────────────────────────────────┘  │
-│              ↓                                  │
-│  ┌─────────────────────────────────────────┐  │
-│  │  Google Analytics Data API              │  │
-│  │  (Google Cloud)                         │  │
-│  └─────────────────────────────────────────┘  │
-│                                                 │
-└─────────────────────────────────────────────────┘
+GA4 Data Analysis Scripts
+        |
+        | (uses)
+        v
+ga4_client.py (Core Module)
+- API authentication
+- Query building
+- Response parsing
+- Error handling & retries
+        |
+        | (calls)
+        v
+Google Analytics Data API
+(Google Cloud)
 ```
 
 **Capabilities**:
@@ -200,29 +197,26 @@ NDE-Stats-GA is a **comprehensive internal analytics and marketing tool** that a
 - Real-time data access (up to ~30 minutes latency)
 
 ### Google Ads Integration Module
+
 ```
-┌──────────────────────────────────────────────────┐
-│     Google Ads Management & Analytics           │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│  ┌──────────────────────────────────────────┐  │
-│  │  Service Account Authentication          │  │
-│  │  (JWT-based)                             │  │
-│  └──────────────────────────────────────────┘  │
-│              ↓                                   │
-│  ┌──────────────────────────────────────────┐  │
-│  │  Google Ads API (v14+)                   │  │
-│  │  - Campaign management                   │  │
-│  │  - Ad creation/modification              │  │
-│  │  - Performance metrics                   │  │
-│  └──────────────────────────────────────────┘  │
-│                                                  │
-│  Scripts:                                       │
-│  - google_ads_performance.py (read-only)      │
-│  - create_ad.py (write operations)            │
-│  - manage_google_ads.py (CRUD operations)     │
-│                                                  │
-└──────────────────────────────────────────────────┘
+Google Ads Management & Analytics
+        |
+        | (uses)
+        v
+Service Account Authentication
+(JWT-based)
+        |
+        | (calls)
+        v
+Google Ads API (v14+)
+- Campaign management
+- Ad creation/modification
+- Performance metrics
+
+Scripts:
+- google_ads_performance.py (read-only)
+- create_ad.py (write operations)
+- manage_google_ads.py (CRUD operations)
 ```
 
 **Service Account Setup**:
@@ -233,27 +227,24 @@ NDE-Stats-GA is a **comprehensive internal analytics and marketing tool** that a
 - Permissions: Admin role on manager account
 
 ### Search Console Integration Module
+
 ```
-┌─────────────────────────────────────────────────┐
-│    Google Search Console (GSC) Integration      │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  ┌─────────────────────────────────────────┐  │
-│  │  Service Account (same as GA4)          │  │
-│  └─────────────────────────────────────────┘  │
-│              ↓                                  │
-│  ┌─────────────────────────────────────────┐  │
-│  │  Search Console API                     │  │
-│  │  - Keyword queries                      │  │
-│  │  - Click metrics                        │  │
-│  │  - Impression data                      │  │
-│  └─────────────────────────────────────────┘  │
-│                                                 │
-│  Scripts:                                       │
-│  - keyword_analysis.py (combined GA4 + GSC)   │
-│  - search_console_report.py                    │
-│                                                 │
-└─────────────────────────────────────────────────┘
+Google Search Console (GSC) Integration
+        |
+        | (uses)
+        v
+Service Account (same as GA4)
+        |
+        | (calls)
+        v
+Search Console API
+- Keyword queries
+- Click metrics
+- Impression data
+
+Scripts:
+- keyword_analysis.py (combined GA4 + GSC)
+- search_console_report.py
 ```
 
 ---
@@ -314,100 +305,64 @@ NDE-Stats-GA is a **comprehensive internal analytics and marketing tool** that a
 ### Report Generation Workflow
 
 ```
-┌────────────────────────────────────────────────────┐
-│  User Request (Web Dashboard or CLI)               │
-└────────────────────┬─────────────────────────────┘
-                     ↓
-┌────────────────────────────────────────────────────┐
-│  Script Execution (Python)                         │
-│  - Parse arguments                                 │
-│  - Load environment variables                      │
-│  - Initialize API clients                          │
-└────────────────────┬─────────────────────────────┘
-                     ↓
-┌────────────────────────────────────────────────────┐
-│  Data Collection                                   │
-│  - GA4 API queries                                 │
-│  - Multi-dimensional requests                      │
-│  - API error handling & retries                    │
-└────────────────────┬─────────────────────────────┘
-                     ↓
-┌────────────────────────────────────────────────────┐
-│  Data Processing (Pandas)                          │
-│  - DataFrame transformation                        │
-│  - Aggregations & rollups                          │
-│  - Metric calculations                             │
-│  - Data validation                                 │
-└────────────────────┬─────────────────────────────┘
-                     ↓
-┌────────────────────────────────────────────────────┐
-│  Output Generation                                 │
-│  Options:                                          │
-│  - CSV export (primary)                            │
-│  - PDF report generation                           │
-│  - Console display                                 │
-│  - Database insertion (optional)                   │
-└────────────────────┬─────────────────────────────┘
-                     ↓
-┌────────────────────────────────────────────────────┐
-│  File Storage                                      │
-│  - Location: /reports/ directory                   │
-│  - Format: CSV with date stamping                  │
-│  - Retention: Indefinite                           │
-└────────────────────────────────────────────────────┘
+User Request (Web Dashboard or CLI)
+        ↓
+Script Execution (Python)
+├── Parse arguments
+├── Load environment variables
+└── Initialize API clients
+        ↓
+Data Collection
+├── GA4 API queries
+├── Multi-dimensional requests
+└── API error handling & retries
+        ↓
+Data Processing (Pandas)
+├── DataFrame transformation
+├── Aggregations & rollups
+├── Metric calculations
+└── Data validation
+        ↓
+Output Generation
+├── CSV export (primary)
+├── PDF report generation
+├── Console display
+└── Database insertion (optional)
+        ↓
+File Storage
+├── Location: /reports/ directory
+├── Format: CSV with date stamping
+└── Retention: Indefinite
 ```
 
 ### Web Request Flow
 
 ```
-┌─────────────┐
-│   Browser   │
-└──────┬──────┘
-       │ HTTP/S Request
-       ↓
-┌──────────────────┐
-│  Nginx Reverse   │
-│  Proxy           │
-└──────┬───────────┘
-       │ Forward to App Server
-       ↓
-┌──────────────────┐
-│  PHP-FPM         │
-│  Application     │
-└──────┬───────────┘
-       │ Route & Execute
-       ↓
-┌──────────────────┐
-│  index.php       │
-│  - Authenticate  │
-│  - Authorize     │
-│  - Display UI    │
-└──────┬───────────┘
-       │ User selects report
-       ↓
-┌──────────────────┐
-│  run_report.php  │
-│  - Validate args │
-│  - Execute script│
-│  - Capture output│
-└──────┬───────────┘
-       │ Exec Python script
-       ↓
-┌──────────────────┐
-│  Python Script   │
-│  (analysis)      │
-│  - Fetch data    │
-│  - Process data  │
-│  - Generate CSV  │
-└──────┬───────────┘
-       │ Return results
-       ↓
-┌──────────────────┐
-│  Display Results │
-│  - CSV download  │
-│  - Visual chart  │
-│  - Archive link  │
-└──────────────────┘
+Browser
+    ↓ (HTTP/S Request)
+Nginx Reverse Proxy
+    ↓ (Forward to App Server)
+PHP-FPM Application
+    ↓ (Route & Execute)
+index.php
+├── Authenticate
+├── Authorize
+└── Display UI
+    ↓ (User selects report)
+run_report.php
+├── Validate args
+├── Execute script
+└── Capture output
+    ↓ (Exec Python script)
+Python Script (analysis)
+├── Fetch data
+├── Process data
+└── Generate CSV
+    ↓ (Return results)
+Display Results
+├── CSV download
+├── Visual chart
+└── Archive link
 ```
 
 ---
@@ -448,10 +403,13 @@ date_ranges = [{'startDate': 'YYYY-MM-DD', 'endDate': 'YYYY-MM-DD'}]
 
 ### Google Ads API
 
+**Access Requirements**:
+- Basic Ads access API required for account management
+- Developer Token (required for production access)
+
 **Authentication**:
 - Service Account (for read-only access via MCC structure)
 - OAuth 2.0 (for account-level operations)
-- Developer Token (required for production access)
 
 **Account Structure**:
 - Manager Account (MCC) - Service account added here
@@ -500,8 +458,9 @@ date_ranges = [{'startDate': 'YYYY-MM-DD', 'endDate': 'YYYY-MM-DD'}]
 
 #### User Authentication
 - **Session-Based**: Cookie-based sessions with secure flags
+- **Two-Factor Authentication (2FA)**: Required for all frontend access
 - **Password Hashing**: bcrypt with configurable rounds
-- **Password Requirements**: 
+- **Password Requirements**:
   - Minimum 12 characters
   - Mixed case, numbers, special characters
   - No common patterns
@@ -517,24 +476,22 @@ date_ranges = [{'startDate': 'YYYY-MM-DD', 'endDate': 'YYYY-MM-DD'}]
 ### Credential Management
 
 #### API Keys & Secrets
+
 ```
-┌────────────────────────────────────────┐
-│ Environment Variables (.env)           │
-├────────────────────────────────────────┤
-│ GOOGLE_ADS_CUSTOMER_ID                 │
-│ GOOGLE_ADS_CLIENT_ID                   │
-│ GOOGLE_ADS_CLIENT_SECRET                │
-│ GOOGLE_ADS_DEVELOPER_TOKEN              │
-│ GOOGLE_ADS_JSON_KEY_PATH                │
-│ GA4_PROPERTY_ID                         │
-│ GA4_KEY_PATH                            │
-│ DATABASE_PASSWORD                       │
-└────────────────────────────────────────┘
-           ↓ (File Not in Git)
-┌────────────────────────────────────────┐
-│ Encrypted Storage                      │
-│ (AES-256 Encryption)                   │
-└────────────────────────────────────────┘
+Environment Variables (.env)
+├── GOOGLE_ADS_CUSTOMER_ID
+├── GOOGLE_ADS_CLIENT_ID
+├── GOOGLE_ADS_CLIENT_SECRET
+├── GOOGLE_ADS_DEVELOPER_TOKEN
+├── GOOGLE_ADS_JSON_KEY_PATH
+├── GA4_PROPERTY_ID
+├── GA4_KEY_PATH
+└── DATABASE_PASSWORD
+
+    ↓ (File Not in Git)
+
+Encrypted Storage
+(AES-256 Encryption)
 ```
 
 #### Service Account Keys
@@ -624,29 +581,18 @@ Outbound Rules:
 ### Local Development Environment
 
 **Technology**: DDEV (Docker-based)
+
 ```
-┌─────────────────────────────────────┐
-│  DDEV Multi-Container Setup         │
-├─────────────────────────────────────┤
-│                                     │
-│  ┌──────────────┐  ┌──────────────┐ │
-│  │ Web Container│  │ Python 3.11  │ │
-│  │ (PHP-FPM)    │  │ (isolated)   │ │
-│  │ Port: 80/443 │  │ Port: 5000   │ │
-│  └──────────────┘  └──────────────┘ │
-│                                     │
-│  ┌──────────────┐  ┌──────────────┐ │
-│  │ MariaDB      │  │ Redis        │ │
-│  │ (Optional)   │  │ (Optional)   │ │
-│  │ Port: 3306   │  │ Port: 6379   │ │
-│  └──────────────┘  └──────────────┘ │
-│                                     │
-│  Volumes:                           │
-│  ├─ Code (bind mount)              │
-│  ├─ Database data                  │
-│  └─ Reports & Logs                 │
-│                                     │
-└─────────────────────────────────────┘
+DDEV Multi-Container Setup
+├── Web Container (PHP-FPM) - Port: 80/443
+├── Python 3.11 (isolated) - Port: 5000
+├── MariaDB (Optional) - Port: 3306
+└── Redis (Optional) - Port: 6379
+
+Volumes:
+├── Code (bind mount)
+├── Database data
+└── Reports & Logs
 ```
 
 **Access**: `https://nde-stats-ga.ddev.site`
@@ -654,35 +600,25 @@ Outbound Rules:
 ### Production Deployment
 
 **Platform**: DigitalOcean App Platform
+
 ```
-┌──────────────────────────────────────────────────┐
-│      DigitalOcean App Platform                   │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│  ┌─────────────────────────────────────────┐   │
-│  │  Nginx - Reverse Proxy & Load Balancer  │   │
-│  │  - TLS Termination (Let's Encrypt)      │   │
-│  │  - Rate Limiting                        │   │
-│  │  - IP Whitelisting                      │   │
-│  │  - Request Logging                      │   │
-│  └────────────────────┬────────────────────┘   │
-│                       ↓                         │
-│  ┌─────────────────────────────────────────┐   │
-│  │  PHP-FPM Application Container(s)       │   │
-│  │  - Multiple instances (auto-scaled)     │   │
-│  │  - Health checks (HTTP 200 response)    │   │
-│  │  - Session storage (Redis or Memcache) │   │
-│  │  - Environment variable injection       │   │
-│  └────────────────────┬────────────────────┘   │
-│                       ↓                         │
-│  ┌─────────────────────────────────────────┐   │
-│  │  Persistent Storage                     │   │
-│  │  - PostgreSQL Database                  │   │
-│  │  - Object Storage (for reports)         │   │
-│  │  - Encrypted Backups                    │   │
-│  └─────────────────────────────────────────┘   │
-│                                                  │
-└──────────────────────────────────────────────────┘
+DigitalOcean App Platform
+├── Nginx - Reverse Proxy & Load Balancer
+│   ├── TLS Termination (Let's Encrypt)
+│   ├── Rate Limiting
+│   ├── IP Whitelisting
+│   └── Request Logging
+│
+├── PHP-FPM Application Container(s)
+│   ├── Multiple instances (auto-scaled)
+│   ├── Health checks (HTTP 200 response)
+│   ├── Session storage (Redis or Memcache)
+│   └── Environment variable injection
+│
+└── Persistent Storage
+    ├── PostgreSQL Database
+    ├── Object Storage (for reports)
+    └── Encrypted Backups
 ```
 
 **Domain**: `analytics.ndestates.com` (Route53 managed)
@@ -786,29 +722,28 @@ Min Instances: 2
 ### Caching Strategy
 
 **Multi-Layer Caching**:
+
 ```
-┌─────────────────────────────┐
-│  Browser Cache              │
-│  (CSS, JS, Images)          │
-│  TTL: 1 week                │
-└─────────────────────────────┘
-          ↓
-┌─────────────────────────────┐
-│  CDN Cache (optional)       │
-│  (Reports, Static files)    │
-│  TTL: 24 hours              │
-└─────────────────────────────┘
-          ↓
-┌─────────────────────────────┐
-│  Application Cache (Redis)  │
-│  (Session, API responses)   │
-│  TTL: 1 hour                │
-└─────────────────────────────┘
-          ↓
-┌─────────────────────────────┐
-│  Database Query Cache       │
-│  TTL: 30 minutes            │
-└─────────────────────────────┘
+Browser Cache
+├── CSS, JS, Images
+└── TTL: 1 week
+
+    ↓
+
+CDN Cache (optional)
+├── Reports, Static files
+└── TTL: 24 hours
+
+    ↓
+
+Application Cache (Redis)
+├── Session, API responses
+└── TTL: 1 hour
+
+    ↓
+
+Database Query Cache
+└── TTL: 30 minutes
 ```
 
 ### Performance Optimization
