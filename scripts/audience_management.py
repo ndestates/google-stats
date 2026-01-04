@@ -385,7 +385,7 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
                                                                 'fieldName': 'pageLocation',
                                                                 'stringFilter': {
                                                                     'matchType': 'CONTAINS',
-                                                                    'value': page_location
+                                                                    'value': page_path
                                                                 }
                                                             }
                                                         }]
