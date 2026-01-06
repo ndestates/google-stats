@@ -12,7 +12,12 @@ Examples:
 """
 
 import os
-import sys
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/device_geo_analysis.py
+"""
+
+import os
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
@@ -211,13 +216,20 @@ def analyze_geographic_performance(start_date: str = None, end_date: str = None)
         geo_data[country]['total_sessions'] += sessions
         geo_data[country]['total_pageviews'] += pageviews
 
-        # Weighted averages for country
-        weight = users / (geo_data[country]['total_users'] + users)
-        current_bounce = geo_data[country]['avg_bounce_rate']
-        current_duration = geo_data[country]['avg_duration']
+        # Weighted averages for country (only if we have users to add)
+        if users > 0:
+            previous_total = geo_data[country]['total_users'] - users  # Total before adding current users
+            if previous_total > 0:
+                weight = users / previous_total
+                current_bounce = geo_data[country]['avg_bounce_rate']
+                current_duration = geo_data[country]['avg_duration']
 
-        geo_data[country]['avg_bounce_rate'] = current_bounce * (1 - weight) + bounce_rate * weight
-        geo_data[country]['avg_duration'] = current_duration * (1 - weight) + avg_duration * weight
+                geo_data[country]['avg_bounce_rate'] = current_bounce * (1 - weight) + bounce_rate * weight
+                geo_data[country]['avg_duration'] = current_duration * (1 - weight) + avg_duration * weight
+            else:
+                # First users for this country, set directly
+                geo_data[country]['avg_bounce_rate'] = bounce_rate
+                geo_data[country]['avg_duration'] = avg_duration
 
         # Region data
         if region not in geo_data[country]['regions']:

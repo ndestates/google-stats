@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Google Ads Performance Analysis and Optimization Report
+Analyze campaign performance, hourly trends, and ad network performance
+
+Run with: ddev exec python scripts/google_ads_performance.py
+Options:  --date yesterday|today|last30|last90 (default: last 365 days)
+          --start YYYY-MM-DD --end YYYY-MM-DD
+"""
+
 import os
 import sys
 from datetime import datetime, timedelta
@@ -14,7 +24,38 @@ from google.analytics.data_v1beta.types import (
 from src.config import REPORTS_DIR, GA4_PROPERTY_ID, GA4_KEY_PATH
 from src.pdf_generator import create_google_ads_report_pdf
 
-def get_google_ads_performance(date_range=None):
+
+def resolve_date_range(date_range: str = None, start_date: str = None, end_date: str = None):
+    """Resolve date range into concrete start/end date objects.
+
+    Priority: explicit start/end > named range > default last 365 days.
+    """
+
+    if start_date and end_date:
+        return datetime.strptime(start_date, "%Y-%m-%d").date(), datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    today = datetime.now().date()
+
+    if date_range == "yesterday":
+        end = today - timedelta(days=1)
+        start = end
+    elif date_range == "today":
+        end = today
+        start = end
+    elif date_range in {"last30", "last_30", "30"}:
+        end = today - timedelta(days=1)
+        start = end - timedelta(days=29)
+    elif date_range in {"last90", "last_90", "90"}:
+        end = today - timedelta(days=1)
+        start = end - timedelta(days=89)
+    else:
+        # Default: last 365 days
+        end = today - timedelta(days=1)
+        start = end - timedelta(days=364)
+
+    return start, end
+
+def get_google_ads_performance(date_range=None, start_date=None, end_date=None):
     """Analyze Google Ads performance by campaign, ad, and time of day"""
 
     # Set environment variable for authentication
@@ -26,17 +67,11 @@ def get_google_ads_performance(date_range=None):
 
     client = BetaAnalyticsDataClient()
 
-    # Calculate date range based on argument
-    if date_range == "yesterday":
-        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday
-        start_date = end_date
-    elif date_range == "today":
-        end_date = datetime.now().date()  # Today
-        start_date = end_date
-    else:
-        # Default: last 30 days
-        end_date = datetime.now().date() - timedelta(days=1)  # Yesterday as end
-        start_date = end_date - timedelta(days=29)  # 30 days total
+    # Resolve date range (default to last 365 days)
+    start_date, end_date = resolve_date_range(date_range, start_date, end_date)
+
+    # Ensure reports directory exists
+    os.makedirs(REPORTS_DIR, exist_ok=True)
 
     print(f"🎯 Analyzing Google Ads Performance: {start_date} to {end_date}")
     print("=" * 80)
@@ -80,7 +115,8 @@ def get_google_ads_performance(date_range=None):
         metrics=[
             Metric(name="totalUsers"),
             Metric(name="sessions"),
-            Metric(name="engagedSessions")
+            Metric(name="engagedSessions"),
+            Metric(name="conversions")
         ],
         date_ranges=[DateRange(start_date=str(start_date), end_date=str(end_date))],
         order_bys=[OrderBy(
@@ -90,13 +126,16 @@ def get_google_ads_performance(date_range=None):
         limit=50,
     )
 
+    campaign_totals = {}
+    pdf_campaign_data = {}
+    top_campaign_names = []
+
     try:
         campaign_response = client.run_report(campaign_request)
 
         if campaign_response.row_count > 0:
             # Process campaign data
             campaign_data = []
-            campaign_totals = {}
 
             for row in campaign_response.rows:
                 campaign_name = row.dimension_values[0].value
@@ -105,6 +144,7 @@ def get_google_ads_performance(date_range=None):
                 users = int(row.metric_values[0].value)
                 sessions = int(row.metric_values[1].value)
                 engaged_sessions = int(row.metric_values[2].value)
+                conversions = int(row.metric_values[3].value)
 
                 campaign_data.append({
                     'Campaign Name': campaign_name,
@@ -113,39 +153,43 @@ def get_google_ads_performance(date_range=None):
                     'Users': users,
                     'Sessions': sessions,
                     'Engaged Sessions': engaged_sessions,
-                    'Engagement Rate': (engaged_sessions / sessions * 100) if sessions > 0 else 0
+                    'Engagement Rate': (engaged_sessions / sessions * 100) if sessions > 0 else 0,
+                    'Conversions': conversions,
+                    'Conversion Rate': (conversions / sessions * 100) if sessions > 0 else 0
                 })
 
                 # Aggregate by campaign
                 key = f"{campaign_name} ({campaign_id})"
                 if key not in campaign_totals:
-                    campaign_totals[key] = {'users': 0, 'sessions': 0, 'engaged': 0}
+                    campaign_totals[key] = {'users': 0, 'sessions': 0, 'engaged': 0, 'conversions': 0}
                 campaign_totals[key]['users'] += users
                 campaign_totals[key]['sessions'] += sessions
                 campaign_totals[key]['engaged'] += engaged_sessions
+                campaign_totals[key]['conversions'] += conversions
 
             # Display top campaigns
             print("🏆 TOP CAMPAIGNS BY USERS:")
             sorted_campaigns = sorted(campaign_totals.items(), key=lambda x: x[1]['users'], reverse=True)
+            top_campaign_names = [campaign_key.split(" (")[0] for campaign_key, _ in sorted_campaigns[:5]]
 
             for i, (campaign_key, totals) in enumerate(sorted_campaigns[:10], 1):
                 engagement_rate = (totals['engaged'] / totals['sessions'] * 100) if totals['sessions'] > 0 else 0
+                conversion_rate = (totals['conversions'] / totals['sessions'] * 100) if totals['sessions'] > 0 else 0
                 print(f"{i}. {campaign_key}")
                 print(f"   Users: {totals['users']:,} | Sessions: {totals['sessions']:,}")
-                print(f"   Engagement Rate: {engagement_rate:.1f}%")
+                print(f"   Engagement Rate: {engagement_rate:.1f}% | Conversions: {totals['conversions']:,} | Conversion Rate: {conversion_rate:.1f}%")
             # Export detailed campaign data
             campaign_df = pd.DataFrame(campaign_data)
-            campaign_csv = f"google_ads_campaign_performance_{start_date}_to_{end_date}.csv"
+            campaign_csv = os.path.join(REPORTS_DIR, f"google_ads_campaign_performance_{start_date}_to_{end_date}.csv")
             campaign_df.to_csv(campaign_csv, index=False)
             print(f"\n📄 Detailed campaign data exported to: {campaign_csv}")
 
             # Prepare campaign data for PDF
-            pdf_campaign_data = {}
             for campaign_key, totals in campaign_totals.items():
                 pdf_campaign_data[campaign_key] = {
                     'users': totals['users'],
                     'sessions': totals['sessions'],
-                    'conversions': totals['engaged']  # Using engaged sessions as proxy for conversions
+                    'conversions': totals['conversions']
                 }
 
     except Exception as e:
@@ -221,9 +265,36 @@ def get_google_ads_performance(date_range=None):
                     })
 
             time_df = pd.DataFrame(time_csv_data)
-            time_csv = f"google_ads_hourly_performance_{start_date}_to_{end_date}.csv"
+            time_csv = os.path.join(REPORTS_DIR, f"google_ads_hourly_performance_{start_date}_to_{end_date}.csv")
             time_df.to_csv(time_csv, index=False)
             print(f"\n📄 Hourly performance data exported to: {time_csv}")
+
+            # Export hourly data for top campaigns to focus optimization
+            if top_campaign_names:
+                top_campaign_hours = [row for row in time_csv_data if row['Campaign'] in top_campaign_names]
+                if top_campaign_hours:
+                    top_time_df = pd.DataFrame(top_campaign_hours)
+                    top_time_csv = os.path.join(REPORTS_DIR, f"google_ads_hourly_performance_top_campaigns_{start_date}_to_{end_date}.csv")
+                    top_time_df.to_csv(top_time_csv, index=False)
+                    print(f"📄 Top campaigns hourly data exported to: {top_time_csv}")
+
+                    # Quick summary of best hours per top campaign
+                    print("\n⏱️ BEST HOURS FOR TOP CAMPAIGNS:")
+                    for campaign in top_campaign_names:
+                        campaign_rows = [r for r in top_campaign_hours if r['Campaign'] == campaign]
+                        hour_totals = {}
+                        for row in campaign_rows:
+                            hour_totals[row['Hour']] = hour_totals.get(row['Hour'], 0) + row['Users']
+
+                        best_hours = sorted(hour_totals.items(), key=lambda x: x[1], reverse=True)[:3]
+                        if best_hours:
+                            formatted_hours = ", ".join([
+                                f"{(h % 12 or 12)}{' AM' if h < 12 else ' PM'} ({users:,} users)"
+                                for h, users in best_hours
+                            ])
+                            print(f"• {campaign}: {formatted_hours}")
+                        else:
+                            print(f"• {campaign}: No hourly data available")
 
             # Prepare hourly data for PDF
             pdf_hourly_data = {}
@@ -299,10 +370,22 @@ def get_google_ads_performance(date_range=None):
 if __name__ == "__main__":
     # Parse command line arguments
     date_range = None
-    if len(sys.argv) > 1:
-        if "--date" in sys.argv:
-            date_index = sys.argv.index("--date")
-            if date_index + 1 < len(sys.argv):
-                date_range = sys.argv[date_index + 1].lower()
+    start_date = None
+    end_date = None
 
-    get_google_ads_performance(date_range)
+    if "--date" in sys.argv:
+        date_index = sys.argv.index("--date")
+        if date_index + 1 < len(sys.argv):
+            date_range = sys.argv[date_index + 1].lower()
+
+    if "--start" in sys.argv:
+        start_index = sys.argv.index("--start")
+        if start_index + 1 < len(sys.argv):
+            start_date = sys.argv[start_index + 1]
+
+    if "--end" in sys.argv:
+        end_index = sys.argv.index("--end")
+        if end_index + 1 < len(sys.argv):
+            end_date = sys.argv[end_index + 1]
+
+    get_google_ads_performance(date_range=date_range, start_date=start_date, end_date=end_date)

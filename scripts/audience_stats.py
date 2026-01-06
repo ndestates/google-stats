@@ -1,6 +1,8 @@
 """
 Google Analytics 4 Audience Statistics Script
 Get user counts and performance metrics for GA4 audiences using the Data API
+
+Run with: ddev exec python scripts/audience_stats.py
 """
 
 import os

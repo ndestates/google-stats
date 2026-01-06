@@ -1,6 +1,8 @@
 """
 Create New Ads in Google Ads Campaigns Script
 Creates responsive search ads in existing ad groups
+
+ddev exec python3 scripts/manage_google_ads.py
 """
 
 import os

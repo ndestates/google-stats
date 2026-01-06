@@ -251,12 +251,13 @@ def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users
     sorted_pages = sorted(page_data.items(), key=lambda x: x[1]['total_users'], reverse=True)
 
     # Create table data - show top 100 pages
-    table_data = [['Page', 'Total Users', 'Top Source']]
+    table_data = [['Page', 'Campaign', 'Total Users', 'Top Source']]
 
     cell_style, header_style = get_table_styles()
 
     for page_path, data in sorted_pages[:100]:
         total_page_users = data['total_users']
+        campaign_name = data.get('campaign', 'Unmapped')
 
         # Get top source
         top_source = max(data['sources'], key=lambda x: x['users']) if data['sources'] else {'source_medium': 'None', 'users': 0}
@@ -266,14 +267,18 @@ def create_comprehensive_report_pdf(page_data, start_date, end_date, total_users
         # Truncate long page paths
         display_path = page_path[:50] + "..." if len(page_path) > 50 else page_path
 
+        # Truncate campaign name if too long
+        display_campaign = campaign_name[:25] + "..." if len(campaign_name) > 25 else campaign_name
+
         table_data.append([
             create_wrapped_paragraph(display_path, cell_style),
+            create_wrapped_paragraph(display_campaign, cell_style),
             create_wrapped_paragraph(f"{total_page_users:,}", cell_style),
             create_wrapped_paragraph(top_source_display, cell_style)
         ])
 
     # Create table with proper column widths (in points, A4 width is about 595 points)
-    col_widths = [200, 80, 250]  # Adjusted for A4 page
+    col_widths = [150, 100, 70, 200]  # Adjusted for A4 page with campaign column
 
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
 

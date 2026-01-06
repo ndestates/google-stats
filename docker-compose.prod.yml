@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: google-stats-web
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount reports directory for persistence
+      - reports_volume:/app/reports
+      # Mount logs directory for persistence
+      - logs_volume:/app/logs
+      # Mount environment file (read-only)
+      - ./.env:/app/.env:ro
+      # Mount keys directory (read-only)
+      - ./keys:/app/keys:ro
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    restart: unless-stopped
+    networks:
+      - google-stats-network
+    # Only restart if it fails, max 5 times
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    labels:
+      com.example.description: "Google Stats Analytics Platform - Web Application"
+      com.example.maintainer: "ND Holdings Limited"
+
+  nginx:
+    image: nginx:alpine
+    container_name: google-stats-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx configuration
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # SSL certificates (read-only)
+      - ./ssl:/etc/nginx/ssl:ro
+      # Static assets
+      - ./assets:/app/assets:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+    networks:
+      - google-stats-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    labels:
+      com.example.description: "Google Stats Analytics Platform - Nginx Reverse Proxy"
+      com.example.maintainer: "ND Holdings Limited"
+
+# Named volumes for persistence across container restarts
+volumes:
+  reports_volume:
+    driver: local
+  logs_volume:
+    driver: local
+
+# Bridge network for container communication
+networks:
+  google-stats-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

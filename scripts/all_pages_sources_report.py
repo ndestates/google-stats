@@ -1,4 +1,11 @@
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/all_pages_sources_report.py
+"""
+
 import os
+import json
+import sqlite3
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy
@@ -7,14 +14,93 @@ from src.config import REPORTS_DIR
 from src.ga4_client import run_report, create_date_range, get_last_30_days_range, get_report_filename
 from src.pdf_generator import create_comprehensive_report_pdf
 
+def load_campaign_mappings():
+    """Load URL-to-campaign mappings from database and source unifications from config file"""
+
+    # Load source unifications from JSON config
+    mapping_file = os.path.join(os.path.dirname(__file__), '..', 'config', 'url_campaign_mapping.json')
+    source_unifications = {}
+
+    if os.path.exists(mapping_file):
+        try:
+            with open(mapping_file, 'r') as f:
+                data = json.load(f)
+                source_unifications = data.get('source_unifications', {})
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"⚠️  Warning: Could not load source unifications: {e}")
+
+    # Load campaign mappings from database
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'properties.db')
+    campaign_mappings = {}
+
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            # Get all URL-to-campaign mappings from database
+            cursor.execute('SELECT url, campaign FROM properties WHERE campaign IS NOT NULL')
+            rows = cursor.fetchall()
+
+            for url, campaign in rows:
+                if url and campaign:
+                    campaign_mappings[url] = campaign
+
+            conn.close()
+            print(f"📋 Loaded {len(campaign_mappings)} URL-to-campaign mappings from database")
+
+        except sqlite3.Error as e:
+            print(f"⚠️  Warning: Could not load campaign mappings from database: {e}")
+            # Fall back to basic mapping
+            campaign_mappings = {"/properties/": "Jersey Property Listings"}
+    else:
+        print("ℹ️  Property database not found. Using basic property mapping.")
+        campaign_mappings = {"/properties/": "Jersey Property Listings"}
+
+    return campaign_mappings, source_unifications
+
+def unify_source_name(source_medium, source_unifications):
+    """Unify source names based on mapping rules"""
+    # Check for exact matches first
+    if source_medium in source_unifications:
+        return source_unifications[source_medium]
+
+    # Handle common patterns
+    if source_medium.startswith('google.com'):
+        return source_medium.replace('google.com', 'google')
+
+    return source_medium
+
+def get_campaign_for_url(url_path, campaign_mappings):
+    """Get campaign name for a URL path"""
+    # Check for exact match first (from database)
+    if url_path in campaign_mappings:
+        return campaign_mappings[url_path]
+
+    # Check for prefix matches (fallback for URLs not in database)
+    for mapped_url, campaign in campaign_mappings.items():
+        if url_path.startswith(mapped_url):
+            return campaign
+
+    # Default fallback for property URLs
+    if url_path.startswith('/properties/'):
+        return "Jersey Property Listings"
+
+    return "Unmapped"
+
 def get_all_pages_with_sources():
     """Get all pages with their traffic sources for the past 30 days"""
+
+    # Load campaign mappings and source unifications
+    campaign_mappings, source_unifications = load_campaign_mappings()
 
     # Get date range for last 30 days
     start_date, end_date = get_last_30_days_range()
 
     print(f"📊 Generating comprehensive page-source report for {start_date} to {end_date}")
     print("=" * 80)
+    print(f"📋 Loaded {len(campaign_mappings)} URL-to-campaign mappings")
+    print(f"🔄 Loaded {len(source_unifications)} source unification rules")
 
     # Get all page + source combinations
     date_range = create_date_range(start_date, end_date)
@@ -48,14 +134,22 @@ def get_all_pages_with_sources():
         if page_path.startswith('/sold/'):
             continue
 
+        # Unify source names
+        unified_source = unify_source_name(source_medium, source_unifications)
+
+        # Get campaign for this URL
+        campaign_name = get_campaign_for_url(page_path, campaign_mappings)
+
         if page_path not in page_data:
             page_data[page_path] = {
                 'total_users': 0,
+                'campaign': campaign_name,
                 'sources': []
             }
 
         page_data[page_path]['sources'].append({
-            'source_medium': source_medium,
+            'source_medium': unified_source,
+            'original_source': source_medium,  # Keep original for reference
             'users': users
         })
         page_data[page_path]['total_users'] += users
@@ -73,9 +167,11 @@ def get_all_pages_with_sources():
     for page_path, data in sorted_pages:
         page_count += 1
         total_page_users = data['total_users']
+        campaign_name = data.get('campaign', 'Unmapped')
         grand_total_users += total_page_users
 
         print(f"\n🏠 PAGE {page_count}: {page_path}")
+        print(f"   Campaign: {campaign_name}")
         print(f"   Total Users: {total_page_users:,}")
         print("   Traffic Sources:")
 
@@ -95,11 +191,14 @@ def get_all_pages_with_sources():
     # Export detailed data to CSV
     csv_data = []
     for page_path, data in sorted_pages:
+        campaign_name = data.get('campaign', 'Unmapped')
         for source in data['sources']:
             csv_data.append({
                 'Date_Range': f"{start_date}_to_{end_date}",
                 'Page_Path': page_path,
+                'Campaign': campaign_name,
                 'Source_Medium': source['source_medium'],
+                'Original_Source': source.get('original_source', source['source_medium']),
                 'Users': source['users'],
                 'Page_Total_Users': data['total_users']
             })
@@ -113,11 +212,13 @@ def get_all_pages_with_sources():
     summary_data = []
     for page_path, data in sorted_pages:
         if data['total_users'] > 0:
+            campaign_name = data.get('campaign', 'Unmapped')
             # Get top source for summary
             top_source = max(data['sources'], key=lambda x: x['users']) if data['sources'] else {'source_medium': 'None', 'users': 0}
             summary_data.append({
                 'Date_Range': f"{start_date}_to_{end_date}",
                 'Page_Path': page_path,
+                'Campaign': campaign_name,
                 'Total_Users': data['total_users'],
                 'Top_Source': top_source['source_medium'],
                 'Top_Source_Users': top_source['users']

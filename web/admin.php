@@ -62,6 +62,7 @@
                             <?php endif; ?>
 
                             <form method="POST" action="auth.php?action=login">
+                                <?php echo csrf_token_field(); ?>
                                 <div class="mb-3">
                                     <label for="username" class="form-label">Username</label>
                                     <input type="text" class="form-control" id="username" name="username" required>
@@ -113,12 +114,23 @@
                 <?php
                 // Load current settings
                 $settings_file = __DIR__ . '/uploads/settings.json';
-                $settings = json_decode(file_get_contents($settings_file), true);
+                $settings = [];
+                if (file_exists($settings_file)) {
+                    $settings_content = file_get_contents($settings_file);
+                    if ($settings_content !== false) {
+                        $settings = json_decode($settings_content, true) ?: [];
+                    }
+                } else {
+                    // Initialize empty settings file
+                    file_put_contents($settings_file, '{}');
+                }
+
+                // Initialize message variables
+                $success_message = null;
+                $error_message = null;
 
                 // Handle form submission
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $success_message = null;
-                    $error_message = null;
 
                     // Handle logo upload
                     if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
@@ -138,6 +150,13 @@
 
                                 $settings['company_logo'] = 'uploads/logos/' . $logo_filename;
                                 $success_message = 'Company logo uploaded successfully!';
+                                
+                                // Save settings after logo upload
+                                if (file_put_contents($settings_file, json_encode($settings, JSON_PRETTY_PRINT))) {
+                                    $success_message = 'Company logo uploaded and settings saved successfully!';
+                                } else {
+                                    $error_message = 'Logo uploaded but failed to save settings.';
+                                }
                             } else {
                                 $error_message = 'Failed to save logo file.';
                             }
@@ -148,6 +167,10 @@
 
                     // Handle settings update
                     if (isset($_POST['action']) && $_POST['action'] === 'update_settings') {
+                        // Validate CSRF token
+                        if (!validate_csrf_token()) {
+                            $error_message = 'Security validation failed. Please try again.';
+                        } else {
                         // Handle property settings
                         $settings['default_property_name'] = $_POST['default_property_name'] ?? '';
                         $settings['default_property_address'] = $_POST['default_property_address'] ?? '';
@@ -161,10 +184,15 @@
                         } else {
                             $error_message = 'Failed to save settings.';
                         }
+                        }
                     }
 
                     // Handle credential import
                     if (isset($_POST['action']) && $_POST['action'] === 'import_credentials') {
+                        // Validate CSRF token
+                        if (!validate_csrf_token()) {
+                            $error_message = 'Security validation failed. Please try again.';
+                        } else {
                         require_once 'credentials.php';
                         $env_path = dirname(__DIR__) . '/.env';
                         if (import_from_env($env_path)) {
@@ -172,10 +200,15 @@
                         } else {
                             $error_message = 'Failed to import credentials or no valid credentials found in .env file.';
                         }
+                        }
                     }
 
                     // Handle credential update
                     if (isset($_POST['action']) && $_POST['action'] === 'update_credentials') {
+                        // Validate CSRF token
+                        if (!validate_csrf_token()) {
+                            $error_message = 'Security validation failed. Please try again.';
+                        } else {
                         require_once 'credentials.php';
                         $credential_keys = [
                             'GA4_PROPERTY_ID', 'GA4_KEY_PATH',
@@ -193,6 +226,7 @@
                             $success_message = 'Credentials updated successfully!';
                         } catch (Exception $e) {
                             $error_message = 'Failed to save credentials: ' . $e->getMessage();
+                        }
                         }
                     }
                 }
@@ -236,6 +270,7 @@
                 ?>
 
                 <form method="POST" enctype="multipart/form-data">
+                    <?php echo csrf_token_field(); ?>
                     <input type="hidden" name="action" value="update_settings">
                     <!-- Company Logo Section -->
                     <div class="card settings-card">
@@ -245,7 +280,7 @@
                         <div class="card-body">
                             <p class="text-muted">Upload your company logo to appear on all PDF reports. Recommended size: 300x150 pixels.</p>
 
-                            <?php if ($settings['company_logo'] && file_exists(__DIR__ . '/' . $settings['company_logo'])): ?>
+                            <?php if (!empty($settings['company_logo']) && file_exists(__DIR__ . '/' . $settings['company_logo'])): ?>
                                 <div class="logo-preview mb-3">
                                     <p><strong>Current Logo:</strong></p>
                                     <img src="<?php echo $settings['company_logo']; ?>" alt="Company Logo" class="current-logo">
@@ -292,7 +327,7 @@
                     </div>
                 </form>
 
-                <?php if ($settings['updated_at']): ?>
+                <?php if (!empty($settings['updated_at'])): ?>
                     <div class="mt-3 text-muted">
                         <small>Last updated: <?php echo $settings['updated_at']; ?></small>
                     </div>
@@ -333,6 +368,7 @@
                                             <?php if ($user['username'] !== $current_user['username']): ?>
                                             <form method="POST" action="auth.php?action=delete_user" class="d-inline"
                                                   onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                                <?php echo csrf_token_field(); ?>
                                                 <input type="hidden" name="delete_username" value="<?php echo htmlspecialchars($user['username']); ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i> Delete
@@ -349,6 +385,7 @@
                         <!-- Add New User -->
                         <h6 class="mt-4">Add New User</h6>
                         <form method="POST" action="auth.php?action=add_user">
+                            <?php echo csrf_token_field(); ?>
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label for="new_username" class="form-label">Username</label>
@@ -371,18 +408,19 @@
                         <!-- Change Password -->
                         <h6 class="mt-4">Change Your Password</h6>
                         <form method="POST" action="auth.php?action=change_password">
+                            <?php echo csrf_token_field(); ?>
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label for="current_password" class="form-label">Current Password</label>
                                     <input type="password" class="form-control" id="current_password" name="current_password" required>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="new_password_change" class="form-label">New Password</label>
-                                    <input type="password" class="form-control" id="new_password_change" name="new_password_change" required>
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="confirm_password_change" class="form-label">Confirm New Password</label>
-                                    <input type="password" class="form-control" id="confirm_password_change" name="confirm_password_change" required>
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-warning">
@@ -445,6 +483,7 @@
                         <h6 class="mt-4">Import Credentials</h6>
                         <p class="text-muted">Import existing credentials from your .env file (one-time migration).</p>
                         <form method="POST" action="admin.php">
+                            <?php echo csrf_token_field(); ?>
                             <input type="hidden" name="action" value="import_credentials">
                             <button type="submit" class="btn btn-info">
                                 <i class="fas fa-upload"></i> Import from .env
@@ -454,6 +493,7 @@
                         <!-- Manual Credential Entry -->
                         <h6 class="mt-4">Manual Credential Entry</h6>
                         <form method="POST" action="admin.php">
+                            <?php echo csrf_token_field(); ?>
                             <input type="hidden" name="action" value="update_credentials">
                             <div class="row">
                                 <div class="col-md-6">

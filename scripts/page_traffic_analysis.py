@@ -2,19 +2,22 @@
 Page Traffic Analysis Script
 Analyze traffic sources and performance for a specific URL/page
 
-Usage:
-    python page_traffic_analysis.py [URL] [days]
-    python page_traffic_analysis.py [URL] --start-date YYYY-MM-DD --end-date YYYY-MM-DD
+Run with: ddev exec python scripts/page_traffic_analysis.py [URL] [days]
+          ddev exec python scripts/page_traffic_analysis.py [URL] --start-date YYYY-MM-DD --end-date YYYY-MM-DD
 
 Examples:
-    python page_traffic_analysis.py /valuations
-    python page_traffic_analysis.py https://www.ndestates.com/valuations 7
-    python page_traffic_analysis.py /valuations 30
-    python page_traffic_analysis.py /valuations --start-date 2025-11-01 --end-date 2025-11-19
+    ddev exec python scripts/page_traffic_analysis.py /valuations
+    ddev exec python scripts/page_traffic_analysis.py /valuations 30
+    ddev exec python scripts/page_traffic_analysis.py /valuations --start-date 2025-11-01 --end-date 2025-11-19
 """
 
 import os
-import sys
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/page_traffic_analysis.py
+"""
+
+import os
 from datetime import datetime, timedelta
 import pandas as pd
 from google.analytics.data_v1beta.types import OrderBy

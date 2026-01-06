@@ -5,6 +5,17 @@ __pycache__/
 
 # Environment variables
 .env
+credentials.enc
+
+# DDEV certificates and keys
+.ddev/traefik/certs/
+
+# Credentials and keys
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
 
 # Generated reports
 reports/
@@ -230,3 +241,14 @@ data/
 # API keys and secrets
 .api_keys
 .credentials
+/keys/*.json
+.ddev/keys/*.json
+.ddev/keys/*
+
+## Google Ads API Credentials - Ignore the following lines when committing sensitive information ##
+
+google_ads.yaml
+/google_ads.yaml
+
+
+

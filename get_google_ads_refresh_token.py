@@ -44,7 +44,7 @@ def main():
                 "client_id": CLIENT_ID,
                 "client_secret": CLIENT_SECRET,
                 "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"],
-                "auth_uri": "https://accounts.google.com/o/oauth/authorize",
+                "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token"
             }
         },

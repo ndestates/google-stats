@@ -1,6 +1,8 @@
 """
 Google Ads Creative Performance Analysis Script
 Analyze individual Google Ads creative performance to identify best performing creatives
+
+Run with: ddev exec python scripts/google_ads_ad_performance.py
 """
 
 import os

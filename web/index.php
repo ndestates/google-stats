@@ -6,6 +6,29 @@
     <title>Google Analytics Reports</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .property-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        .property-preview .preview-image img {
+            border: 1px solid #dee2e6;
+        }
+        .property-preview .preview-details h6 {
+            color: #007cba;
+            font-weight: 600;
+        }
+        .campaign-url-form .form-control[readonly] {
+            background-color: #e9ecef;
+        }
+        .url-preview {
+            font-family: monospace;
+            font-size: 0.875rem;
+            word-break: break-all;
+        }
+    </style>
     <?php
     // Start session for authentication
     session_start();
@@ -69,6 +92,7 @@
                             <?php endif; ?>
 
                             <form method="POST" action="auth.php?action=login&redirect=index.php">
+                                <?php echo csrf_token_field(); ?>
                                 <div class="mb-3">
                                     <label for="username" class="form-label">Username</label>
                                     <input type="text" class="form-control" id="username" name="username" required>
@@ -221,6 +245,7 @@
                     <div class="card-body">
                         <p>Analyze page traffic and performance metrics</p>
                         <form id="page-traffic-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -245,9 +270,9 @@
                             </div>
                             <div class="mb-3" id="custom-date-range" style="display: none;">
                                 <label for="start-date" class="form-label">Start Date:</label>
-                                <input type="date" class="form-control" id="start-date" required>
+                                <input type="date" class="form-control" id="start-date">
                                 <label for="end-date" class="form-label">End Date:</label>
-                                <input type="date" class="form-control" id="end-date" required>
+                                <input type="date" class="form-control" id="end-date">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -283,6 +308,7 @@
                     <div class="card-body">
                         <p>Analyze hourly traffic patterns and best times by source</p>
                         <form id="hourly-traffic-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="hourly-page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -307,9 +333,9 @@
                             </div>
                             <div class="mb-3" id="hourly-custom-date-range" style="display: none;">
                                 <label for="hourly-start-date" class="form-label">Start Date:</label>
-                                <input type="date" class="form-control" id="hourly-start-date" required>
+                                <input type="date" class="form-control" id="hourly-start-date">
                                 <label for="hourly-end-date" class="form-label">End Date:</label>
-                                <input type="date" class="form-control" id="hourly-end-date" required>
+                                <input type="date" class="form-control" id="hourly-end-date">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -695,6 +721,7 @@
                     <div class="card-body">
                         <p>Discover optimal posting hours for social media platforms by analyzing specific page traffic</p>
                         <form id="social-media-form" class="mb-3">
+                            <?php echo csrf_token_field(); ?>
                             <div class="mb-3">
                                 <label for="social-page-url" class="form-label">Page URL or Path:</label>
                                 <div class="input-group">
@@ -723,6 +750,84 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-social_media_analytics"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Property Page URL Tools -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-home"></i> Property Page Campaign Tools</h5>
+                        <small class="text-muted">St Helier Two Bedroom House with Patio & Garden</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Page Preview</h6>
+                                <div class="property-preview mb-3">
+                                    <div class="preview-image">
+                                        <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #007cba 0%, #005a87 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
+                                            🏠 Property Image
+                                        </div>
+                                    </div>
+                                    <div class="preview-details mt-2">
+                                        <h6 class="mb-1">St Helier Two Bedroom House with Patio & Garden</h6>
+                                        <p class="text-muted small mb-1">Beautiful two bedroom property in St Helier with patio and garden</p>
+                                        <p class="text-primary mb-0"><strong>Page:</strong> /properties/st-helier-two-bedroom-house-with-patio-garden</p>
+                                        <a href="#" id="preview-link" class="btn btn-sm btn-outline-primary mt-2" target="_blank">
+                                            <i class="fas fa-external-link-alt"></i> View Full Page
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Campaign URL Builder</h6>
+                                <form id="campaign-url-form">
+                                    <div class="mb-3">
+                                        <label for="base-url" class="form-label">Base URL:</label>
+                                        <input type="text" class="form-control" id="base-url" 
+                                               value="https://www.ndestates.com/properties/st-helier-two-bedroom-house-with-patio-garden" readonly>
+                                        <div class="form-text">Property page URL (read-only)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="url-prepend" class="form-label">URL Prepend (Optional):</label>
+                                        <input type="text" class="form-control" id="url-prepend" 
+                                               placeholder="e.g., /featured or /special-offer">
+                                        <div class="form-text">Add a path prefix to the URL (e.g., for campaign tracking)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-source" class="form-label">UTM Source:</label>
+                                        <input type="text" class="form-control" id="utm-source" placeholder="e.g., facebook, google, email">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-medium" class="form-label">UTM Medium:</label>
+                                        <input type="text" class="form-control" id="utm-medium" placeholder="e.g., cpc, social, email">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="utm-campaign" class="form-label">UTM Campaign:</label>
+                                        <input type="text" class="form-control" id="utm-campaign" placeholder="e.g., spring-promo-2025">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="generated-url" class="form-label">Generated Campaign URL:</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="generated-url" readonly>
+                                            <button class="btn btn-outline-secondary" type="button" id="copy-url-btn">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Copy this URL for your marketing campaigns</div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="button" class="btn btn-primary" id="generate-url-btn">
+                                            <i class="fas fa-magic"></i> Generate Campaign URL
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -759,11 +864,17 @@
                 // Handle time period selection
                 const analysisDaysSelect = document.getElementById('analysis-days');
                 const customDateRange = document.getElementById('custom-date-range');
+                const startDateInput = document.getElementById('start-date');
+                const endDateInput = document.getElementById('end-date');
                 analysisDaysSelect.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         customDateRange.style.display = 'block';
+                        startDateInput.setAttribute('required', 'required');
+                        endDateInput.setAttribute('required', 'required');
                     } else {
                         customDateRange.style.display = 'none';
+                        startDateInput.removeAttribute('required');
+                        endDateInput.removeAttribute('required');
                     }
                 });
 
@@ -791,9 +902,9 @@
                             alert('Start date cannot be after end date');
                             return;
                         }
-                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                        scriptArgs = `${url} --start-date ${startDate} --end-date ${endDate}`;
                     } else {
-                        scriptArgs = `"${url}" ${days}`;
+                        scriptArgs = `${url} ${days}`;
                     }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
@@ -808,11 +919,17 @@
                 // Handle time period selection
                 const hourlyAnalysisDaysSelect = document.getElementById('hourly-analysis-days');
                 const hourlyCustomDateRange = document.getElementById('hourly-custom-date-range');
+                const hourlyStartDateInput = document.getElementById('hourly-start-date');
+                const hourlyEndDateInput = document.getElementById('hourly-end-date');
                 hourlyAnalysisDaysSelect.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         hourlyCustomDateRange.style.display = 'block';
+                        hourlyStartDateInput.setAttribute('required', 'required');
+                        hourlyEndDateInput.setAttribute('required', 'required');
                     } else {
                         hourlyCustomDateRange.style.display = 'none';
+                        hourlyStartDateInput.removeAttribute('required');
+                        hourlyEndDateInput.removeAttribute('required');
                     }
                 });
 
@@ -840,9 +957,9 @@
                             alert('Start date cannot be after end date');
                             return;
                         }
-                        scriptArgs = `"${url}" --start-date ${startDate} --end-date ${endDate}`;
+                        scriptArgs = `${url} --start-date ${startDate} --end-date ${endDate}`;
                     } else {
-                        scriptArgs = `"${url}" ${days}`;
+                        scriptArgs = `${url} ${days}`;
                     }
                     if (propertyName) scriptArgs += ` --property-name "${propertyName}"`;
                     if (propertyAddress) scriptArgs += ` --property-address "${propertyAddress}"`;
@@ -968,7 +1085,7 @@
                         return;
                     }
 
-                    const scriptArgs = `"${url}" ${days}`;
+                    const scriptArgs = `${url} ${days}`;
                     runScript('hourly_traffic_analysis.py', scriptArgs);
                 });
             }
@@ -1074,15 +1191,35 @@
                 if (scriptArgs) {
                     formData.append('args', scriptArgs);
                 }
+                
+                // Add CSRF token
+                const csrfToken = document.querySelector('input[name="csrf_token"]');
+                if (csrfToken) {
+                    formData.append('csrf_token', csrfToken.value);
+                }
 
                 // Make AJAX request
                 fetch('run_report.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    }
                 })
                 .catch(error => {
                     if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
@@ -1128,9 +1265,23 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    }
                 })
                 .catch(error => {
                     if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-danger">Error: ' + error.message + '</div>';
@@ -1159,24 +1310,44 @@
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('script', scriptName);
+                
+                // Add CSRF token
+                const csrfToken = document.querySelector('input[name="csrf_token"]');
+                if (csrfToken) {
+                    formData.append('csrf_token', csrfToken.value);
+                }
 
                 // Make AJAX request
                 fetch('run_report.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.text())
+                .then(response => {
+                    // Check if response is a redirect (authentication failed)
+                    if (response.redirected || response.url.includes('index.php')) {
+                        window.location.href = 'index.php?error=session_expired';
+                        return;
+                    }
+                    return response.text();
+                })
                 .then(data => {
-                    // Check if it's HTML (social media dashboard) or plain text (error)
-                    if (data.includes('<html>') || data.includes('<!DOCTYPE html>')) {
-                        // It's HTML, open in new window
-                        const newWindow = window.open('', '_blank');
-                        newWindow.document.write(data);
-                        newWindow.document.close();
-                        if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-success">Social media analytics opened in new window/tab</div>';
-                    } else {
-                        // It's plain text, display in output div
-                        if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                    if (data) {
+                        // Check if response contains login form (session expired)
+                        if (data.includes('Login Required') || data.includes('csrf_token_field')) {
+                            window.location.href = 'index.php?error=session_expired';
+                            return;
+                        }
+                        // Check if it's HTML (social media dashboard) or plain text (error)
+                        if (data.includes('<html>') || data.includes('<!DOCTYPE html>')) {
+                            // It's HTML, open in new window
+                            const newWindow = window.open('', '_blank');
+                            newWindow.document.write(data);
+                            newWindow.document.close();
+                            if (outputDiv) outputDiv.innerHTML = '<div class="alert alert-success">Social media analytics opened in new window/tab</div>';
+                        } else {
+                            // It's plain text, display in output div
+                            if (outputDiv) outputDiv.innerHTML = '<pre>' + data + '</pre>';
+                        }
                     }
                 })
                 .catch(error => {
@@ -1188,6 +1359,94 @@
                 });
             }
         });
+
+        // Property Page Campaign URL Builder functionality
+        const generateUrlBtn = document.getElementById('generate-url-btn');
+        const copyUrlBtn = document.getElementById('copy-url-btn');
+        const generatedUrlInput = document.getElementById('generated-url');
+        const previewLink = document.getElementById('preview-link');
+
+        if (generateUrlBtn) {
+            generateUrlBtn.addEventListener('click', function() {
+                const baseUrl = document.getElementById('base-url').value;
+                const prepend = document.getElementById('url-prepend').value.trim();
+                const utmSource = document.getElementById('utm-source').value.trim();
+                const utmMedium = document.getElementById('utm-medium').value.trim();
+                const utmCampaign = document.getElementById('utm-campaign').value.trim();
+
+                let finalUrl = baseUrl;
+
+                // Add prepend if provided
+                if (prepend) {
+                    // Ensure prepend starts with /
+                    const cleanPrepend = prepend.startsWith('/') ? prepend : '/' + prepend;
+                    // Remove trailing / from base URL if present
+                    const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                    finalUrl = cleanBase + cleanPrepend;
+                }
+
+                // Add UTM parameters
+                const utmParams = [];
+                if (utmSource) utmParams.push(`utm_source=${encodeURIComponent(utmSource)}`);
+                if (utmMedium) utmParams.push(`utm_medium=${encodeURIComponent(utmMedium)}`);
+                if (utmCampaign) utmParams.push(`utm_campaign=${encodeURIComponent(utmCampaign)}`);
+
+                if (utmParams.length > 0) {
+                    const separator = finalUrl.includes('?') ? '&' : '?';
+                    finalUrl += separator + utmParams.join('&');
+                }
+
+                generatedUrlInput.value = finalUrl;
+                
+                // Update preview link
+                previewLink.href = finalUrl;
+                previewLink.style.display = 'inline-block';
+            });
+        }
+
+        if (copyUrlBtn) {
+            copyUrlBtn.addEventListener('click', function() {
+                const url = generatedUrlInput.value;
+                if (!url) {
+                    alert('Please generate a URL first');
+                    return;
+                }
+
+                navigator.clipboard.writeText(url).then(function() {
+                    // Show success feedback
+                    const originalText = copyUrlBtn.innerHTML;
+                    copyUrlBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyUrlBtn.classList.remove('btn-outline-secondary');
+                    copyUrlBtn.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        copyUrlBtn.innerHTML = originalText;
+                        copyUrlBtn.classList.remove('btn-success');
+                        copyUrlBtn.classList.add('btn-outline-secondary');
+                    }, 2000);
+                }).catch(function(err) {
+                    // Fallback for older browsers
+                    generatedUrlInput.select();
+                    document.execCommand('copy');
+                    
+                    const originalText = copyUrlBtn.innerHTML;
+                    copyUrlBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyUrlBtn.classList.remove('btn-outline-secondary');
+                    copyUrlBtn.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        copyUrlBtn.innerHTML = originalText;
+                        copyUrlBtn.classList.remove('btn-success');
+                        copyUrlBtn.classList.add('btn-outline-secondary');
+                    }, 2000);
+                });
+            });
+        }
+
+        // Set initial preview link
+        if (previewLink) {
+            previewLink.href = document.getElementById('base-url').value;
+        }
     </script>
         });
     </script>

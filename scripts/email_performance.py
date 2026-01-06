@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+"""
+Run with: ddev exec python scripts/email_performance.py
+"""
+
 import os
 import sys
 import argparse
