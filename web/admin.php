@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(get_csrf_token()); ?>">
     <title>Admin Settings - Google Analytics Platform</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -88,6 +89,17 @@
 
     // User is logged in, show admin interface
     $current_user = get_logged_in_user();
+    $two_factor_enabled = !empty($current_user['two_factor_enabled']);
+    $two_factor_setup_secret = null;
+    if (!$two_factor_enabled) {
+        $existing_secret = test_session_get('two_factor_setup_secret');
+        if (!$existing_secret) {
+            $existing_secret = generate_totp_secret();
+            test_session_set('two_factor_setup_secret', $existing_secret);
+        }
+        $two_factor_setup_secret = $existing_secret;
+        $otpauth_url = 'otpauth://totp/' . rawurlencode('Google Stats:' . $current_user['username']) . '?secret=' . $two_factor_setup_secret . '&issuer=' . rawurlencode('Google Stats');
+    }
     ?>
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -250,7 +262,10 @@
                     $success_messages = [
                         'user_added' => 'User added successfully!',
                         'user_deleted' => 'User deleted successfully!',
-                        'password_changed' => 'Password changed successfully!'
+                        'password_changed' => 'Password changed successfully!',
+                        'twofa_enabled' => 'Two-factor authentication enabled.',
+                        'twofa_disabled' => 'Two-factor authentication disabled.',
+                        'twofa_secret_regenerated' => 'New 2FA secret generated. Please scan and verify.'
                     ];
                     if (isset($success_messages[$_GET['success']])) {
                         echo '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' . $success_messages[$_GET['success']] . '</div>';
@@ -261,7 +276,12 @@
                         'user_exists' => 'Username already exists.',
                         'password_mismatch' => 'Passwords do not match.',
                         'cannot_delete_self' => 'You cannot delete your own account.',
-                        'wrong_current_password' => 'Current password is incorrect.'
+                        'wrong_current_password' => 'Current password is incorrect.',
+                        'twofa_invalid_code' => 'Invalid 2FA code. Please try again.',
+                        'twofa_missing_secret' => 'No 2FA secret available. Regenerate and try again.',
+                        'twofa_expired' => 'Two-factor challenge expired. Please sign in again.',
+                        'twofa_not_configured' => 'Two-factor configuration missing. Please set up again.',
+                        'csrf_invalid' => 'Security validation failed. Please try again.'
                     ];
                     if (isset($error_messages[$_GET['error']])) {
                         echo '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ' . $error_messages[$_GET['error']] . '</div>';
@@ -332,6 +352,61 @@
                         <small>Last updated: <?php echo $settings['updated_at']; ?></small>
                     </div>
                 <?php endif; ?>
+
+                <!-- Two-Factor Authentication -->
+                <div class="card settings-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Two-Factor Authentication</h5>
+                        <span class="badge bg-<?php echo $two_factor_enabled ? 'success' : 'secondary'; ?>">Status: <?php echo $two_factor_enabled ? 'Enabled' : 'Disabled'; ?></span>
+                    </div>
+                    <div class="card-body">
+                        <?php if ($two_factor_enabled): ?>
+                            <p class="text-muted">Your account is protected with TOTP-based two-factor authentication.</p>
+                            <form method="POST" action="auth.php?action=disable_2fa" onsubmit="return confirm('Disable two-factor authentication for your account?');">
+                                <?php echo csrf_token_field(); ?>
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="fas fa-ban"></i> Disable 2FA
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <p class="text-muted">Add a second factor using any TOTP authenticator app (Google Authenticator, Authy, 1Password, etc.).</p>
+                            <?php if ($two_factor_setup_secret): ?>
+                                <div class="mb-3">
+                                    <label class="form-label">Secret Key</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" value="<?php echo htmlspecialchars($two_factor_setup_secret); ?>" readonly>
+                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                    </div>
+                                    <small class="text-muted">Enter this key into your authenticator app or use the URI below.</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Provisioning URI</label>
+                                    <input type="text" class="form-control" value="<?php echo htmlspecialchars($otpauth_url); ?>" readonly>
+                                    <small class="text-muted">Copy into your authenticator app if it supports manual URI entry.</small>
+                                </div>
+                            <?php endif; ?>
+
+                            <form method="POST" action="auth.php?action=enable_2fa" class="mb-3">
+                                <?php echo csrf_token_field(); ?>
+                                <div class="mb-3">
+                                    <label for="two_factor_code" class="form-label">Enter 6-digit code to confirm setup</label>
+                                    <input type="text" class="form-control" id="two_factor_code" name="two_factor_code" pattern="\d{6}" inputmode="numeric" required>
+                                    <div class="form-text">Generate a code in your authenticator app using the secret above.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check-circle"></i> Enable 2FA
+                                </button>
+                            </form>
+
+                            <form method="POST" action="auth.php?action=regenerate_2fa_secret">
+                                <?php echo csrf_token_field(); ?>
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-sync"></i> Generate New Secret
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
                 <!-- User Management Section -->
                 <div class="card settings-card">
@@ -591,12 +666,137 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Audiences Management -->
+                    <div class="card mt-5">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-users"></i> Audiences</h5>
+                            <div>
+                                <button id="snapshotAllBtn" class="btn btn-sm btn-outline-primary me-2">Snapshot All</button>
+                                <button id="refreshAudiences" class="btn btn-sm btn-outline-secondary">Refresh</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle" id="audiencesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Current Members</th>
+                                            <th>Last Snapshot</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted">Archive keeps the audience; Delete marks it deleted. Snapshots record current membership counts over time.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    (() => {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const tableBody = document.querySelector('#audiencesTable tbody');
+        const refreshBtn = document.getElementById('refreshAudiences');
+        const snapshotAllBtn = document.getElementById('snapshotAllBtn');
+
+        const statusBadge = (status) => {
+            const cls = {
+                active: 'success',
+                archived: 'secondary',
+                deleted: 'danger'
+            }[status] || 'secondary';
+            return `<span class="badge bg-${cls}">${status}</span>`;
+        };
+
+        const formatDate = (value) => {
+            if (!value) return '—';
+            return new Date(value).toLocaleString();
+        };
+
+        const renderRows = (rows) => {
+            if (!rows.length) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No audiences found.</td></tr>';
+                return;
+            }
+            tableBody.innerHTML = rows.map(row => {
+                const actions = [];
+                if (row.status !== 'archived') actions.push(`<button class="btn btn-sm btn-outline-secondary me-1" data-action="archive" data-id="${row.id}">Archive</button>`);
+                if (row.status !== 'deleted') actions.push(`<button class="btn btn-sm btn-outline-danger me-1" data-action="delete" data-id="${row.id}">Delete</button>`);
+                actions.push(`<button class="btn btn-sm btn-outline-primary" data-action="snapshot" data-id="${row.id}">Snapshot</button>`);
+
+                return `
+                    <tr>
+                        <td>${row.name}</td>
+                        <td>${statusBadge(row.status)}</td>
+                        <td class="text-end">${row.membership_count ?? 0}</td>
+                        <td>${formatDate(row.last_snapshot_at)}</td>
+                        <td>${actions.join(' ')}</td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        const handleError = (msg) => {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${msg}</td></tr>`;
+        };
+
+        const fetchAudiences = async () => {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>';
+            try {
+                const res = await fetch('api/audiences.php?action=list', {credentials: 'same-origin'});
+                const data = await res.json();
+                if (!res.ok || data.error) throw new Error(data.error || 'Request failed');
+                renderRows(data.audiences || []);
+            } catch (e) {
+                handleError(e.message);
+            }
+        };
+
+        const postAction = async (action, id = null) => {
+            const form = new URLSearchParams();
+            form.set('csrf_token', csrfToken);
+            if (id) form.set('id', id);
+            try {
+                const res = await fetch(`api/audiences.php?action=${action}`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: form.toString()
+                });
+                const data = await res.json();
+                if (!res.ok || data.error) throw new Error(data.error || 'Request failed');
+                await fetchAudiences();
+            } catch (e) {
+                alert(e.message);
+            }
+        };
+
+        tableBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === 'delete' && !confirm('Delete this audience?')) return;
+            postAction(action, id);
+        });
+
+        refreshBtn?.addEventListener('click', fetchAudiences);
+        snapshotAllBtn?.addEventListener('click', () => postAction('snapshot'));
+
+        fetchAudiences();
+    })();
+    </script>
 
     <footer class="text-center text-muted mt-5 py-3 border-top">
         <p>&copy; <?php echo APP_COPYRIGHT; ?> | Version <?php echo APP_VERSION; ?> | Powered by Google Analytics 4</p>

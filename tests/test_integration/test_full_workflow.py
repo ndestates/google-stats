@@ -276,7 +276,7 @@ class TestScriptIntegration:
         result = get_yesterday_report()
         assert result is None  # Function returns None
 
-    @patch('google.analytics.data_v1beta.BetaAnalyticsDataClient')
+    @patch('scripts.google_ads_performance.BetaAnalyticsDataClient')
     @patch('os.path.exists')
     def test_google_ads_performance_full_workflow(self, mock_exists, mock_client_class):
         """Test full Google Ads performance workflow"""

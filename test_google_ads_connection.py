@@ -11,6 +11,7 @@ import os
 import sys
 import json
 from datetime import datetime
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '.'))
 
@@ -95,6 +96,7 @@ def test_client_initialization():
         print(f"  Error: {str(e)[:200]}")
         return None
 
+@pytest.mark.skip(reason="Skipped to avoid customer list access in tests")
 def test_customer_list_access(client):
     """Test if we can list customers accessible from the manager account"""
     print_header("CUSTOMER ACCESSIBILITY TEST")
@@ -174,6 +176,7 @@ def test_customer_list_access(client):
             print(f"❌ Error accessing customer list: {error_str[:200]}")
         return False
 
+@pytest.mark.skip(reason="Skipped to avoid customer access in tests")
 def test_target_customer_access(client):
     """Test if we can access the target customer account directly"""
     print_header("TARGET CUSTOMER ACCESS TEST")

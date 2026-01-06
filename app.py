@@ -8,7 +8,7 @@ import os
 import sys
 import subprocess
 import pandas as pd
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from datetime import datetime, timedelta
 import json
 
@@ -97,25 +97,27 @@ def run_script(script_name, *args):
         }
 
 def get_recent_reports():
-    """Get list of recent CSV reports"""
+    """Get list of recent CSV and PDF reports"""
     if not os.path.exists(REPORTS_DIR):
         return []
 
     reports = []
     for file in os.listdir(REPORTS_DIR):
-        if file.endswith('.csv'):
+        if file.endswith(('.csv', '.pdf')):
             filepath = os.path.join(REPORTS_DIR, file)
             mtime = os.path.getmtime(filepath)
+            file_type = 'PDF' if file.endswith('.pdf') else 'CSV'
             reports.append({
                 'filename': file,
                 'path': filepath,
                 'modified': datetime.fromtimestamp(mtime),
-                'size': os.path.getsize(filepath)
+                'size': os.path.getsize(filepath),
+                'type': file_type
             })
 
     # Sort by modification time, newest first
     reports.sort(key=lambda x: x['modified'], reverse=True)
-    return reports[:10]  # Return top 10 most recent
+    return reports[:20]  # Return top 20 most recent
 
 def parse_csv_preview(filepath, max_rows=10):
     """Parse CSV file and return preview data"""
@@ -153,8 +155,10 @@ def run_report(report_id):
         args = []
         if report_id == 'page_traffic_analysis':
             url = request.form.get('url')
-            if url:
-                args = ['--url', url]
+            if not url:
+                flash('A URL is required for Page Traffic Analysis.', 'error')
+                return render_template('run_report.html', report=report, report_id=report_id)
+            args = ['--url', url]
         elif report_id in ['yesterday_report', 'campaign_performance', 'gsc_ga_keywords', 'google_ads_ad_performance']:
             # These scripts have interactive prompts, so we'll run them directly
             pass
@@ -167,17 +171,19 @@ def run_report(report_id):
             recent_reports = get_recent_reports()
             return render_template('result.html',
                                  report=report,
+                                 report_id=report_id,
                                  result=result,
                                  recent_reports=recent_reports)
         else:
             flash(f'{report["name"]} failed: {result["stderr"]}', 'error')
             return render_template('result.html',
                                  report=report,
+                                 report_id=report_id,
                                  result=result,
                                  recent_reports=get_recent_reports())
 
     # GET request - show form
-    return render_template('run_report.html', report=report)
+    return render_template('run_report.html', report=report, report_id=report_id)
 
 @app.route('/reports')
 def list_reports():
@@ -192,17 +198,47 @@ def view_report(filename):
 
     if not os.path.exists(filepath):
         flash('Report file not found', 'error')
-        return redirect(url_for('reports'))
+        return redirect(url_for('list_reports'))
 
     preview = parse_csv_preview(filepath, max_rows=100)
 
     if 'error' in preview:
         flash(f'Error reading report: {preview["error"]}', 'error')
-        return redirect(url_for('reports'))
+        return redirect(url_for('list_reports'))
 
     return render_template('view_report.html',
                          filename=filename,
                          preview=preview)
+
+
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    """Download a report file with simple path safety checks"""
+    try:
+        reports_dir = os.path.abspath(REPORTS_DIR)
+        file_path = os.path.abspath(os.path.join(REPORTS_DIR, filename))
+
+        # Ensure the requested file stays within the reports directory
+        if not file_path.startswith(reports_dir):
+            flash('Access denied', 'error')
+            return redirect(url_for('list_reports'))
+
+        if not os.path.exists(file_path):
+            flash('File not found', 'error')
+            return redirect(url_for('list_reports'))
+
+        if filename.lower().endswith('.pdf'):
+            mimetype = 'application/pdf'
+        elif filename.lower().endswith('.csv'):
+            mimetype = 'text/csv'
+        else:
+            mimetype = 'application/octet-stream'
+
+        return send_file(file_path, mimetype=mimetype, as_attachment=True, download_name=filename)
+
+    except Exception as e:
+        flash(f'Error downloading file: {str(e)}', 'error')
+        return redirect(url_for('list_reports'))
 
 @app.route('/api/run/<report_id>', methods=['POST'])
 def api_run_report(report_id):
