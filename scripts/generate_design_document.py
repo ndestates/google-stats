@@ -135,7 +135,7 @@ def build_design_document():
     story.append(
         _bullets(
             [
-                "Data sources: GA4 (primary), Google Ads, Google Search Console, Mailchimp.",
+                "Data sources: GA4 (primary), Google Ads, Google Search Console.",
                 "Core modules: src/config.py, src/ga4_client.py, src/pdf_generator.py, logging_control.py.",
                 "Interfaces: scripts/ for one-off and scheduled runs, web/ PHP UI for report execution, app.py Flask alternative.",
                 "Outputs: CSVs in reports/ (date-stamped), PDFs generated via reportlab for summaries and ad-hoc docs.",
@@ -168,7 +168,7 @@ def build_design_document():
     story.append(
         _bullets(
             [
-                "Ingress: GA4 Data API for traffic metrics; Google Ads API for campaigns and performance; GSC for search data; Mailchimp for email stats.",
+                "Ingress: GA4 Data API for traffic metrics; Google Ads API for campaigns and performance; GSC for search data.",
                 "Processing: scripts/ modules normalize rows into pandas DataFrames, apply date filters, and compute rollups.",
                 "Outputs: CSVs saved to reports/ using naming convention &lt;report&gt;_&lt;start&gt;_to_&lt;end&gt;.csv; PDFs via src/pdf_generator.py for selected summaries.",
                 "Orchestration: PHP web UI and app.py invoke Python scripts; tests/run_tests.py covers unit, integration, and script harnesses.",
@@ -185,7 +185,7 @@ def build_design_document():
                 "Google Ads: service account flow using developer token, login-customer-id, and target customer id; OAuth refresh tokens supported for manual flows.",
                 "GA4: service account key (GA4_KEY_PATH) with property id (GA4_PROPERTY_ID).",
                 "GSC: service account key (GSC_KEY_PATH) with site URL binding.",
-                "Mailchimp: API client configured per-script with environment variables (see relevant script).",
+                "Mailchimp API configured in separate mailchimp project.",
                 "Logging: logs/&lt;script&gt;.log plus centralized controls via logging_control.py.",
             ],
             styles,
