@@ -42,6 +42,18 @@ DDEV Usage:
     # Interactively select and delete audiences
     ddev exec python3 scripts/audience_management.py --action delete-interactive
     
+    # Bulk delete audiences (preview only)
+    ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Listing" --dry-run
+    
+    # Bulk delete all audiences containing "Listing" (actual deletion)
+    ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Listing"
+    
+    # Bulk delete only inactive audiences
+    ddev exec python3 scripts/audience_management.py --action bulk-delete --inactive-only
+    
+    # Bulk delete inactive audiences matching pattern
+    ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Test" --inactive-only
+    
     # Analyze audience performance
     ddev exec python3 scripts/audience_management.py --action analyze
 
@@ -56,6 +68,7 @@ Features:
     - Configurable batch limits
     - Uses pagePath for accurate GA4 matching
     - Interactive deletion for easy audience management
+    - Bulk deletion by pattern or status
     - View audiences in segments
     - Track audience usage across campaigns and conversions
     - Find audience in Google Ads campaigns
@@ -357,7 +370,7 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
     service = get_admin_service()
     
     # Truncate description to stay within GA4 limits (256 characters)
-    description = f"Viewed {page_path}"
+    description = f"{display_name}"
     if len(description) > 256:
         description = description[:253] + "..."
 
@@ -374,25 +387,13 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
                         'filterExpressions': [{
                             'orGroup': {
                                 'filterExpressions': [{
-                                    'eventFilter': {
-                                        'eventName': 'page_view',
-                                        'eventParameterFilterExpression': {
-                                            'andGroup': {
-                                                'filterExpressions': [{
-                                                    'orGroup': {
-                                                        'filterExpressions': [{
-                                                            'dimensionOrMetricFilter': {
-                                                                'fieldName': 'pageLocation',
-                                                                'stringFilter': {
-                                                                    'matchType': 'CONTAINS',
-                                                                    'value': page_path
-                                                                }
-                                                            }
-                                                        }]
-                                                    }
-                                                }]
-                                            }
-                                        }
+                                    'dimensionOrMetricFilter': {
+                                        'fieldName': 'pagePathPlusQueryString',
+                                        'stringFilter': {
+                                            'matchType': 'CONTAINS',
+                                            'value': page_path
+                                        },
+                                        'atAnyPointInTime': True
                                     }
                                 }]
                             }
@@ -509,6 +510,39 @@ def create_cart_abandoner_audience(display_name: str = "Cart Abandoners", member
 
     print(f"✅ Created cart abandoner audience: {request['displayName']} (ID: {request['name'].split('/')[-1]})")
     return request
+
+
+def get_audience_details(audience_id: str):
+    """Get detailed configuration of a specific audience including filters"""
+    
+    service = get_admin_service()
+    
+    try:
+        audience = service.properties().audiences().get(
+            name=f'properties/{GA4_PROPERTY_ID}/audiences/{audience_id}'
+        ).execute()
+        
+        print(f"\n📋 Audience Details:")
+        print("=" * 100)
+        print(f"ID: {audience['name'].split('/')[-1]}")
+        print(f"Name: {audience['displayName']}")
+        print(f"Description: {audience.get('description', 'N/A')}")
+        print(f"Status: {'Active' if audience.get('state') == 'ACTIVE' else 'Inactive'}")
+        print(f"Membership Duration: {audience.get('membershipDurationDays', 'N/A')} days")
+        
+        # Show filter configuration
+        if 'filterClauses' in audience:
+            print(f"\n🔍 Filter Configuration:")
+            print("-" * 100)
+            import json
+            print(json.dumps(audience['filterClauses'], indent=2))
+        
+        print("\n" + "=" * 100)
+        return audience
+        
+    except Exception as e:
+        print(f"❌ Error retrieving audience: {e}")
+        return None
 
 
 def list_audiences(include_metrics=False, analyze_performance=False):
@@ -1042,6 +1076,93 @@ def delete_audiences_interactive():
         print("❌ Invalid input. Please enter numbers separated by commas.")
 
 
+def bulk_delete_audiences(
+    pattern: str = None,
+    inactive_only: bool = False,
+    dry_run: bool = True,
+):
+    """
+    Bulk delete audiences based on criteria.
+    
+    Args:
+        pattern: Text pattern to match in audience name (case-insensitive)
+        inactive_only: Only delete inactive audiences
+        dry_run: Preview changes without actually deleting
+    """
+    service = get_admin_service()
+    result = service.properties().audiences().list(parent=f"properties/{GA4_PROPERTY_ID}").execute()
+    
+    if 'audiences' not in result or len(result['audiences']) == 0:
+        print("No audiences found.")
+        return
+    
+    audiences = result['audiences']
+    
+    # Filter audiences based on criteria
+    matching_audiences = []
+    
+    for audience in audiences:
+        audience_id = audience['name'].split('/')[-1]
+        display_name = audience['displayName']
+        is_active = audience.get('state') == 'ACTIVE'
+        
+        # Apply filters
+        if inactive_only and is_active:
+            continue
+            
+        if pattern and pattern.lower() not in display_name.lower():
+            continue
+        
+        matching_audiences.append({
+            'id': audience_id,
+            'name': display_name,
+            'status': 'Active' if is_active else 'Inactive',
+            'audience': audience
+        })
+    
+    if not matching_audiences:
+        print("❌ No audiences match the specified criteria.")
+        return
+    
+    # Display matching audiences
+    print(f"\n📋 Found {len(matching_audiences)} audience(s) matching criteria:")
+    print("=" * 100)
+    
+    for idx, item in enumerate(matching_audiences, 1):
+        print(f"{idx}. [{item['id']}] {item['name']} ({item['status']})")
+    
+    print("\n" + "=" * 100)
+    
+    if dry_run:
+        print(f"\n🔍 DRY RUN: Would delete {len(matching_audiences)} audience(s)")
+        print("Run again without --dry-run to actually delete these audiences.")
+        return
+    
+    # Confirm deletion
+    confirm = input(f"\n⚠️ Are you sure you want to delete {len(matching_audiences)} audience(s)? Type 'yes' to confirm: ").strip().lower()
+    
+    if confirm != 'yes':
+        print("❌ Deletion cancelled.")
+        return
+    
+    # Delete audiences
+    deleted_count = 0
+    failed_count = 0
+    
+    print("\n🗑️ Deleting audiences...")
+    for item in matching_audiences:
+        try:
+            delete_audience(item['id'])
+            deleted_count += 1
+        except Exception as e:
+            print(f"❌ Failed to delete [{item['id']}] {item['name']}: {e}")
+            failed_count += 1
+    
+    print(f"\n✅ Bulk deletion complete:")
+    print(f"   Deleted: {deleted_count}")
+    print(f"   Failed: {failed_count}")
+
+
 def generate_audiences_from_feed(
     feed_url: str,
     scope: str = "both",
@@ -1127,7 +1248,7 @@ def generate_audiences_from_feed(
 
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'show-segment-usage', 'show-all-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'bulk-delete', 'get-details', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'show-segment-usage', 'show-all-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
@@ -1143,6 +1264,10 @@ def main():
                        help='Include user count metrics when listing audiences')
     parser.add_argument('--analyze-performance', action='store_true',
                        help='Analyze audience performance and provide recommendations')
+    # Bulk delete flags
+    parser.add_argument('--pattern', help='Text pattern to match in audience name for bulk delete (case-insensitive)')
+    parser.add_argument('--inactive-only', action='store_true',
+                       help='Only delete inactive audiences (for bulk-delete action)')
     # Feed generation flags
     parser.add_argument('--feed-url', default='https://api.ndestates.com/feeds/ndefeed.xml',
                         help='XML feed URL for listings (default: ND Estates feed)')
@@ -1202,8 +1327,21 @@ def main():
                 return
             delete_audience(args.audience_id)
 
+        elif args.action == 'get-details':
+            if not args.audience_id:
+                print("❌ --audience-id is required for get-details action")
+                return
+            get_audience_details(args.audience_id)
+
         elif args.action == 'delete-interactive':
             delete_audiences_interactive()
+
+        elif args.action == 'bulk-delete':
+            bulk_delete_audiences(
+                pattern=args.pattern,
+                inactive_only=args.inactive_only,
+                dry_run=args.dry_run or False,
+            )
 
         elif args.action == 'list-segments':
             list_segments_with_audiences()

@@ -67,25 +67,25 @@ def cache_feed_response(conn, status_code, payload, etag, last_modified_header):
     cursor.close()
 
 
-def fetch_feed_with_cache(conn):
+def fetch_feed_with_cache(conn, force_refresh=False):
     """Fetch feed using cache and conditional requests to avoid unnecessary API calls"""
     cached = get_cached_feed(conn)
 
-    # Use cached payload if fetched recently
-    if cached and cached.get('fetched_at'):
+    # Use cached payload if fetched recently and not forcing refresh
+    if not force_refresh and cached and cached.get('fetched_at'):
         fetched_at = cached['fetched_at']
         if cached.get('payload') and fetched_at >= datetime.now() - timedelta(minutes=MIN_FETCH_INTERVAL_MINUTES):
             return cached['payload'], 'cache-recent'
 
     headers = {}
-    if cached and cached.get('etag'):
+    if not force_refresh and cached and cached.get('etag'):
         headers['If-None-Match'] = cached['etag']
-    if cached and cached.get('last_modified_header'):
+    if not force_refresh and cached and cached.get('last_modified_header'):
         headers['If-Modified-Since'] = cached['last_modified_header']
 
     response = requests.get(XML_FEED_URL, headers=headers, timeout=30)
 
-    if response.status_code == 304:
+    if not force_refresh and response.status_code == 304:
         # Not modified; use cached payload
         if not cached or not cached.get('payload'):
             raise ValueError("Received 304 but no cached payload available")
@@ -110,50 +110,62 @@ def import_property_feed():
         conn = mysql.connector.connect(**MARIADB_CONFIG)
         cursor = conn.cursor()
 
+        # Check if properties table is empty
+        cursor.execute('SELECT COUNT(*) FROM properties')
+        property_count = cursor.fetchone()[0]
+        force_refresh = property_count == 0
+        
+        if force_refresh:
+            print("ℹ️ Properties table is empty. Forcing a fresh feed download.")
+
         # Fetch XML feed with cache support
         print(f"📡 Fetching XML feed from: {XML_FEED_URL}")
-        payload, source = fetch_feed_with_cache(conn)
+        payload, source = fetch_feed_with_cache(conn, force_refresh=force_refresh)
         print(f"✅ Feed ready via: {source}")
 
         # Parse XML
         root = ET.fromstring(payload)
+
+        # The root element is <xml>, and properties are direct children
+        properties_found = root.findall('property')
+        print(f"🔍 Found {len(properties_found)} properties in the XML feed.")
 
         properties_imported = 0
         properties_updated = 0
         properties_skipped = 0
 
         # Process each property
-        for prop_elem in root.findall('.//Property'):
+        for prop_elem in properties_found:
             try:
                 # Extract data
-                reference = prop_elem.find('Reference').text if prop_elem.find('Reference') is not None else ''
-                url = prop_elem.find('PropertyDetailLink').text if prop_elem.find('PropertyDetailLink') is not None else ''
-                property_name = prop_elem.find('Address').text if prop_elem.find('Address') is not None else ''
-                house_name = prop_elem.find('HouseName').text if prop_elem.find('HouseName') is not None else ''
-                property_type = prop_elem.find('PropertyType').text if prop_elem.find('PropertyType') is not None else ''
+                reference = prop_elem.find('reference').text if prop_elem.find('reference') is not None else ''
+                url = prop_elem.find('url').text if prop_elem.find('url') is not None else ''
+                property_name = prop_elem.find('propertyname').text if prop_elem.find('propertyname') is not None else ''
+                house_name = prop_elem.find('houseName').text if prop_elem.find('houseName') is not None else ''
+                property_type = prop_elem.find('propertytype').text if prop_elem.find('propertytype') is not None else ''
                 
-                price_elem = prop_elem.find('Price')
+                price_elem = prop_elem.find('price')
                 price = float(price_elem.text) if price_elem is not None and price_elem.text else 0
                 
-                parish = prop_elem.find('Parish').text if prop_elem.find('Parish') is not None else 'Jersey'
-                status = prop_elem.find('Status').text if prop_elem.find('Status') is not None else 'Available'
-                type_sale = prop_elem.find('Type').text if prop_elem.find('Type') is not None else 'buy'
+                parish = prop_elem.find('parish').text if prop_elem.find('parish') is not None else 'Jersey'
+                status = prop_elem.find('status').text if prop_elem.find('status') is not None else 'Available'
+                type_sale = prop_elem.find('type').text if prop_elem.find('type') is not None else 'buy'
                 
-                bedrooms = int(prop_elem.find('Bedrooms').text or 0) if prop_elem.find('Bedrooms') is not None else 0
-                bathrooms = int(prop_elem.find('Bathrooms').text or 0) if prop_elem.find('Bathrooms') is not None else 0
-                receptions = int(prop_elem.find('Receptions').text or 0) if prop_elem.find('Receptions') is not None else 0
-                parking = int(prop_elem.find('Parking').text or 0) if prop_elem.find('Parking') is not None else 0
+                bedrooms = int(prop_elem.find('bedrooms').text or 0) if prop_elem.find('bedrooms') is not None else 0
+                bathrooms = int(prop_elem.find('bathrooms').text or 0) if prop_elem.find('bathrooms') is not None else 0
+                receptions = int(prop_elem.find('receptions').text or 0) if prop_elem.find('receptions') is not None else 0
+                parking = int(prop_elem.find('parking').text or 0) if prop_elem.find('parking') is not None else 0
                 
-                latitude = float(prop_elem.find('Latitude').text or 0) if prop_elem.find('Latitude') is not None else 0
-                longitude = float(prop_elem.find('Longitude').text or 0) if prop_elem.find('Longitude') is not None else 0
+                latitude = float(prop_elem.find('latitude').text or 0) if prop_elem.find('latitude') is not None else 0
+                longitude = float(prop_elem.find('longitude').text or 0) if prop_elem.find('longitude') is not None else 0
                 
-                description = prop_elem.find('ShortDescription').text if prop_elem.find('ShortDescription') is not None else ''
+                description = prop_elem.find('description').text if prop_elem.find('description') is not None else ''
                 
-                image_one = prop_elem.find('Image1').text if prop_elem.find('Image1') is not None else ''
-                image_two = prop_elem.find('Image2').text if prop_elem.find('Image2') is not None else ''
-                image_three = prop_elem.find('Image3').text if prop_elem.find('Image3') is not None else ''
-                image_four = prop_elem.find('Image4').text if prop_elem.find('Image4') is not None else ''
-                image_five = prop_elem.find('Image5').text if prop_elem.find('Image5') is not None else ''
+                image_one = prop_elem.find('image_one').text if prop_elem.find('image_one') is not None else ''
+                image_two = prop_elem.find('image_two').text if prop_elem.find('image_two') is not None else ''
+                image_three = prop_elem.find('image_three').text if prop_elem.find('image_three') is not None else ''
+                image_four = prop_elem.find('image_four').text if prop_elem.find('image_four') is not None else ''
+                image_five = prop_elem.find('image_five').text if prop_elem.find('image_five') is not None else ''
                 
                 campaign = get_campaign_name(parish, property_type)
 
@@ -178,11 +190,15 @@ def import_property_feed():
                 
                 if cursor.rowcount == 1:
                     properties_imported += 1
-                else:
+                elif cursor.rowcount == 2:
                     properties_updated += 1
+                else:
+                    # This can happen if the data is identical and no update occurs
+                    pass
 
             except Exception as e:
                 properties_skipped += 1
+                print(f"⚠️  Skipping property due to error: {e}")
                 continue
 
         conn.commit()
@@ -191,27 +207,29 @@ def import_property_feed():
         print(f"   📥 New properties: {properties_imported}")
         print(f"   🔄 Updated properties: {properties_updated}")
         print(f"   ⏭️  Skipped: {properties_skipped}")
-        print(f"   📊 Total processed: {properties_imported + properties_updated + properties_skipped}")
+        print(f"   📊 Total processed: {properties_imported + properties_updated}")
 
         # Verify total
         cursor.execute('SELECT COUNT(*) FROM properties')
         total = cursor.fetchone()[0]
         print(f"\n🔍 MariaDB now contains {total} properties")
 
-        cursor.close()
-        conn.close()
-        return True
-
-    except (requests.exceptions.RequestException, ValueError) as e:
-        print(f"❌ Failed to fetch XML feed: {e}")
-        return False
     except Error as e:
-        print(f"❌ MariaDB error: {e}")
-        return False
+        print(f"❌ MariaDB Error: {e}")
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Failed to fetch XML feed: {e}")
+        sys.exit(1)
+    except ET.ParseError as e:
+        print(f"❌ Failed to parse XML: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"❌ Error: {e}")
-        return False
+        print(f"❌ An unexpected error occurred: {e}")
+        sys.exit(1)
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 if __name__ == "__main__":
-    success = import_property_feed()
-    sys.exit(0 if success else 1)
+    import_property_feed()
