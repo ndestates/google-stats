@@ -753,6 +753,87 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> Catalog Analytics Comparison</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Compare property catalog listings against analytics performance with viewing requests and campaign correlation</p>
+                        <div class="btn-group-vertical w-100 mb-3" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 30 --recommendations">30 Days with Recommendations</button>
+                            <button class="btn btn-success run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 14 --store-db">14 Days + Store in Database</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 7">7 Days Quick Report</button>
+                            <button class="btn btn-info run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 60 --export-csv">60 Days + Export CSV</button>
+                            <button class="btn btn-warning run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 90 --recommendations --store-db --export-csv">90 Days Complete Analysis</button>
+                        </div>
+                        <div class="border-top pt-3">
+                            <h6 class="mb-2"><i class="fas fa-database"></i> Database Tools</h6>
+                            <button class="btn btn-outline-primary btn-sm w-100 run-report mb-1" data-script="catalog_analytics_report.py" data-args="--init-db">Initialize Database Tables</button>
+                        </div>
+                        <div class="loading mt-2" id="loading-catalog_analytics_report">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running catalog analysis...
+                        </div>
+                        <div class="output" id="output-catalog_analytics_report"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-eye"></i> Viewing Requests Manager</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Track and analyze property viewing requests and correlate with analytics</p>
+                        <div class="btn-group-vertical w-100 mb-3" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="viewing_requests_manager.py" data-args="--show-history --days 30">Viewing History (30 Days)</button>
+                            <button class="btn btn-success run-report mb-1" data-script="viewing_requests_manager.py" data-args="--analyze --days 30">Analyze Correlations (30 Days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="viewing_requests_manager.py" data-args="--show-history --days 90">Viewing History (90 Days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="viewing_requests_manager.py" data-args="--top-converters --limit 10">Top 10 Converting Properties</button>
+                        </div>
+                        <div class="border-top pt-3">
+                            <h6 class="mb-2"><i class="fas fa-plus-circle"></i> Add Viewing Request</h6>
+                            <p class="small text-muted">Use CLI: --add --reference REF123 --date 2026-01-09 --notes "Details"</p>
+                        </div>
+                        <div class="loading mt-2" id="loading-viewing_requests_manager">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running viewing analysis...
+                        </div>
+                        <div class="output" id="output-viewing_requests_manager"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bullhorn"></i> Campaign Manager</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Track marketing campaigns across all platforms and correlate with viewing requests</p>
+                        <div class="btn-group-vertical w-100 mb-3" role="group">
+                            <button class="btn btn-primary run-report mb-1" data-script="campaign_manager.py" data-args="--list-active">List Active Campaigns</button>
+                            <button class="btn btn-success run-report mb-1" data-script="campaign_manager.py" data-args="--correlate-viewings --days 30">Correlate Viewings (30 Days)</button>
+                            <button class="btn btn-secondary run-report mb-1" data-script="campaign_manager.py" data-args="--timeline --days 90">Campaign Timeline (90 Days)</button>
+                            <button class="btn btn-info run-report mb-1" data-script="campaign_manager.py" data-args="--correlate-viewings --days 7">Quick Correlation (7 Days)</button>
+                        </div>
+                        <div class="border-top pt-3">
+                            <h6 class="mb-2"><i class="fas fa-plus-circle"></i> Campaign Management</h6>
+                            <p class="small text-muted mb-1"><strong>Add Campaign:</strong> --add --name "Campaign Name" --platform "Facebook Ads" --start-date 2026-01-09 --budget 500 --properties "REF1,REF2"</p>
+                            <p class="small text-muted mb-1"><strong>Analyze Campaign:</strong> --analyze --campaign-id 1</p>
+                            <p class="small text-muted mb-0"><strong>End Campaign:</strong> --end-campaign 1</p>
+                        </div>
+                        <div class="loading mt-2" id="loading-campaign_manager">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            Running campaign analysis...
+                        </div>
+                        <div class="output" id="output-campaign_manager"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Property Page URL Tools -->

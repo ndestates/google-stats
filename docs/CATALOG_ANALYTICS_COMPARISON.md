@@ -2,16 +2,37 @@
 
 ## Overview
 
-The Catalog Analytics Comparison tool helps you analyze how your property listings are performing in Google Analytics compared to your catalog inventory. It identifies which listings need marketing attention and provides platform-specific recommendations.
+The Catalog Analytics Comparison tool helps you analyze how your property listings are performing in Google Analytics compared to your catalog inventory. It identifies which listings need marketing attention, tracks viewing requests, correlates marketing campaigns with actual results, and provides platform-specific recommendations.
 
 ## Features
 
 ### 📊 Performance Analysis
-- **Pageview Tracking**: Total views per listing over 30/60/90 days
+- **Pageview Tracking**: Total views per listing over 7/14/30/60/90 days
 - **User Engagement**: Unique visitors and session counts
 - **Time on Page**: Average session duration per listing
 - **Bounce Rate**: Percentage of visitors leaving immediately
-- **Traffic Sources**: Breakdown by channel (Organic, Paid, Social, Direct)
+- **Traffic Sources**: Breakdown by 10+ channels including:
+  - Email Marketing (Mailchimp)
+  - Facebook Ads & Organic
+  - Instagram Ads & Organic
+  - LinkedIn Ads & Organic
+  - Google Ads (PPC)
+  - Google Organic (SEO)
+  - Buffer (Social Media Management)
+  - Direct, Referral, Shopping
+
+### 📞 Viewing Request Tracking
+- **Request Recording**: Log viewing requests with dates and notes
+- **Property History**: View all viewing requests per property
+- **Conversion Analysis**: Calculate viewing-to-session conversion rates
+- **Source Attribution**: Which traffic channels drive actual viewings
+
+### 📢 Campaign Correlation
+- **Campaign Tracking**: Monitor marketing campaigns across all platforms
+- **Budget Management**: Track spending and ROI per campaign
+- **Viewing Attribution**: Link viewing requests to active campaigns
+- **Timeline Analysis**: See when campaigns and viewings happened together
+- **Cost per Viewing**: Calculate marketing efficiency metrics
 
 ### 🎯 Performance Scoring
 Each listing receives a score from 0-100 based on:
