@@ -46,12 +46,14 @@ DDEV Usage:
     ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Listing" --dry-run
     
     # Bulk delete all audiences containing "Listing" (actual deletion)
-    ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Listing"
     
+      
     # Bulk delete only inactive audiences
+    # NOTE: inactive-only has no effect - API only returns active (non-archived) audiences
     ddev exec python3 scripts/audience_management.py --action bulk-delete --inactive-only
     
     # Bulk delete inactive audiences matching pattern
+    # NOTE: inactive-only has no effect - API only returns active (non-archived) audiences
     ddev exec python3 scripts/audience_management.py --action bulk-delete --pattern "Test" --inactive-only
     
     # Analyze audience performance
@@ -68,6 +70,12 @@ Features:
     - Configurable batch limits
     - Uses pagePath for accurate GA4 matching
     - Interactive deletion for easy audience management
+
+Important API Limitations:
+    - GA4 Admin API does not expose an audience 'state' field
+    - list() method only returns non-archived (active) audiences
+    - Cannot query or filter archived audiences via API
+    - All listed audiences should be considered "Active"
     - Bulk deletion by pattern or status
     - View audiences in segments
     - Track audience usage across campaigns and conversions
@@ -527,7 +535,7 @@ def get_audience_details(audience_id: str):
         print(f"ID: {audience['name'].split('/')[-1]}")
         print(f"Name: {audience['displayName']}")
         print(f"Description: {audience.get('description', 'N/A')}")
-        print(f"Status: {'Active' if audience.get('state') == 'ACTIVE' else 'Inactive'}")
+        print(f"Status: Active (listed audiences are not archived)")
         print(f"Membership Duration: {audience.get('membershipDurationDays', 'N/A')} days")
         
         # Show filter configuration
@@ -573,7 +581,8 @@ def list_audiences(include_metrics=False, analyze_performance=False):
 
         for audience in audiences['audiences']:
             audience_id = audience['name'].split('/')[-1]
-            status = "Active" if audience.get('state') == 'ACTIVE' else "Inactive"
+            # Note: list() only returns non-archived audiences, so all are active
+            status = "Active"
 
             print(f"ID: {audience_id}")
             print(f"Name: {audience['displayName']}")
@@ -978,7 +987,8 @@ def list_audiences_with_segment_info():
     for idx, audience in enumerate(audiences, 1):
         audience_id = audience['name'].split('/')[-1]
         display_name = audience['displayName']
-        status = "Active" if audience.get('state') == 'ACTIVE' else "Inactive"
+        # Note: list() only returns non-archived audiences
+        status = "Active"
         
         print(f"{idx}. [{audience_id}] {display_name}")
         print(f"    Status: {status}")
@@ -1086,8 +1096,15 @@ def bulk_delete_audiences(
     
     Args:
         pattern: Text pattern to match in audience name (case-insensitive)
-        inactive_only: Only delete inactive audiences
+        inactive_only: Only delete inactive audiences (NOTE: API limitation - list() only 
+                      returns non-archived audiences, so this filter has no effect. All 
+                      listed audiences are active.)
         dry_run: Preview changes without actually deleting
+        
+    Note:
+        GA4 Admin API does not expose an audience 'state' field. The list() method only
+        returns non-archived audiences, meaning all audiences returned are active. The
+        inactive_only parameter cannot function as intended due to this API limitation.
     """
     service = get_admin_service()
     result = service.properties().audiences().list(parent=f"properties/{GA4_PROPERTY_ID}").execute()
@@ -1095,6 +1112,12 @@ def bulk_delete_audiences(
     if 'audiences' not in result or len(result['audiences']) == 0:
         print("No audiences found.")
         return
+    
+    # Warn user if they're trying to use inactive_only filter
+    if inactive_only:
+        print("⚠️ WARNING: inactive_only flag has no effect due to API limitation.")
+        print("   GA4 Admin API list() only returns non-archived (active) audiences.")
+        print("   No audiences will match the inactive criteria.\n")
     
     audiences = result['audiences']
     
@@ -1104,7 +1127,9 @@ def bulk_delete_audiences(
     for audience in audiences:
         audience_id = audience['name'].split('/')[-1]
         display_name = audience['displayName']
-        is_active = audience.get('state') == 'ACTIVE'
+        # Note: list() only returns non-archived audiences, so all are active
+        # The inactive_only filter cannot work as intended since API doesn't expose archived audiences
+        is_active = True
         
         # Apply filters
         if inactive_only and is_active:
