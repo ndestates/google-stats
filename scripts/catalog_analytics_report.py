@@ -3,6 +3,12 @@ Catalog Analytics Comparison Script
 Compare property catalog listings against GA4 analytics data
 
 DDEV Usage:
+    # Generate 7-day catalog analytics report
+    ddev exec python3 scripts/catalog_analytics_report.py --days 7
+    
+    # Generate 14-day report
+    ddev exec python3 scripts/catalog_analytics_report.py --days 14
+    
     # Generate 30-day catalog analytics report
     ddev exec python3 scripts/catalog_analytics_report.py --days 30
     
@@ -31,11 +37,16 @@ Features:
     - Fetch property catalog from XML feed
     - Match listings to GA4 pageview data
     - Calculate pageviews, traffic sources, and average time on page
+    - Expanded traffic source tracking (Email, Social, Paid, Organic, Direct)
     - Identify low-performing listings
-    - Generate marketing recommendations by platform
+    - Platform-specific marketing recommendations (Email, Facebook, Google Ads, LinkedIn, Instagram)
+    - Store analytics data in MariaDB database
+    - Track viewing requests with dates
+    - Correlate viewing requests with marketing channels
     - Export results to CSV
     - Filter by property type and status
-    - Compare performance across time periods
+    - Compare performance across time periods (7, 14, 30, 60, 90 days)
+    - Trend analysis over multiple time periods
 """
 
 import os
@@ -54,6 +65,404 @@ import pandas as pd
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
+import mysql.connector
+from mysql.connector import Error
+
+
+def map_traffic_source(ga4_channel):
+    """
+    Map GA4 channel groups to specific marketing platforms.
+    """
+    channel_mapping = {
+        'Organic Search': 'Google Organic',
+        'Organic Social': 'Social',
+        'Paid Search': 'Google Ads',
+        'Paid Social': 'Social',
+        'Email': 'Email',
+        'Direct': 'Direct',
+        'Referral': 'Referral',
+        'Display': 'Display Ads',
+        'Organic Shopping': 'Shopping',
+        'Paid Shopping': 'Shopping Ads',
+    }
+    
+    # Check for specific sources
+    ga4_lower = ga4_channel.lower()
+    if 'facebook' in ga4_lower or 'fb' in ga4_lower:
+        return 'Facebook'
+    elif 'instagram' in ga4_lower or 'ig' in ga4_lower:
+        return 'Instagram'
+    elif 'linkedin' in ga4_lower:
+        return 'LinkedIn'
+    elif 'mailchimp' in ga4_lower or 'email' in ga4_lower:
+        return 'Email'
+    elif 'buffer' in ga4_lower:
+        return 'Buffer'
+    elif 'google' in ga4_lower and 'organic' in ga4_lower:
+        return 'Google Organic'
+    elif 'google' in ga4_lower and ('ads' in ga4_lower or 'cpc' in ga4_lower or 'paid' in ga4_lower):
+        return 'Google Ads'
+    
+    return channel_mapping.get(ga4_channel, ga4_channel)
+
+
+def get_db_connection():
+    """Get database connection using environment variables."""
+    try:
+        connection = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'db'),
+            database=os.getenv('DB_NAME', 'google_stats'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', 'root')
+        )
+        return connection
+    except Error as e:
+        print(f"⚠️ Database connection error: {e}")
+        return None
+
+
+def init_database_tables():
+    """Create database tables if they don't exist."""
+    connection = get_db_connection()
+    if not connection:
+        return False
+    
+    try:
+        cursor = connection.cursor()
+        
+        # Property analytics table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS property_analytics (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                reference VARCHAR(50) NOT NULL,
+                property_name VARCHAR(255),
+                property_url TEXT,
+                property_type VARCHAR(10),
+                property_status VARCHAR(20),
+                price INT,
+                report_date DATE NOT NULL,
+                period_days INT NOT NULL,
+                pageviews INT DEFAULT 0,
+                users INT DEFAULT 0,
+                sessions INT DEFAULT 0,
+                avg_session_duration DECIMAL(10,2) DEFAULT 0,
+                bounce_rate DECIMAL(5,4) DEFAULT 0,
+                performance_score INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_property_report (reference, report_date, period_days),
+                INDEX idx_reference (reference),
+                INDEX idx_report_date (report_date),
+                INDEX idx_performance (performance_score)
+            )
+        """)
+        
+        # Traffic sources table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS property_traffic_sources (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                analytics_id INT NOT NULL,
+                source VARCHAR(50) NOT NULL,
+                sessions INT DEFAULT 0,
+                FOREIGN KEY (analytics_id) REFERENCES property_analytics(id) ON DELETE CASCADE,
+                INDEX idx_analytics_id (analytics_id),
+                INDEX idx_source (source)
+            )
+        """)
+        
+        # Viewing requests table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS property_viewing_requests (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                reference VARCHAR(50) NOT NULL,
+                request_date DATE NOT NULL,
+                request_count INT DEFAULT 1,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_reference_date (reference, request_date),
+                INDEX idx_reference (reference),
+                INDEX idx_request_date (request_date)
+            )
+        """)
+        
+        # Marketing recommendations table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS property_marketing_recommendations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                analytics_id INT NOT NULL,
+                priority VARCHAR(20) NOT NULL,
+                platform VARCHAR(50) NOT NULL,
+                action TEXT NOT NULL,
+                reason TEXT,
+                suggested_budget VARCHAR(100),
+                expected_impact VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (analytics_id) REFERENCES property_analytics(id) ON DELETE CASCADE,
+                INDEX idx_analytics_id (analytics_id),
+                INDEX idx_priority (priority)
+            )
+        """)
+        
+        # Marketing campaigns table - track actual campaigns launched
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS marketing_campaigns (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                campaign_name VARCHAR(255) NOT NULL,
+                platform VARCHAR(50) NOT NULL,
+                campaign_type VARCHAR(50),
+                start_date DATE NOT NULL,
+                end_date DATE,
+                budget_spent DECIMAL(10,2),
+                target_references TEXT COMMENT 'Comma-separated property references',
+                status VARCHAR(20) DEFAULT 'active',
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_platform (platform),
+                INDEX idx_start_date (start_date),
+                INDEX idx_status (status)
+            )
+        """)
+        
+        # Campaign performance metrics - correlate campaigns with results
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS campaign_performance (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                campaign_id INT NOT NULL,
+                reference VARCHAR(50) NOT NULL,
+                metric_date DATE NOT NULL,
+                impressions INT DEFAULT 0,
+                clicks INT DEFAULT 0,
+                sessions INT DEFAULT 0,
+                pageviews INT DEFAULT 0,
+                viewing_requests INT DEFAULT 0,
+                conversions INT DEFAULT 0,
+                cost DECIMAL(10,2) DEFAULT 0,
+                FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_campaign_property_date (campaign_id, reference, metric_date),
+                INDEX idx_campaign_id (campaign_id),
+                INDEX idx_reference (reference),
+                INDEX idx_metric_date (metric_date)
+            )
+        """)
+        
+        # Campaign timeline - track when activity was done on campaigns
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS campaign_activity_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                campaign_id INT NOT NULL,
+                activity_date DATE NOT NULL,
+                activity_type VARCHAR(50) NOT NULL COMMENT 'launched, paused, resumed, budget_adjusted, ended',
+                description TEXT,
+                budget_change DECIMAL(10,2) DEFAULT 0,
+                created_by VARCHAR(100),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id) ON DELETE CASCADE,
+                INDEX idx_campaign_id (campaign_id),
+                INDEX idx_activity_date (activity_date),
+                INDEX idx_activity_type (activity_type)
+            )
+        """)
+        
+        connection.commit()
+        cursor.close()
+        return True
+        
+    except Error as e:
+        print(f"⚠️ Error creating tables: {e}")
+        return False
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+def store_analytics_in_database(listings, days):
+    """Store analytics data and recommendations in database."""
+    connection = get_db_connection()
+    if not connection:
+        print("⚠️ Skipping database storage - no connection")
+        return False
+    
+    try:
+        cursor = connection.cursor()
+        report_date = datetime.now().date()
+        stored_count = 0
+        
+        for listing in listings:
+            # Insert or update property analytics
+            cursor.execute("""
+                INSERT INTO property_analytics (
+                    reference, property_name, property_url, property_type, property_status,
+                    price, report_date, period_days, pageviews, users, sessions,
+                    avg_session_duration, bounce_rate, performance_score
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    property_name = VALUES(property_name),
+                    property_url = VALUES(property_url),
+                    property_type = VALUES(property_type),
+                    property_status = VALUES(property_status),
+                    price = VALUES(price),
+                    pageviews = VALUES(pageviews),
+                    users = VALUES(users),
+                    sessions = VALUES(sessions),
+                    avg_session_duration = VALUES(avg_session_duration),
+                    bounce_rate = VALUES(bounce_rate),
+                    performance_score = VALUES(performance_score),
+                    updated_at = CURRENT_TIMESTAMP
+            """, (
+                listing['reference'],
+                listing['name'],
+                listing['url'],
+                listing['type'],
+                listing['status'],
+                listing['price'],
+                report_date,
+                days,
+                listing['pageviews'],
+                listing['users'],
+                listing['sessions'],
+                listing['avg_session_duration'],
+                listing['bounce_rate'],
+                listing['performance_score']
+            ))
+            
+            analytics_id = cursor.lastrowid or cursor.execute(
+                "SELECT id FROM property_analytics WHERE reference = %s AND report_date = %s AND period_days = %s",
+                (listing['reference'], report_date, days)
+            ) or cursor.fetchone()[0]
+            
+            # Delete old traffic sources for this record
+            cursor.execute("""
+                DELETE FROM property_traffic_sources WHERE analytics_id = %s
+            """, (analytics_id,))
+            
+            # Insert traffic sources
+            for source, sessions in listing.get('traffic_sources', {}).items():
+                cursor.execute("""
+                    INSERT INTO property_traffic_sources (analytics_id, source, sessions)
+                    VALUES (%s, %s, %s)
+                """, (analytics_id, source, sessions))
+            
+            # Store marketing recommendations if available
+            if 'recommendations' in listing:
+                # Delete old recommendations
+                cursor.execute("""
+                    DELETE FROM property_marketing_recommendations WHERE analytics_id = %s
+                """, (analytics_id,))
+                
+                for rec in listing['recommendations']:
+                    cursor.execute("""
+                        INSERT INTO property_marketing_recommendations (
+                            analytics_id, priority, platform, action, reason,
+                            suggested_budget, expected_impact
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        analytics_id,
+                        rec['priority'],
+                        rec['platform'],
+                        rec['action'],
+                        rec['reason'],
+                        rec['suggested_budget'],
+                        rec['expected_impact']
+                    ))
+            
+            stored_count += 1
+        
+        connection.commit()
+        cursor.close()
+        print(f"✅ Stored {stored_count} property analytics records in database")
+        return True
+        
+    except Error as e:
+        print(f"⚠️ Error storing data in database: {e}")
+        connection.rollback()
+        return False
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+def add_viewing_request(reference, request_date=None, notes=""):
+    """Add a viewing request for a property."""
+    if request_date is None:
+        request_date = datetime.now().date()
+    
+    connection = get_db_connection()
+    if not connection:
+        print("❌ Cannot add viewing request - no database connection")
+        return False
+    
+    try:
+        cursor = connection.cursor()
+        
+        cursor.execute("""
+            INSERT INTO property_viewing_requests (reference, request_date, request_count, notes)
+            VALUES (%s, %s, 1, %s)
+            ON DUPLICATE KEY UPDATE
+                request_count = request_count + 1,
+                notes = CONCAT(IFNULL(notes, ''), IF(notes IS NULL OR notes = '', '', '; '), %s)
+        """, (reference, request_date, notes, notes))
+        
+        connection.commit()
+        cursor.close()
+        
+        print(f"✅ Added viewing request for {reference} on {request_date}")
+        return True
+        
+    except Error as e:
+        print(f"❌ Error adding viewing request: {e}")
+        return False
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+def get_viewing_requests_for_period(reference, days=30):
+    """Get viewing requests for a property over a period."""
+    connection = get_db_connection()
+    if not connection:
+        return []
+    
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days)
+        
+        cursor.execute("""
+            SELECT request_date, SUM(request_count) as total_requests, GROUP_CONCAT(notes SEPARATOR '; ') as all_notes
+            FROM property_viewing_requests
+            WHERE reference = %s AND request_date BETWEEN %s AND %s
+            GROUP BY request_date
+            ORDER BY request_date DESC
+        """, (reference, start_date, end_date))
+        
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+        
+    except Error as e:
+        print(f"⚠️ Error fetching viewing requests: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+def correlate_viewings_with_marketing(listings, days):
+    """Add viewing request data to listings and correlate with traffic sources."""
+    for listing in listings:
+        viewing_requests = get_viewing_requests_for_period(listing['reference'], days)
+        listing['viewing_requests'] = viewing_requests
+        listing['total_viewing_requests'] = sum(vr['total_requests'] for vr in viewing_requests)
+        
+        # Calculate correlation score (simple metric)
+        if listing['total_viewing_requests'] > 0 and listing['sessions'] > 0:
+            listing['viewing_conversion_rate'] = (listing['total_viewing_requests'] / listing['sessions']) * 100
+        else:
+            listing['viewing_conversion_rate'] = 0
+    
+    return listings
 
 
 def fetch_feed(feed_url: str = "https://api.ndestates.com/feeds/ndefeed.xml") -> str:
@@ -160,6 +569,9 @@ def get_analytics_data(days: int = 30):
             page_path = row.dimension_values[0].value
             traffic_source = row.dimension_values[1].value
             
+            # Map GA4 channel groups to our specific channels
+            mapped_source = map_traffic_source(traffic_source)
+            
             pageviews = int(row.metric_values[0].value)
             users = int(row.metric_values[1].value)
             sessions = int(row.metric_values[2].value)
@@ -172,7 +584,7 @@ def get_analytics_data(days: int = 30):
             data['sessions'] += sessions
             data['total_session_duration'] += avg_duration * sessions
             data['bounce_rate_sum'] += bounce_rate * sessions
-            data['traffic_sources'][traffic_source] += sessions
+            data['traffic_sources'][mapped_source] += sessions
             data['session_count'] += sessions
     
     # Calculate averages
@@ -288,11 +700,33 @@ def generate_marketing_recommendations(listing):
             'expected_impact': 'HIGH'
         }]
     
-    # Analyze traffic sources
-    organic_sessions = listing['traffic_sources'].get('Organic Search', 0)
-    paid_sessions = listing['traffic_sources'].get('Paid Search', 0)
-    social_sessions = listing['traffic_sources'].get('Organic Social', 0)
+    # Analyze traffic sources with expanded channels
+    email_sessions = listing['traffic_sources'].get('Email', 0)
+    facebook_sessions = listing['traffic_sources'].get('Facebook', 0)
+    instagram_sessions = listing['traffic_sources'].get('Instagram', 0)
+    linkedin_sessions = listing['traffic_sources'].get('LinkedIn', 0)
+    google_organic = listing['traffic_sources'].get('Google Organic', 0)
+    google_paid = listing['traffic_sources'].get('Google Ads', 0)
+    organic_search = listing['traffic_sources'].get('Organic Search', 0)
+    paid_search = listing['traffic_sources'].get('Paid Search', 0)
+    social_sessions = listing['traffic_sources'].get('Social', 0)
     direct_sessions = listing['traffic_sources'].get('Direct', 0)
+    
+    # Calculate totals
+    total_organic = google_organic + organic_search
+    total_paid = google_paid + paid_search
+    total_social = facebook_sessions + instagram_sessions + linkedin_sessions + social_sessions
+    
+    # No email traffic - critical missed opportunity
+    if email_sessions == 0:
+        recommendations.append({
+            'priority': 'HIGH',
+            'platform': 'Mailchimp Email',
+            'action': 'Launch email marketing campaign',
+            'reason': 'No email traffic detected - leverage existing database',
+            'suggested_budget': 'Internal effort + Mailchimp subscription',
+            'expected_impact': 'HIGH'
+        })
     
     # Low overall performance
     if score < 30:
@@ -305,28 +739,40 @@ def generate_marketing_recommendations(listing):
             'expected_impact': 'HIGH'
         })
         
-        recommendations.append({
-            'priority': 'HIGH',
-            'platform': 'Facebook/Instagram',
-            'action': 'Create property showcase ads',
-            'reason': 'Need broader audience reach with visual content',
-            'suggested_budget': '£100-200/month',
-            'expected_impact': 'MEDIUM'
-        })
+        # Separate Facebook and Instagram recommendations
+        if facebook_sessions < 5:
+            recommendations.append({
+                'priority': 'HIGH',
+                'platform': 'Facebook Ads',
+                'action': 'Create property showcase ads',
+                'reason': f'Low Facebook traffic ({facebook_sessions} sessions) - visual platform ideal for properties',
+                'suggested_budget': '£100-200/month',
+                'expected_impact': 'HIGH'
+            })
+        
+        if instagram_sessions < 5:
+            recommendations.append({
+                'priority': 'HIGH',
+                'platform': 'Instagram Ads',
+                'action': 'Create Instagram Stories and Feed ads',
+                'reason': f'Low Instagram traffic ({instagram_sessions} sessions) - high engagement platform',
+                'suggested_budget': '£75-150/month',
+                'expected_impact': 'MEDIUM'
+            })
     
     # Low organic traffic
-    if organic_sessions < total_sessions * 0.3:
+    if total_organic < total_sessions * 0.3 and total_sessions > 0:
         recommendations.append({
             'priority': 'MEDIUM',
-            'platform': 'SEO',
+            'platform': 'SEO / Google Organic',
             'action': 'Optimize listing content and metadata',
-            'reason': f'Low organic traffic ({organic_sessions} sessions, {organic_sessions/total_sessions*100:.1f}% of total)',
+            'reason': f'Low organic traffic ({total_organic} sessions, {total_organic/total_sessions*100:.1f}% of total)',
             'suggested_budget': 'Internal effort or £300-500 one-time',
             'expected_impact': 'MEDIUM (long-term)'
         })
     
     # No paid traffic on valuable property
-    if paid_sessions == 0 and listing.get('price', 0) > 400000:
+    if total_paid == 0 and listing.get('price', 0) > 400000:
         recommendations.append({
             'priority': 'MEDIUM',
             'platform': 'Google Ads',
@@ -336,15 +782,26 @@ def generate_marketing_recommendations(listing):
             'expected_impact': 'MEDIUM'
         })
     
-    # Low social presence
-    if social_sessions < 5:
+    # LinkedIn for high-value properties
+    if linkedin_sessions < 3 and listing.get('price', 0) > 500000:
         recommendations.append({
-            'priority': 'LOW',
+            'priority': 'MEDIUM',
+            'platform': 'LinkedIn Ads',
+            'action': 'Target professional audience',
+            'reason': f'Premium property (£{listing["price"]:,}) with minimal LinkedIn presence ({linkedin_sessions} sessions)',
+            'suggested_budget': '£100-200/month',
+            'expected_impact': 'MEDIUM'
+        })
+    
+    # Low overall social presence
+    if total_social < 10:
+        recommendations.append({
+            'priority': 'MEDIUM',
             'platform': 'Social Media',
             'action': 'Increase social media posting frequency',
-            'reason': f'Minimal social traffic ({social_sessions} sessions)',
+            'reason': f'Minimal social traffic ({total_social} sessions across all platforms)',
             'suggested_budget': 'Internal effort',
-            'expected_impact': 'LOW-MEDIUM'
+            'expected_impact': 'MEDIUM'
         })
     
     # High bounce rate
@@ -441,8 +898,18 @@ def generate_report(listings, days, include_recommendations=False, low_performer
                 for source, count in sorted(listing['traffic_sources'].items(), key=lambda x: x[1], reverse=True):
                     print(f"        - {source}: {count} sessions")
             
+            # Show viewing requests if available
+            if listing.get('total_viewing_requests', 0) > 0:
+                print(f"     👁️ Viewing Requests: {listing['total_viewing_requests']} in last {days} days")
+                if listing.get('viewing_conversion_rate', 0) > 0:
+                    print(f"        Viewing Conversion Rate: {listing['viewing_conversion_rate']:.2f}%")
+                if listing.get('viewing_requests'):
+                    for vr in listing['viewing_requests'][:3]:  # Show last 3
+                        print(f"        - {vr['request_date']}: {vr['total_requests']} request(s)")
+            
             if include_recommendations:
                 recommendations = generate_marketing_recommendations(listing)
+                listing['recommendations'] = recommendations  # Store for database
                 print(f"     🎯 Marketing Recommendations:")
                 for rec in recommendations[:3]:  # Show top 3 recommendations
                     print(f"        [{rec['priority']}] {rec['platform']}: {rec['action']}")
@@ -485,6 +952,8 @@ def export_to_csv(listings, days, filename=None):
             'Avg Session Duration (s)': round(listing['avg_session_duration'], 2),
             'Bounce Rate (%)': round(listing['bounce_rate'] * 100, 2),
             'Top Traffic Sources': traffic_sources_str,
+            'Viewing Requests': listing.get('total_viewing_requests', 0),
+            'Viewing Conversion Rate (%)': round(listing.get('viewing_conversion_rate', 0), 2),
         })
     
     df = pd.DataFrame(export_data)
@@ -496,7 +965,7 @@ def export_to_csv(listings, days, filename=None):
 
 def main():
     parser = argparse.ArgumentParser(description='Catalog Analytics Comparison Report')
-    parser.add_argument('--days', type=int, default=30, choices=[30, 60, 90],
+    parser.add_argument('--days', type=int, default=30, choices=[7, 14, 30, 60, 90],
                        help='Time period for analytics (default: 30)')
     parser.add_argument('--recommendations', action='store_true',
                        help='Include marketing recommendations')
@@ -510,8 +979,32 @@ def main():
                        help='Show only low-performing listings (score < 40)')
     parser.add_argument('--feed-url', default='https://api.ndestates.com/feeds/ndefeed.xml',
                        help='XML feed URL (default: ND Estates feed)')
+    parser.add_argument('--store-db', action='store_true',
+                       help='Store results in database for trend analysis')
+    parser.add_argument('--add-viewing', nargs=2, metavar=('REFERENCE', 'DATE'),
+                       help='Add viewing request: REFERENCE YYYY-MM-DD (or "today")')
+    parser.add_argument('--viewing-notes', default='',
+                       help='Notes for viewing request')
+    parser.add_argument('--init-db', action='store_true',
+                       help='Initialize database tables')
     
     args = parser.parse_args()
+    
+    # Handle database initialization
+    if args.init_db:
+        print("🔧 Initializing database tables...")
+        if init_database_tables():
+            print("✅ Database tables initialized successfully")
+        else:
+            print("❌ Failed to initialize database tables")
+        return
+    
+    # Handle adding viewing request
+    if args.add_viewing:
+        reference, date_str = args.add_viewing
+        viewing_date = datetime.now().date() if date_str.lower() == 'today' else datetime.strptime(date_str, '%Y-%m-%d').date()
+        add_viewing_request(reference, viewing_date, args.viewing_notes)
+        return
     
     if not GA4_PROPERTY_ID:
         print("❌ GA4_PROPERTY_ID not found. Please check your .env file.")
@@ -539,6 +1032,9 @@ def main():
         # Match listings to analytics
         listings = match_listings_to_analytics(listings, analytics_data)
         
+        # Correlate with viewing requests
+        listings = correlate_viewings_with_marketing(listings, args.days)
+        
         # Generate report
         listings = generate_report(
             listings,
@@ -546,6 +1042,11 @@ def main():
             include_recommendations=args.recommendations,
             low_performers_only=args.low_performers
         )
+        
+        # Store in database if requested
+        if args.store_db:
+            print("\n💾 Storing analytics data in database...")
+            store_analytics_in_database(listings, args.days)
         
         # Export if requested
         if args.export_csv:
