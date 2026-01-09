@@ -69,6 +69,8 @@ if (!defined('SESSIONS_FILE')) define('SESSIONS_FILE', __DIR__ . '/uploads/sessi
 if (!defined('MAX_LOGIN_ATTEMPTS')) define('MAX_LOGIN_ATTEMPTS', 5);
 if (!defined('LOCKOUT_TIME')) define('LOCKOUT_TIME', 900); // 15 minutes
 if (!defined('SESSION_TIMEOUT')) define('SESSION_TIMEOUT', 3600); // 1 hour
+if (!defined('TWO_FACTOR_WINDOW')) define('TWO_FACTOR_WINDOW', 1); // +/- 1 time slice
+if (!defined('TWO_FACTOR_PERIOD')) define('TWO_FACTOR_PERIOD', 30); // 30s TOTP window
 
 /**
  * Initialize users file if it doesn't exist
@@ -83,7 +85,10 @@ function init_users_file() {
             'created_at' => date('Y-m-d H:i:s'),
             'last_login' => null,
             'login_attempts' => 0,
-            'locked_until' => null
+            'locked_until' => null,
+            'two_factor_enabled' => false,
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => []
         ];
         $users = [$default_user];
         file_put_contents(USERS_FILE, json_encode($users, JSON_PRETTY_PRINT));
@@ -98,8 +103,38 @@ function load_users() {
     if (!file_exists(USERS_FILE)) {
         init_users_file();
     }
-    $data = json_decode(file_get_contents(USERS_FILE), true);
-    return $data ?: [];
+        $data = json_decode(file_get_contents(USERS_FILE), true);
+        $users = $data ?: [];
+
+        // Backward compatibility: ensure new fields exist
+        foreach ($users as &$user) {
+            if (!array_key_exists('two_factor_enabled', $user)) {
+                $user['two_factor_enabled'] = false;
+            }
+            if (!array_key_exists('two_factor_secret', $user)) {
+                $user['two_factor_secret'] = null;
+            }
+            if (!array_key_exists('two_factor_recovery_codes', $user)) {
+                $user['two_factor_recovery_codes'] = [];
+            }
+        }
+
+        return $users;
+
+    // Backward compatibility: ensure new fields exist
+    foreach ($users as &$user) {
+        if (!array_key_exists('two_factor_enabled', $user)) {
+            $user['two_factor_enabled'] = false;
+        }
+        if (!array_key_exists('two_factor_secret', $user)) {
+            $user['two_factor_secret'] = null;
+        }
+        if (!array_key_exists('two_factor_recovery_codes', $user)) {
+            $user['two_factor_recovery_codes'] = [];
+        }
+    }
+
+    return $users;
 }
 
 /**
@@ -125,6 +160,163 @@ function load_sessions() {
  */
 function save_sessions($sessions) {
     file_put_contents(SESSIONS_FILE, json_encode($sessions, JSON_PRETTY_PRINT));
+}
+
+/**
+ * Utility: fetch user by username
+ */
+function &find_user($username, &$users) {
+    foreach ($users as &$u) {
+        if ($u['username'] === $username) {
+            return $u;
+        }
+    }
+    static $null = null;
+    return $null;
+}
+
+/**
+ * Generate a random Base32 secret for TOTP
+ */
+function generate_totp_secret($length = 16) {
+    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $secret = '';
+    for ($i = 0; $i < $length; $i++) {
+        $secret .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+    }
+    return $secret;
+}
+
+/**
+ * Decode Base32 (RFC 4648) without padding
+ */
+function base32_decode_nopad($b32) {
+    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $b32 = strtoupper($b32);
+    $bits = '';
+    $bytes = '';
+
+    for ($i = 0; $i < strlen($b32); $i++) {
+        $val = strpos($alphabet, $b32[$i]);
+        if ($val === false) {
+            continue;
+        }
+        $bits .= str_pad(decbin($val), 5, '0', STR_PAD_LEFT);
+    }
+
+    for ($i = 0; $i + 8 <= strlen($bits); $i += 8) {
+        $bytes .= chr(bindec(substr($bits, $i, 8)));
+    }
+
+    return $bytes;
+}
+
+/**
+ * Generate a TOTP code for a secret
+ */
+function generate_totp($secret, $time_slice = null) {
+    $time_slice = $time_slice ?? floor(time() / TWO_FACTOR_PERIOD);
+    $secret_key = base32_decode_nopad($secret);
+
+    $time = pack('N*', 0) . pack('N*', $time_slice);
+    $hash = hash_hmac('sha1', $time, $secret_key, true);
+    $offset = ord(substr($hash, -1)) & 0x0F;
+    $truncated = (ord($hash[$offset]) & 0x7F) << 24 |
+                 (ord($hash[$offset + 1]) & 0xFF) << 16 |
+                 (ord($hash[$offset + 2]) & 0xFF) << 8 |
+                 (ord($hash[$offset + 3]) & 0xFF);
+    $code = $truncated % 1000000;
+    return str_pad($code, 6, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Verify a TOTP code within the allowed window
+ */
+function verify_totp($secret, $code) {
+    if (!$secret || !$code) {
+        return false;
+    }
+    $code = preg_replace('/\s+/', '', $code);
+    if (!preg_match('/^\d{6}$/', $code)) {
+        return false;
+    }
+
+    $current_slice = floor(time() / TWO_FACTOR_PERIOD);
+    for ($i = -TWO_FACTOR_WINDOW; $i <= TWO_FACTOR_WINDOW; $i++) {
+        if (hash_equals(generate_totp($secret, $current_slice + $i), $code)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Create a login session for a user
+ */
+function create_user_session($username, $ip = 'unknown') {
+    $sessions = load_sessions();
+    $session_id = test_session_id();
+    $sessions[$session_id] = [
+        'user_id' => $username,
+        'created_at' => time(),
+        'last_activity' => time(),
+        'ip' => $ip
+    ];
+    save_sessions($sessions);
+    test_session_set('user_id', $username);
+}
+
+/**
+ * Mark the user as pending 2FA challenge
+ */
+function set_pending_two_factor($username, $redirect = 'admin.php') {
+    test_session_set('pending_2fa_user', $username);
+    test_session_set('pending_2fa_expires', time() + 600);
+    test_session_set('pending_2fa_redirect', $redirect);
+}
+
+/**
+ * Clear any pending 2FA markers
+ */
+function clear_pending_two_factor() {
+    test_session_set('pending_2fa_user', null);
+    test_session_set('pending_2fa_expires', null);
+    test_session_set('pending_2fa_redirect', null);
+}
+
+/**
+ * Persist login metadata and create the session record
+ */
+function finalize_login_success(&$users, $username, $ip = 'unknown') {
+    foreach ($users as &$user) {
+        if ($user['username'] === $username) {
+            $user['login_attempts'] = 0;
+            $user['locked_until'] = null;
+            $user['last_login'] = date('Y-m-d H:i:s');
+            break;
+        }
+    }
+    save_users($users);
+    create_user_session($username, $ip);
+}
+
+/**
+ * Persist 2FA settings for a user
+ */
+function set_two_factor_settings($username, $enabled, $secret = null) {
+    $users = load_users();
+    foreach ($users as &$user) {
+        if ($user['username'] === $username) {
+            $user['two_factor_enabled'] = $enabled;
+            $user['two_factor_secret'] = $secret;
+            if (!$enabled) {
+                $user['two_factor_recovery_codes'] = [];
+            }
+            save_users($users);
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -201,15 +393,7 @@ function authenticate_user($username, $password) {
     }
 
     $users = load_users();
-    $user = null;
-
-    // Find user
-    foreach ($users as &$u) {
-        if ($u['username'] === $username) {
-            $user = &$u;
-            break;
-        }
-    }
+    $user = &find_user($username, $users);
 
     if (!$user) {
         $web_logger->log_authentication(false, $username);
@@ -235,26 +419,20 @@ function authenticate_user($username, $password) {
         return false;
     }
 
-    // Successful login
+    // Password validated
     $user['login_attempts'] = 0;
     $user['locked_until'] = null;
-    $user['last_login'] = date('Y-m-d H:i:s');
     save_users($users);
 
-    // Create session
-    $sessions = load_sessions();
-    $session_id = test_session_id();
-    $sessions[$session_id] = [
-        'user_id' => $username,
-        'created_at' => time(),
-        'last_activity' => time(),
-        'ip' => $ip
-    ];
-    save_sessions($sessions);
+    // If 2FA is enabled, park the session until OTP is confirmed
+    if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_secret'])) {
+        set_pending_two_factor($username, $_GET['redirect'] ?? 'admin.php');
+        $web_logger->log_authentication(true, $username, '2FA_REQUIRED');
+        return '2fa_required';
+    }
 
-    test_session_set('user_id', $username);
-
-    $web_logger->log_authentication(true, $username);
+    finalize_login_success($users, $username, $ip);
+    $web_logger->log_authentication(true, $username, 'PASSWORD_ONLY');
     return true;
 }
 
@@ -269,6 +447,8 @@ function logout_user() {
         unset($sessions[$session_id]);
         save_sessions($sessions);
     }
+
+    clear_pending_two_factor();
 
     // Clear test session
     if (defined('TEST_MODE')) {
@@ -300,7 +480,10 @@ function add_user($username, $password, $role = 'admin') {
         'created_at' => date('Y-m-d H:i:s'),
         'last_login' => null,
         'login_attempts' => 0,
-        'locked_until' => null
+        'locked_until' => null,
+        'two_factor_enabled' => false,
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => []
     ];
 
     $users[] = $new_user;
@@ -436,11 +619,18 @@ if (isset($_GET['action'])) {
                 $username = trim($_POST['username'] ?? '');
                 $password = $_POST['password'] ?? '';
 
-                if (authenticate_user($username, $password)) {
+                $result = authenticate_user($username, $password);
+                if ($result === true) {
                     // Regenerate CSRF token after successful login for security
                     generate_csrf_token();
                     $redirect = $_GET['redirect'] ?? 'admin.php';
                     header('Location: ' . $redirect);
+                    exit;
+                } elseif ($result === '2fa_required') {
+                    // Preserve intended redirect for after 2FA success
+                    $redirect = $_GET['redirect'] ?? 'admin.php';
+                    test_session_set('pending_2fa_redirect', $redirect);
+                    header('Location: twofactor.php');
                     exit;
                 } else {
                     $error = isset($_SESSION['login_error']) ? $_SESSION['login_error'] : 'invalid';
@@ -537,6 +727,57 @@ if (isset($_GET['action'])) {
                     header('Location: admin.php?error=wrong_current_password');
                     exit;
                 }
+            }
+            break;
+
+        case 'enable_2fa':
+            if (is_logged_in() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                if (!validate_csrf_token()) {
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
+                $current_user = get_logged_in_user();
+                $secret = test_session_get('two_factor_setup_secret');
+                $code = $_POST['two_factor_code'] ?? '';
+
+                if (!$secret) {
+                    header('Location: admin.php?error=twofa_missing_secret');
+                    exit;
+                }
+
+                if (!verify_totp($secret, $code)) {
+                    header('Location: admin.php?error=twofa_invalid_code');
+                    exit;
+                }
+
+                set_two_factor_settings($current_user['username'], true, $secret);
+                test_session_set('two_factor_setup_secret', null);
+                header('Location: admin.php?success=twofa_enabled');
+                exit;
+            }
+            break;
+
+        case 'disable_2fa':
+            if (is_logged_in() && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                if (!validate_csrf_token()) {
+                    header('Location: admin.php?error=csrf_invalid');
+                    exit;
+                }
+
+                $current_user = get_logged_in_user();
+                set_two_factor_settings($current_user['username'], false, null);
+                test_session_set('two_factor_setup_secret', null);
+                header('Location: admin.php?success=twofa_disabled');
+                exit;
+            }
+            break;
+
+        case 'regenerate_2fa_secret':
+            if (is_logged_in()) {
+                test_session_set('two_factor_setup_secret', generate_totp_secret());
+                header('Location: admin.php?success=twofa_secret_regenerated');
+                exit;
             }
             break;
     }

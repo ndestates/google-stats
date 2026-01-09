@@ -9,12 +9,20 @@ database:
     type: mariadb
     version: "10.11"
 use_dns_when_possible: true
-web_environment: 
+web_environment:
+    - DB_HOST=db
+    - DB_NAME=google-stats
+    - DB_USERNAME=db
+    - DB_PASSWORD=db
     - GOOGLE_APPLICATION_CREDENTIALS=/var/www/html/.ddev/keys/ga4-page-analytics-cf93eb65ac26.json
- 
 corepack_enable: false
 
-
+hooks:
+  pre-stop:
+    # - exec-host: "ddev snapshot"
+    - exec-host: "ddev export-db -f backup/latest-google-stats-db.sql.gz --database=google-stats"
+    - exec-host: "ddev export-db -f backup/$(date +%Y%m%d%H%M%S)-google-stats-db.sql.gz --database=google-stats"
+         
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides
