@@ -1,6 +1,8 @@
 """
 Google Analytics 4 Configuration Module
 Handles environment variables and GA4 client setup
+
+Enhanced with database-backed encrypted credential storage for improved security.
 """
 
 import os
@@ -10,9 +12,12 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Check if we should use database credentials (recommended for production)
+USE_DATABASE_CREDENTIALS = os.getenv("USE_DATABASE_CREDENTIALS", "false").lower() == "true"
+
 # GA4 Configuration
 GA4_PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
-GA4_KEY_PATH = os.getenv("GA4_KEY_PATH")
+GA4_KEY_PATH = os.getenv("GA4_KEY_PATH")  # Legacy file-based path (fallback)
 
 # Property Information (optional - for PDF customization)
 PROPERTY_NAME = os.getenv("PROPERTY_NAME", "")
@@ -57,14 +62,53 @@ GSC_KEY_PATH = os.getenv("GSC_KEY_PATH")
 # Reports directory
 REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports")
 
+# Credential manager singleton
+_credential_manager = None
+
+def get_credential_manager():
+    """Get or create credential manager instance"""
+    global _credential_manager
+    if _credential_manager is None:
+        try:
+            from src.credential_manager import DatabaseCredentialManager
+            _credential_manager = DatabaseCredentialManager()
+        except Exception as e:
+            # If database credentials fail, we'll fall back to file-based
+            pass
+    return _credential_manager
+
+def get_ga4_credentials_path():
+    """
+    Get GA4 credentials path - from database or file
+    
+    Returns path to credential file (temporary if from database)
+    """
+    if USE_DATABASE_CREDENTIALS:
+        try:
+            manager = get_credential_manager()
+            if manager:
+                return manager.get_credential_as_temp_file("GA4 Service Account", "google_token")
+        except Exception as e:
+            print(f"⚠️  Database credential retrieval failed, falling back to file: {e}")
+    
+    # Fall back to file-based credential
+    if not GA4_KEY_PATH:
+        raise ValueError("GA4_KEY_PATH environment variable is not set and database credentials not available.")
+    if not os.path.exists(GA4_KEY_PATH):
+        raise FileNotFoundError(f"GA4 service account key not found at {GA4_KEY_PATH}")
+    
+    return GA4_KEY_PATH
+
 def validate_config():
     """Validate that all required environment variables are set"""
     if not GA4_PROPERTY_ID:
         raise ValueError("GA4_PROPERTY_ID environment variable is not set. Please check your .env file.")
-    if not GA4_KEY_PATH:
-        raise ValueError("GA4_KEY_PATH environment variable is not set. Please check your .env file.")
-    if not os.path.exists(GA4_KEY_PATH):
-        raise FileNotFoundError(f"GA4 service account key not found at {GA4_KEY_PATH}. Please check the path.")
+    
+    # Try to get credentials (will raise error if neither database nor file available)
+    try:
+        get_ga4_credentials_path()
+    except Exception as e:
+        raise ValueError(f"GA4 credentials not available: {e}")
 
 def validate_gsc_config():
     """Validate that GSC environment variables are set"""
@@ -78,11 +122,14 @@ def get_ga4_admin_client():
     """Get authenticated GA4 Admin API client"""
     from google.analytics.admin_v1beta import AnalyticsAdminServiceClient
 
-    # Set environment variable for authentication
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
-
     # Validate configuration
     validate_config()
+    
+    # Get credentials path (from database or file)
+    cred_path = get_ga4_credentials_path()
+    
+    # Set environment variable for authentication
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 
     return AnalyticsAdminServiceClient()
 
@@ -90,11 +137,14 @@ def get_ga4_client():
     """Get authenticated GA4 Data API client"""
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
 
-    # Set environment variable for authentication
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GA4_KEY_PATH
-
     # Validate configuration
     validate_config()
+    
+    # Get credentials path (from database or file)
+    cred_path = get_ga4_credentials_path()
+    
+    # Set environment variable for authentication
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 
     return BetaAnalyticsDataClient()
 

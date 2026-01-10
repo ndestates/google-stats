@@ -60,9 +60,9 @@ def get_db_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'db'),
-            database=os.getenv('DB_NAME', 'google_stats'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', 'root')
+            database=os.getenv('DB_NAME', 'google-stats'),
+            user=os.getenv('DB_USER', 'db'),
+            password=os.getenv('DB_PASSWORD', 'db')
         )
         return connection
     except Error as e:

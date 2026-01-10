@@ -1,0 +1,509 @@
+/* 
+ * Facebook Stats - Branding & Color Scheme
+ * 
+ * Customize this file to match your brand identity.
+ * All color variables are defined here for easy theming.
+ * 
+ * Usage: Update the CSS variables in :root to change the entire theme
+ */
+
+/* ============================================
+   COLOR PALETTE VARIABLES
+   ============================================ */
+
+:root {
+    /* Light Blue Palette - Primary secondary colors, cards, accents */
+    --nd-light-blue-100: #F0F9FB;
+    --nd-light-blue-200: #C7E7F1;
+    --nd-light-blue-300: #9FD6E6;
+    --nd-light-blue-400: #76C4DC;
+    --nd-light-blue-500: #4EB3D1;
+    --nd-light-blue-600: #319CBB;
+    --nd-light-blue-700: #267A93;
+    --nd-light-blue-800: #1C586A;
+    --nd-light-blue-900: #113742;
+
+    /* Dark Blue Palette - Primary colors, headers, buttons */
+    --nd-dark-blue-100: #62B0FE;
+    --nd-dark-blue-200: #49A3FD;
+    --nd-dark-blue-300: #1689FD;
+    --nd-dark-blue-400: #0270DE;
+    --nd-dark-blue-500: #013D79;
+    --nd-dark-blue-600: #0156AC;
+    --nd-dark-blue-700: #012346;
+    --nd-dark-blue-800: #000A14;
+    --nd-dark-blue-900: #000A10;
+
+    /* Text Colors */
+    --nd-text: #838383;
+    /* Default text color */
+    --nd-text-light: #c3c3c3;
+    /* Light/muted text */
+    --nd-text-dark: #575757;
+    /* Darker/emphasized text */
+
+    /* Neutral Colors */
+    --nd-grey-light: #f7f7f7;
+    /* Very light background */
+    --nd-grey: #f4f4f4;
+    /* Default light background */
+
+    /* Semantic Colors (for status/feedback) */
+    --nd-success: #28a745;
+    --nd-danger: #dc3545;
+    --nd-warning: #ffc107;
+    --nd-info: #17a2b8;
+
+    /* Typography */
+    --nd-font-family: 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
+    --nd-font-size-base: 1rem;
+    --nd-font-size-sm: 0.875rem;
+    --nd-font-size-lg: 1.125rem;
+
+    /* Spacing */
+    --nd-gap-sm: 10px;
+    --nd-gap-base: 15px;
+    --nd-gap-md: 20px;
+    --nd-gap-lg: 30px;
+
+    /* Border Radius */
+    --nd-radius-sm: 4px;
+    --nd-radius-base: 8px;
+    --nd-radius-lg: 12px;
+    --nd-radius-xl: 15px;
+
+    /* Shadows */
+    --nd-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --nd-shadow-base: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --nd-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   CARD STYLING
+   ============================================ */
+
+.report-card {
+    margin-bottom: var(--nd-gap-base);
+    border: 1px solid var(--nd-light-blue-200);
+    border-radius: var(--nd-radius-lg);
+    box-shadow: var(--nd-shadow-sm);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.report-card:hover {
+    box-shadow: var(--nd-shadow-base);
+    border-color: var(--nd-light-blue-400);
+}
+
+.report-card .card-header {
+    background-color: var(--nd-light-blue-100);
+    border-bottom: 1px solid var(--nd-light-blue-200);
+    border-radius: var(--nd-radius-lg) var(--nd-radius-lg) 0 0;
+}
+
+.report-card .card-header h5 {
+    color: var(--nd-dark-blue-600);
+    font-weight: 600;
+    margin: 0;
+    font-family: var(--nd-font-family);
+}
+
+.report-card .card-body {
+    color: var(--nd-text);
+    padding: var(--nd-gap-base);
+}
+
+.report-card p {
+    color: var(--nd-text-dark);
+    font-size: var(--nd-font-size-sm);
+    margin-bottom: var(--nd-gap-base);
+    line-height: 1.6;
+}
+
+/* Compact card descriptions in grid on desktop */
+.cards-grid .report-card p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ============================================
+   OUTPUT & FEEDBACK STYLING
+   ============================================ */
+
+.output {
+    background-color: var(--nd-grey);
+    padding: var(--nd-gap-base);
+    border-radius: var(--nd-radius-base);
+    margin-top: var(--nd-gap-base);
+    border: 1px solid var(--nd-light-blue-200);
+    color: var(--nd-text);
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: var(--nd-font-size-sm);
+    line-height: 1.5;
+    overflow-x: auto;
+}
+
+.loading {
+    display: none;
+}
+
+/* ============================================
+   DASHBOARD HEADER
+   ============================================ */
+
+.facebook-dashboard {
+    background: linear-gradient(135deg, var(--nd-dark-blue-600) 0%, var(--nd-dark-blue-700) 100%);
+    border-radius: var(--nd-radius-xl);
+    padding: var(--nd-gap-lg);
+    margin-bottom: var(--nd-gap-lg);
+    color: white;
+    box-shadow: var(--nd-shadow-lg);
+    border: 1px solid var(--nd-light-blue-600);
+}
+
+.facebook-dashboard h2 {
+    font-size: 1.8rem;
+    margin-bottom: var(--nd-gap-base);
+    font-weight: 600;
+    color: #ffffff;
+    font-family: var(--nd-font-family);
+}
+
+.facebook-dashboard .subtitle {
+    font-size: var(--nd-font-size-base);
+    opacity: 0.95;
+    margin-bottom: var(--nd-gap-md);
+    color: var(--nd-light-blue-100);
+}
+
+.facebook-dashboard .alert {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--nd-light-blue-400);
+    color: var(--nd-light-blue-100);
+    border-radius: var(--nd-radius-base);
+}
+
+/* ============================================
+   RESPONSIVE GRID LAYOUT
+   ============================================ */
+
+.cards-grid {
+    display: grid;
+    gap: var(--nd-gap-md);
+    grid-template-columns: repeat(5, 1fr);
+    margin-bottom: var(--nd-gap-md);
+}
+
+/* Desktop: 5 columns (1200px and up) */
+@media (min-width: 1200px) {
+    .cards-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* Tablet: 3 columns (768px to 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Mobile: 1 column (less than 768px) */
+@media (max-width: 767px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cards-grid .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.cards-grid .card-body {
+    flex-grow: 1;
+}
+
+/* Make grid cards feel clickable without breaking form controls */
+.cards-grid .report-card {
+    cursor: pointer;
+}
+
+.cards-grid .report-card :is(button, input, select, textarea, label, a) {
+    cursor: auto;
+}
+
+/* ============================================
+   METRIC CARDS & DASHBOARD METRICS
+   ============================================ */
+
+.metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--nd-gap-md);
+}
+
+.metric-card {
+    background: rgba(79, 179, 209, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: var(--nd-radius-lg);
+    padding: var(--nd-gap-base);
+    border: 1px solid rgba(79, 179, 209, 0.3);
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    background: rgba(79, 179, 209, 0.25);
+    border-color: rgba(79, 179, 209, 0.5);
+}
+
+.metric-card .metric-icon {
+    font-size: 1.5rem;
+    margin-bottom: var(--nd-gap-base);
+    display: inline-block;
+    color: var(--nd-light-blue-400);
+}
+
+.metric-card .metric-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    font-weight: 600;
+    margin-bottom: var(--nd-gap-base);
+    color: var(--nd-light-blue-300);
+}
+
+.metric-period {
+    margin-bottom: var(--nd-gap-sm);
+}
+
+.metric-period-label {
+    display: inline-block;
+    background: rgba(79, 179, 209, 0.25);
+    padding: 2px 8px;
+    border-radius: var(--nd-radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: var(--nd-gap-sm);
+    min-width: 65px;
+    text-align: center;
+    color: var(--nd-light-blue-200);
+}
+
+.metric-value {
+    display: inline-block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* ============================================
+   BUTTON STYLING
+   ============================================ */
+
+.btn-primary {
+    background-color: var(--nd-dark-blue-600);
+    border-color: var(--nd-dark-blue-600);
+    color: white;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--nd-dark-blue-700);
+    border-color: var(--nd-dark-blue-700);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--nd-shadow-base);
+}
+
+.btn-outline-primary {
+    color: var(--nd-dark-blue-600);
+    border-color: var(--nd-dark-blue-600);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--nd-dark-blue-600);
+    border-color: var(--nd-dark-blue-600);
+    color: white;
+}
+
+.btn-success {
+    background-color: var(--nd-light-blue-600);
+    border-color: var(--nd-light-blue-600);
+    color: white;
+    font-weight: 500;
+}
+
+.btn-success:hover {
+    background-color: var(--nd-light-blue-700);
+    border-color: var(--nd-light-blue-700);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--nd-shadow-base);
+}
+
+.btn-danger {
+    background-color: var(--nd-danger);
+    border-color: var(--nd-danger);
+    color: white;
+    font-weight: 500;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+    color: white;
+}
+
+.btn-info {
+    background-color: var(--nd-light-blue-500);
+    border-color: var(--nd-light-blue-500);
+    color: white;
+    font-weight: 500;
+}
+
+.btn-info:hover {
+    background-color: var(--nd-light-blue-600);
+    border-color: var(--nd-light-blue-600);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--nd-shadow-base);
+}
+
+.btn-secondary {
+    background-color: var(--nd-grey);
+    border-color: var(--nd-light-blue-200);
+    color: var(--nd-text-dark);
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: var(--nd-light-blue-100);
+    border-color: var(--nd-light-blue-300);
+    color: var(--nd-text-dark);
+}
+
+.btn-outline-secondary {
+    color: var(--nd-text-dark);
+    border-color: var(--nd-light-blue-200);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--nd-light-blue-100);
+    border-color: var(--nd-light-blue-300);
+    color: var(--nd-text-dark);
+}
+
+/* ============================================
+   FORM CONTROLS
+   ============================================ */
+
+.form-control {
+    border-color: var(--nd-light-blue-200);
+    color: var(--nd-text-dark);
+    font-family: var(--nd-font-family);
+    font-size: var(--nd-font-size-base);
+    border-radius: var(--nd-radius-base);
+}
+
+.form-control:focus {
+    border-color: var(--nd-light-blue-600);
+    box-shadow: 0 0 0 0.2rem rgba(49, 156, 187, 0.25);
+    color: var(--nd-text-dark);
+}
+
+.form-control::placeholder {
+    color: var(--nd-text-light);
+}
+
+.form-select {
+    border-color: var(--nd-light-blue-200);
+    color: var(--nd-text-dark);
+    font-family: var(--nd-font-family);
+    font-size: var(--nd-font-size-base);
+    border-radius: var(--nd-radius-base);
+}
+
+.form-select:focus {
+    border-color: var(--nd-light-blue-600);
+    box-shadow: 0 0 0 0.2rem rgba(49, 156, 187, 0.25);
+}
+
+.form-check-input {
+    border-color: var(--nd-light-blue-300);
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: var(--nd-radius-sm);
+}
+
+.form-check-input:checked {
+    background-color: var(--nd-dark-blue-600);
+    border-color: var(--nd-dark-blue-600);
+}
+
+.form-check-input:focus {
+    border-color: var(--nd-light-blue-600);
+    box-shadow: 0 0 0 0.2rem rgba(49, 156, 187, 0.25);
+}
+
+.form-label {
+    color: var(--nd-text-dark);
+    font-weight: 500;
+    margin-bottom: var(--nd-gap-sm);
+    font-family: var(--nd-font-family);
+}
+
+.form-text {
+    color: var(--nd-text-light);
+    font-size: var(--nd-font-size-sm);
+}
+
+/* ============================================
+   STATUS & FEEDBACK
+   ============================================ */
+
+.metrics-loading {
+    text-align: center;
+    padding: var(--nd-gap-lg);
+    font-size: var(--nd-font-size-lg);
+    color: var(--nd-text-dark);
+}
+
+.metrics-error {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: var(--nd-radius-base);
+    padding: var(--nd-gap-base);
+    text-align: center;
+    color: var(--nd-danger);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-primary {
+    color: var(--nd-dark-blue-600) !important;
+}
+
+.text-secondary {
+    color: var(--nd-light-blue-600) !important;
+}
+
+.text-muted {
+    color: var(--nd-text-light) !important;
+}
+
+.bg-light {
+    background-color: var(--nd-grey) !important;
+}
+
+.border-primary {
+    border-color: var(--nd-light-blue-300) !important;
+}

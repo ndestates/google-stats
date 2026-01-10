@@ -162,29 +162,67 @@ if ($start_date && $end_date) {
 // Validate and sanitize script name to prevent security issues
 $script = basename($script); // Remove path components
 $allowed_scripts = [
+    // Core Analytics
     'page_traffic_analysis.py',
     'hourly_traffic_analysis.py',
-    'google_ads_performance.py',
-    'mailchimp_performance.py',
-    'gsc_ga_keywords.py',
     'get_top_pages.py',
     'yesterday_report.py',
-    'google_ads_ad_performance.py',
     'all_pages_sources_report.py',
+    'site_metrics.py',
+    'property_traffic_comparison.py',
+    'property_daily_traffic.py',
+    
+    // Marketing & Campaigns
+    'google_ads_performance.py',
+    'google_ads_ad_performance.py',
+    'mailchimp_performance.py',
+    'email_performance.py',
     'campaign_performance.py',
+    'campaign_manager.py',
+    'catalog_analytics_report.py',
+    'manage_google_ads.py',
+    'create_ad.py',
+    'ads_manager.py',
+    
+    // SEO & Content
+    'gsc_ga_keywords.py',
+    'seo_analysis.py',
+    'content_performance.py',
+    
+    // User Behavior & Audiences
     'audience_management.py',
+    'audience_stats.py',
+    'auto_audience_creation.py',
     'conversion_funnel_analysis.py',
     'bounce_rate_analysis.py',
     'device_geo_analysis.py',
-    'technical_performance.py',
     'user_behavior.py',
-    'content_performance.py',
-    'seo_analysis.py',
-    'social_media_analytics'
+    'user_flow_analysis.py',
+    'snapshot_audiences_mariadb.py',
+    
+    // Technical & Performance
+    'technical_performance.py',
+    
+    // Social Media
+    'social_media_analytics',
+    'social_media_timing.py',
+    
+    // Database Management
+    'create_property_database.py',
+    'create_mariadb_database.py',
+    'setup_property_database.py',
+    'setup_mariadb.py',
+    'import_property_feed.py',
+    'import_property_feed_mariadb.py',
+    'migrate_sqlite_to_mariadb.py',
+    'migrate_credentials_to_db.py',
+    'viewing_requests_manager.py',
+    'test_db_credentials.py',
+    'generate_design_document.py'
 ];
 
 if (!in_array($script, $allowed_scripts)) {
-    echo "Error: Invalid script specified";
+    echo "Error: Invalid script specified - '$script' is not in the allowed list";
     exit;
 }
 

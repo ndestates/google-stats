@@ -111,9 +111,9 @@ def get_db_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'db'),
-            database=os.getenv('DB_NAME', 'google_stats'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', 'root')
+            database=os.getenv('DB_NAME', 'google-stats'),
+            user=os.getenv('DB_USER', 'db'),
+            password=os.getenv('DB_PASSWORD', 'db')
         )
         return connection
     except Error as e:
@@ -857,10 +857,19 @@ def generate_report(listings, days, include_recommendations=False, low_performer
     
     # Summary statistics
     total_listings = len(listings)
+    
+    if total_listings == 0:
+        print("\n⚠️  WARNING: No properties found matching your criteria!")
+        print("\nPossible issues:")
+        print("  - Property references don't exist in the feed")
+        print("  - Check spelling of property references")
+        print("  - Run without --properties filter to see all available properties")
+        return listings
+    
     listings_with_traffic = sum(1 for l in listings if l['pageviews'] > 0)
     total_pageviews = sum(l['pageviews'] for l in listings)
     total_users = sum(l['users'] for l in listings)
-    avg_score = sum(l['performance_score'] for l in listings) / len(listings) if listings else 0
+    avg_score = sum(l['performance_score'] for l in listings) / total_listings
     
     print(f"\n📈 Summary:")
     print(f"   Total Listings: {total_listings}")
@@ -875,6 +884,10 @@ def generate_report(listings, days, include_recommendations=False, low_performer
     for idx, listing in enumerate(top_performers, 1):
         print(f"   {idx}. {listing['name'] or listing['reference']} - Score: {listing['performance_score']}/100")
         print(f"      Pageviews: {listing['pageviews']:,} | Users: {listing['users']:,} | Avg Time: {listing['avg_session_duration']:.0f}s")
+        if listing['traffic_sources']:
+            top_sources = sorted(listing['traffic_sources'].items(), key=lambda x: x[1], reverse=True)[:3]
+            sources_str = ", ".join([f"{src}: {cnt}" for src, cnt in top_sources])
+            print(f"      Top Sources: {sources_str}")
     
     # Low performers needing attention
     print(f"\n⚠️ Listings Needing Attention (Score < 40):")
@@ -894,9 +907,15 @@ def generate_report(listings, days, include_recommendations=False, low_performer
             print(f"     Avg Session Duration: {listing['avg_session_duration']:.0f}s | Bounce Rate: {listing['bounce_rate']*100:.1f}%")
             
             if listing['traffic_sources']:
-                print(f"     Traffic Sources:")
+                print(f"\n     📍 TRAFFIC SOURCES & MEDIUM:")
+                print(f"     {'Source/Medium':<30} {'Sessions':<12} {'% of Total'}")
+                print(f"     {'-'*30} {'-'*12} {'-'*10}")
+                total_sessions = sum(listing['traffic_sources'].values())
                 for source, count in sorted(listing['traffic_sources'].items(), key=lambda x: x[1], reverse=True):
-                    print(f"        - {source}: {count} sessions")
+                    percentage = (count / total_sessions * 100) if total_sessions > 0 else 0
+                    print(f"     {source:<30} {count:<12} {percentage:>6.1f}%")
+            else:
+                print(f"\n     📍 TRAFFIC SOURCES: No traffic data available (0 sessions)")
             
             # Show viewing requests if available
             if listing.get('total_viewing_requests', 0) > 0:
@@ -975,6 +994,8 @@ def main():
                        help='Filter by property type')
     parser.add_argument('--status', choices=['available', 'sold', 'let'],
                        help='Filter by property status')
+    parser.add_argument('--properties', type=str,
+                       help='Filter by specific property references (comma-separated, e.g., STH250039,STH240092)')
     parser.add_argument('--low-performers', action='store_true',
                        help='Show only low-performing listings (score < 40)')
     parser.add_argument('--feed-url', default='https://api.ndestates.com/feeds/ndefeed.xml',
@@ -1025,6 +1046,24 @@ def main():
         if args.status:
             listings = [l for l in listings if l['status'] == args.status]
             print(f"📋 Filtered to {len(listings)} {args.status} properties")
+        
+        if args.properties:
+            # Filter by specific property references
+            # Handle both comma-separated and space-separated references
+            property_refs = [ref.strip() for ref in args.properties.replace(',', ' ').split() if ref.strip()]
+            if property_refs:
+                # Get available references before filtering
+                available_refs = [l['reference'] for l in listings]
+                listings = [l for l in listings if l['reference'] in property_refs]
+                print(f"📋 Filtered to {len(listings)} specified properties: {', '.join(property_refs)}")
+                if len(listings) == 0:
+                    print(f"\n⚠️  ERROR: No properties matched the provided references!")
+                    print(f"   Requested: {', '.join(property_refs)}")
+                    print(f"   Available: {', '.join(available_refs[:10])}{'...' if len(available_refs) > 10 else ''}")
+                    print(f"\nTip: Run without --properties to see all {len(available_refs)} properties")
+                    return
+            else:
+                print(f"⚠️  WARNING: --properties specified but no valid references found")
         
         # Get analytics data
         analytics_data = get_analytics_data(days=args.days)

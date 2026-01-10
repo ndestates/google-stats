@@ -42,9 +42,9 @@ def get_db_connection():
     try:
         connection = mysql.connector.connect(
             host=os.getenv('DB_HOST', 'db'),
-            database=os.getenv('DB_NAME', 'google_stats'),
-            user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', 'root')
+            database=os.getenv('DB_NAME', 'google-stats'),
+            user=os.getenv('DB_USER', 'db'),
+            password=os.getenv('DB_PASSWORD', 'db')
         )
         return connection
     except Error as e:
@@ -284,6 +284,28 @@ def show_top_converters(days=30, limit=10):
         
         if not results:
             print(f"\n⚠️ No conversion data available for last {days} days")
+            print("\n📋 TROUBLESHOOTING GUIDE:")
+            print("=" * 80)
+            print("\n1️⃣ CHECK IF VIEWING REQUESTS EXIST:")
+            print("   Run: ddev exec python3 scripts/viewing_requests_manager.py --analyze --days 30")
+            print("   This will show if any viewing requests are recorded in the database.")
+            print("\n2️⃣ ADD A VIEWING REQUEST:")
+            print("   Run: ddev exec python3 scripts/viewing_requests_manager.py --add STH240092 --notes 'Test viewing'")
+            print("   Replace STH240092 with your property reference.")
+            print("\n3️⃣ CHECK IF PROPERTY ANALYTICS DATA EXISTS:")
+            print("   Run: ddev exec python3 scripts/catalog_analytics_report.py --days 30")
+            print("   This ensures properties have analytics data to correlate with.")
+            print("\n4️⃣ VERIFY DATE RANGES ALIGN:")
+            print("   Viewing requests and analytics must overlap in time period.")
+            print("   Try: --days 90 for a longer lookback period.")
+            print("\n5️⃣ CHECK DATABASE TABLES:")
+            print("   Tables needed: property_analytics, property_viewing_requests")
+            print("   Run catalog analytics with --store-db to populate data.")
+            print("\n💡 QUICK START:")
+            print("   1. Run: ddev exec python3 scripts/catalog_analytics_report.py --days 30 --store-db")
+            print("   2. Add viewing: ddev exec python3 scripts/viewing_requests_manager.py --add REF --notes 'Lead source'")
+            print("   3. Check again: ddev exec python3 scripts/viewing_requests_manager.py --top-converters --days 30")
+            print("\n" + "=" * 80)
             return
         
         print(f"\n🏆 TOP {limit} PROPERTIES BY VIEWING CONVERSION RATE - LAST {days} DAYS")

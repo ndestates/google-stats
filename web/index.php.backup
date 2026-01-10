@@ -8,10 +8,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <!-- Filament-Inspired Layout -->
-    <link href="styles/filament-layout.css" rel="stylesheet">
-    <!-- Customizable Branding & Color Scheme -->
-    <link href="css/branding.css" rel="stylesheet">
     <link href="css/ui-enhancements.css" rel="stylesheet" />
     <style>
         .property-preview {
@@ -70,6 +66,7 @@
                         <h4>Access Denied</h4>
                         <p>Your IP address has been blocked due to security policy.</p>
                     </div>
+                </div>
             </body>
             </html>
             <?php
@@ -81,7 +78,9 @@
     </head>
     <body>
         <div class="container mt-5">
-            <div class="row justify-content-center">                    <div class="card">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
                         <div class="card-header">
                             <h4 class="mb-0"><i class="fas fa-lock"></i> Login Required</h4>
                         </div>
@@ -124,8 +123,11 @@
                             <div class="mt-3 text-center">
                                 <a href="admin.php">Admin Login</a>
                             </div>
+                        </div>
                     </div>
+                </div>
             </div>
+        </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     </body>
     </html>
@@ -220,77 +222,38 @@
     </style>
 </head>
 <body>
-<div class="app-shell">
-  <!-- Left Sidebar Navigation -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar__brand">
-      <div class="sidebar__logo">GS</div>
-      <div>
-        <div class="sidebar__title">Google Stats</div>
-        <div class="sidebar__subtitle">Analytics Dashboard</div>
-      </div>
-    </div>
-    <nav class="sidebar__nav">
-      <a class="sidebar__link active" href="index.php">
-        <i class="fas fa-chart-line"></i> Overview
-      </a>
-      <a class="sidebar__link" href="run_report.php">
-        <i class="fas fa-play-circle"></i> Scripts
-      </a>
-      <a class="sidebar__link" href="documentation.php">
-        <i class="fas fa-book"></i> Documentation
-      </a>
-      <a class="sidebar__link" href="admin.php">
-        <i class="fas fa-users-cog"></i> Admin
-      </a>
-    </nav>
-    <div class="sidebar__user">
-      <div class="sidebar__user-name"><?php echo htmlspecialchars($current_user['username']); ?></div>
-      <div class="sidebar__user-role">Administrator</div>
-      <div class="sidebar__user-actions">
-        <a class="sidebar__link--muted" href="auth.php?action=logout">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
-      </div>
-    </div>
-  </aside>
-
-  <div class="main-area">
-    <!-- Top Bar Header -->
-    <header class="topbar">
-      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-        <span></span><span></span><span></span>
-      </button>
-      <div class="topbar__titles">
-        <p class="topbar__eyebrow">Analytics Platform</p>
-        <h1 class="topbar__title">Google Analytics Dashboard</h1>
-      </div>
-      <div class="topbar__actions">
-        <a class="btn btn-primary btn-sm" href="run_report.php">
-          <i class="fas fa-play"></i> Run Script
-        </a>
-      </div>
-    </header>
-
-    <!-- Page Content -->
-    <main class="content-area">
-      <!-- Hero Section -->
-      <section class="page-hero">
-        <div>
-          <p class="eyebrow">Unified Analytics View</p>
-          <h2>Real-time insights from Google Analytics 4</h2>
-          <p class="text-muted">Use the report forms below to generate analytics. Metrics will display after running each report.</p>
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">Google Analytics Reports</h1>
+            <nav>
+                <span class="me-3">Welcome, <?php echo htmlspecialchars($current_user['username']); ?></span>
+                <a href="documentation.php" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-book"></i> Documentation
+                </a>
+                <a href="admin.php" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-cog"></i> Admin
+                </a>
+                <a href="auth.php?action=logout" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </nav>
         </div>
-        <div class="hero-metrics">
-          <div class="pill">Welcome, <?php echo htmlspecialchars($current_user['username']); ?></div>
-      </section>
 
-      <!-- Report Cards Grid (responsive, mobile-first) -->
-      <div class="cards-grid">
-                <!-- Page Traffic Analysis Card -->
+        <!-- Site Metrics Dashboard -->
+        <div class="metrics-dashboard" id="metricsContainer">
+            <div class="metrics-loading">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2">Loading site metrics...</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
                 <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Page Traffic Analysis</h5>
+                        <h5>Page Traffic Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze page traffic and performance metrics for one or multiple properties</p>
@@ -310,6 +273,7 @@
                                         <i class="fas fa-th"></i> Multiple Properties
                                     </label>
                                 </div>
+                            </div>
                             <div class="mb-3" id="single-property-selector">
                                 <label for="page-url" class="form-label">Page URL or Property:</label>
                                 <select class="form-select property-url-select" id="page-url" required style="width: 100%;">
@@ -318,6 +282,7 @@
                                 <div class="form-text">
                                     <i class="fas fa-info-circle"></i> Select from property catalog or type custom URL/path
                                 </div>
+                            </div>
                             <div class="mb-3" id="multi-property-selector" style="display: none;">
                                 <label for="page-urls-multi" class="form-label">Select Multiple Properties:</label>
                                 <select class="form-select property-multi-select" id="page-urls-multi" multiple style="width: 100%;">
@@ -325,6 +290,7 @@
                                 <div class="form-text">
                                     <i class="fas fa-search"></i> Select multiple properties to compare
                                 </div>
+                            </div>
                             <div class="mb-3">
                                 <label for="analysis-days" class="form-label">Time Period:</label>
                                 <select class="form-select" id="analysis-days">
@@ -345,10 +311,12 @@
                                     <label for="property-name" class="form-label">Property Name (Optional):</label>
                                     <input type="text" class="form-control" id="property-name" placeholder="e.g., 4 Melrose Apartments">
                                     <div class="form-text">Will appear on PDF reports</div>
+                                </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="property-address" class="form-label">Property Address (Optional):</label>
                                     <input type="text" class="form-control" id="property-address" placeholder="e.g., St Helier">
                                     <div class="form-text">Will appear on PDF reports</div>
+                                </div>
                             </div>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle"></i> <strong>Company Logo:</strong> Set your company logo once in the <a href="admin.php" target="_blank">Admin Settings</a> panel. It will automatically appear on all your reports.
@@ -360,10 +328,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-page_traffic_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Hourly Traffic Analysis</h5>
+                        <h5>Hourly Traffic Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze hourly traffic patterns and best times by source</p>
@@ -377,6 +349,7 @@
                                 <div class="form-text">
                                     <i class="fas fa-search"></i> Select from property catalog or type custom URL/path
                                 </div>
+                            </div>
                             <div class="mb-3">
                                 <label for="hourly-analysis-days" class="form-label">Time Period:</label>
                                 <select class="form-select" id="hourly-analysis-days">
@@ -397,10 +370,12 @@
                                     <label for="hourly-property-name" class="form-label">Property Name (Optional):</label>
                                     <input type="text" class="form-control" id="hourly-property-name" placeholder="e.g., 4 Melrose Apartments">
                                     <div class="form-text">Will appear on PDF reports</div>
+                                </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="hourly-property-address" class="form-label">Property Address (Optional):</label>
                                     <input type="text" class="form-control" id="hourly-property-address" placeholder="e.g., St Helier">
                                     <div class="form-text">Will appear on PDF reports</div>
+                                </div>
                             </div>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle"></i> <strong>Company Logo:</strong> Set your company logo once in the <a href="admin.php" target="_blank">Admin Settings</a> panel. It will automatically appear on all your reports.
@@ -412,10 +387,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-hourly_traffic_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-google"></i> Google Ads Performance</h5>
+                        <h5>Google Ads Performance</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze Google Ads campaign performance</p>
@@ -429,10 +408,14 @@
                             Running report...
                         </div>
                         <div class="output" id="output-google_ads_performance"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Google Ads Creative Performance</h5>
+                        <h5>Google Ads Creative Performance</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze individual Google Ads creative performance</p>
@@ -445,10 +428,14 @@
                             Running report...
                         </div>
                         <div class="output" id="output-google_ads_ad_performance"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Mailchimp Performance</h5>
+                        <h5>Mailchimp Performance</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze Mailchimp campaign performance</p>
@@ -470,6 +457,7 @@
                                     <label for="mailchimp-end-date" class="form-label small">End Date</label>
                                     <input type="date" class="form-control form-control-sm" id="mailchimp-end-date" value="<?php echo date('Y-m-d', strtotime('-1 day')); ?>">
                                 </div>
+                            </div>
                             <button class="btn btn-warning btn-sm run-custom-date-report w-100" data-script="mailchimp_performance.py" data-report-type="date-range" data-start-date-id="mailchimp-start-date" data-end-date-id="mailchimp-end-date">
                                 <i class="fas fa-calendar-check"></i> Run Custom Date Range Report
                             </button>
@@ -480,10 +468,14 @@
                             Running report...
                         </div>
                         <div class="output" id="output-mailchimp_performance"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> GSC & GA4 Keywords</h5>
+                        <h5>GSC & GA4 Keywords</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze keywords from Google Search Console and GA4</p>
@@ -498,8 +490,12 @@
                             Running report...
                         </div>
                         <div class="output" id="output-gsc_ga_keywords"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-calendar-day"></i> Yesterday's Traffic Report</h5>
                     </div>
@@ -518,8 +514,12 @@
                             Analyzing yesterday's traffic...
                         </div>
                         <div class="output" id="output-yesterday_report"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-chart-bar"></i> Property Traffic Source Comparison</h5>
                     </div>
@@ -547,8 +547,12 @@
                             Generating comparison report...
                         </div>
                         <div class="output" id="output-property_traffic_comparison"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-chart-line"></i> Property Daily Traffic Breakdown</h5>
                     </div>
@@ -571,10 +575,14 @@
                             Generating daily breakdown...
                         </div>
                         <div class="output" id="output-property_daily_traffic"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-file-alt"></i> Top Pages Report</h5>
+                        <h5>Top Pages Report</h5>
                     </div>
                     <div class="card-body">
                         <p>Get top performing pages report</p>
@@ -588,10 +596,14 @@
                             Running report...
                         </div>
                         <div class="output" id="output-get_top_pages"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Audience Management</h5>
+                        <h5>Audience Management</h5>
                     </div>
                     <div class="card-body">
                         <p>Create and manage Google Analytics audiences</p>
@@ -607,10 +619,14 @@
                             Running audience management...
                         </div>
                         <div class="output" id="output-audience_management"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Audience Statistics</h5>
+                        <h5>Audience Statistics</h5>
                     </div>
                     <div class="card-body">
                         <p>Get performance metrics for all GA4 audiences</p>
@@ -624,10 +640,14 @@
                             Running audience analysis...
                         </div>
                         <div class="output" id="output-audience_stats"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> User Behavior Analysis</h5>
+                        <h5>User Behavior Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze user paths, engagement patterns, and site behavior</p>
@@ -641,10 +661,14 @@
                             Analyzing user behavior...
                         </div>
                         <div class="output" id="output-user_flow_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Conversion Funnel Analysis</h5>
+                        <h5>Conversion Funnel Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze user conversion paths and goal completion</p>
@@ -660,10 +684,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-conversion_funnel_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Bounce Rate Analysis</h5>
+                        <h5>Bounce Rate Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Identify high-bounce pages and optimization opportunities</p>
@@ -679,10 +707,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-bounce_rate_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Device & Geographic Analysis</h5>
+                        <h5>Device & Geographic Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze performance by device type and geographic location</p>
@@ -698,10 +730,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-device_geo_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Technical Performance</h5>
+                        <h5>Technical Performance</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze technical performance and custom events</p>
@@ -717,10 +753,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-technical_performance"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> User Behavior Analysis</h5>
+                        <h5>User Behavior Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze user navigation patterns and behavior flows</p>
@@ -736,10 +776,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-user_behavior"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> Content Performance</h5>
+                        <h5>Content Performance</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze content engagement and effectiveness</p>
@@ -755,10 +799,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-content_performance"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> SEO Analysis</h5>
+                        <h5>SEO Analysis</h5>
                     </div>
                     <div class="card-body">
                         <p>Analyze search engine optimization performance</p>
@@ -774,10 +822,14 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-seo_analysis"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
-                        <h5><i class="fas fa-chart-line"></i> <i class="fab fa-facebook-f"></i> <i class="fab fa-instagram"></i> <i class="fab fa-twitter"></i> Social Media Analytics</h5>
+                        <h5><i class="fab fa-facebook-f"></i> <i class="fab fa-instagram"></i> <i class="fab fa-twitter"></i> Social Media Analytics</h5>
                     </div>
                     <div class="card-body">
                         <p>Discover optimal posting hours for social media platforms by analyzing specific page traffic</p>
@@ -791,6 +843,7 @@
                                 <div class="form-text">
                                     <i class="fas fa-search"></i> Select from property catalog or type custom URL/path
                                 </div>
+                            </div>
                             <div class="mb-3">
                                 <label for="social-analysis-days" class="form-label">Time Period:</label>
                                 <select class="form-select" id="social-analysis-days">
@@ -806,8 +859,12 @@
                             Running analysis...
                         </div>
                         <div class="output" id="output-social_media_analytics"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-chart-line"></i> Catalog Analytics Comparison</h5>
                     </div>
@@ -831,6 +888,8 @@
                                 <div class="form-text">
                                     <i class="fas fa-search"></i> Type to search by reference or address (e.g., "STH240092" or "Melrose"). Click to see all properties.
                                 </div>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="catalog-days" class="form-label">Time Period:</label>
@@ -862,6 +921,7 @@
                                             <i class="fas fa-file-csv text-success"></i> Export to CSV
                                         </label>
                                     </div>
+                                </div>
                             </div>
                             
                             <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
@@ -875,13 +935,18 @@
                                 <button class="btn btn-outline-secondary btn-sm run-report mb-1" data-script="catalog_analytics_report.py" data-args="--days 7">7 Days Quick Report</button>
                                 <button class="btn btn-outline-info btn-sm run-report mb-1" data-script="catalog_analytics_report.py" data-args="--low-performers --days 30">Show Low Performers</button>
                             </div>
+                        </div>
                         <div class="loading mt-2" id="loading-catalog_analytics_report">
                             <div class="spinner-border spinner-border-sm" role="status"></div>
                             Running catalog analysis...
                         </div>
                         <div class="output" id="output-catalog_analytics_report"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-eye"></i> Viewing Requests Manager</h5>
                     </div>
@@ -902,8 +967,12 @@
                             Running viewing analysis...
                         </div>
                         <div class="output" id="output-viewing_requests_manager"></div>
+                    </div>
                 </div>
-            </div>                <div class="card report-card">
+            </div>
+
+            <div class="col-md-6">
+                <div class="card report-card">
                     <div class="card-header">
                         <h5><i class="fas fa-bullhorn"></i> Campaign Manager</h5>
                     </div>
@@ -926,7 +995,9 @@
                             Running campaign analysis...
                         </div>
                         <div class="output" id="output-campaign_manager"></div>
+                    </div>
                 </div>
+            </div>
         </div>
 
         <!-- Property Page URL Tools -->
@@ -938,12 +1009,15 @@
                         <small class="text-muted">St Helier Two Bedroom House with Patio & Garden</small>
                     </div>
                     <div class="card-body">
-                        <div class="row">                                <h6>Page Preview</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Page Preview</h6>
                                 <div class="property-preview mb-3">
                                     <div class="preview-image">
                                         <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #007cba 0%, #005a87 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold;">
                                             🏠 Property Image
                                         </div>
+                                    </div>
                                     <div class="preview-details mt-2">
                                         <h6 class="mb-1">St Helier Two Bedroom House with Patio & Garden</h6>
                                         <p class="text-muted small mb-1">Beautiful two bedroom property in St Helier with patio and garden</p>
@@ -952,18 +1026,23 @@
                                             <i class="fas fa-external-link-alt"></i> View Full Page
                                         </a>
                                     </div>
-                            </div>                                <h6>Campaign URL Builder</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Campaign URL Builder</h6>
                                 <form id="campaign-url-form">
                                     <div class="mb-3">
                                         <label for="base-url" class="form-label">Base URL:</label>
                                         <input type="text" class="form-control" id="base-url" 
                                                value="https://www.ndestates.com/properties/st-helier-two-bedroom-house-with-patio-garden" readonly>
                                         <div class="form-text">Property page URL (read-only)</div>
+                                    </div>
                                     <div class="mb-3">
                                         <label for="url-prepend" class="form-label">URL Prepend (Optional):</label>
                                         <input type="text" class="form-control" id="url-prepend" 
                                                placeholder="e.g., /featured or /special-offer">
                                         <div class="form-text">Add a path prefix to the URL (e.g., for campaign tracking)</div>
+                                    </div>
                                     <div class="mb-3">
                                         <label for="utm-source" class="form-label">UTM Source:</label>
                                         <input type="text" class="form-control" id="utm-source" placeholder="e.g., facebook, google, email">
@@ -985,6 +1064,7 @@
                                             </button>
                                         </div>
                                         <div class="form-text">Copy this URL for your marketing campaigns</div>
+                                    </div>
                                     <div class="d-grid">
                                         <button type="button" class="btn btn-primary" id="generate-url-btn">
                                             <i class="fas fa-magic"></i> Generate Campaign URL
@@ -992,8 +1072,11 @@
                                     </div>
                                 </form>
                             </div>
+                        </div>
                     </div>
+                </div>
             </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1899,6 +1982,7 @@
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <div class="mt-2">Loading site metrics...</div>
+                </div>
             `;
             
             fetch('api/site_metrics.php')
@@ -1954,6 +2038,7 @@
                     <div style="flex: 1;">
                         <h2 style="margin: 0;">Site Metrics ${fromCache ? '<small class="text-muted">(cached)</small>' : ''}</h2>
                         <div class="subtitle">Real-time analytics overview</div>
+                    </div>
                     <button onclick="loadSiteMetrics(true)" class="btn btn-sm btn-outline-light" title="Refresh metrics" id="refreshBtn">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
@@ -1974,6 +2059,7 @@
                             <span class="metric-period-label">Annual</span>
                             <span class="metric-value">${formatNumber(data.annual.total_pageviews)}</span>
                         </div>
+                    </div>
                     <div class="metric-card">
                         <div class="metric-icon">👁️</div>
                         <div class="metric-label">Individual Properties Viewed</div>
@@ -1989,6 +2075,7 @@
                             <span class="metric-period-label">Annual</span>
                             <span class="metric-value">${formatNumber(data.annual.unique_properties)}</span>
                         </div>
+                    </div>
                     <div class="metric-card">
                         <div class="metric-icon">👥</div>
                         <div class="metric-label">Unique Visitors</div>
@@ -2004,6 +2091,7 @@
                             <span class="metric-period-label">Annual</span>
                             <span class="metric-value">${formatNumber(data.annual.total_users)}</span>
                         </div>
+                    </div>
                 </div>
             `;
         }
@@ -2046,12 +2134,9 @@
     <!-- UI Enhancement Functions -->
     <script src="js/ui-enhancements.js"></script>
 
-      </div> <!-- End cards-grid -->
-    </main> <!-- End content-area -->
-  </div> <!-- End main-area -->
-</div> <!-- End app-shell -->
-
-    <script src="js/filament-layout.js"></script>
+    <footer class="text-center text-muted mt-5 py-3 border-top">
+        <p>&copy; <?php echo APP_COPYRIGHT; ?> | Version <?php echo APP_VERSION; ?> | Powered by Google Analytics 4</p>
+    </footer>
 </body>
 </html>
 ```
