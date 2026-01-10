@@ -48,7 +48,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Welcome to Google Stats</h1>
-            <span class="badge bg-primary-soft text-primary">Version: <?php echo htmlspecialchars($version_info['tag']); ?></span>
+            <span class="badge bg-primary-soft text-primary">Version: <?php echo htmlspecialchars($version_info['tag'] ?? APP_VERSION ?? 'N/A'); ?></span>
         </div>
 
         <div class="card">
@@ -99,46 +99,6 @@
         </div>
 
     </div>
-</body>
-</html>
-                                        default:
-                                            echo 'Login failed.';
-                                    }
-                                    ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <form method="POST" action="auth.php?action=login&redirect=index.php">
-                                <?php echo csrf_token_field(); ?>
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-sign-in-alt"></i> Login
-                                    </button>
-                                </div>
-                            </form>
-                            <div class="mt-3 text-center">
-                                <a href="admin.php">Admin Login</a>
-                            </div>
-                    </div>
-            </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    </body>
-    </html>
-        <?php
-        exit;
-    }
-
-    // User is logged in, show main interface
-    $current_user = get_logged_in_user();
-    ?>
     <style>
         .report-card { margin-bottom: 20px; }
         .output { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; }
@@ -2048,6 +2008,29 @@
 
     <!-- UI Enhancement Functions -->
     <script src="js/ui-enhancements.js"></script>
+
+    <!-- Sidebar Toggle Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('open');
+                });
+
+                // Close sidebar when clicking outside on mobile
+                document.addEventListener('click', function(event) {
+                    if (window.innerWidth <= 1024) {
+                        if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                            sidebar.classList.remove('open');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 
       </div> <!-- End cards-grid -->
     </main> <!-- End content-area -->
