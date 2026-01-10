@@ -30,7 +30,7 @@ function get_db_connection() {
     }
     
     $host = getenv('DB_HOST') ?: 'db';
-    $db = getenv('DB_NAME') ?: 'google-stats';
+    $db = getenv('DB_NAME') ?: 'google_stats';
     $user = getenv('DB_USERNAME') ?: 'db';
     $pass = getenv('DB_PASSWORD') ?: 'db';
     

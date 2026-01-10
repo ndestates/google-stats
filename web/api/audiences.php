@@ -12,7 +12,7 @@ if (!is_logged_in()) {
 }
 
 function db_connect() {
-    $dsn = 'mysql:host=db;dbname=google-stats;charset=utf8mb4';
+    $dsn = 'mysql:host=db;dbname=google_stats;charset=utf8mb4';
     $user = 'db';
     $pass = 'db';
     $options = [

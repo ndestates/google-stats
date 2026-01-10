@@ -3,101 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Analytics Reports</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <!-- Filament-Inspired Layout -->
-    <link href="styles/filament-layout.css" rel="stylesheet">
-    <!-- Customizable Branding & Color Scheme -->
-    <link href="css/branding.css" rel="stylesheet">
-    <link href="css/ui-enhancements.css" rel="stylesheet" />
-    <style>
-        .property-preview {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 15px;
-            background: #f8f9fa;
-        }
-        .property-preview .preview-image img {
-            border: 1px solid #dee2e6;
-        }
-        .property-preview .preview-details h6 {
-            color: #007cba;
-            font-weight: 600;
-        }
-        .campaign-url-form .form-control[readonly] {
-            background-color: #e9ecef;
-        }
-        .url-preview {
-            font-family: monospace;
-            font-size: 0.875rem;
-            word-break: break-all;
-        }
-        .select2-container--bootstrap-5 .select2-selection {
-            min-height: 38px;
-        }
-        .data-table-output {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .data-table-output table {
-            font-size: 0.875rem;
-        }
-    </style>
-    <?php
-    // Start session for authentication
-    session_start();
+    <title>Google Analytics Reports - ND Estates</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/design-system/nd-estates-design-system/logos/stacked-colour.svg" type="image/svg+xml">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="assets/design-system/nd-estates-design-system/logos/row-colour.svg" alt="ND Estates Logo">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.php" class="active">Dashboard</a></li>
+                <li><a href="documentation.php">Documentation</a></li>
+                <li><a href="logout.php" class="logout-link">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    // Include authentication functions
-    require_once 'auth.php';
+    <div class="container">
+        <?php
+        // Start session for authentication
+        session_start();
 
-    // Include version information
-    require_once 'version.php';
+        // Include authentication functions
+        require_once 'auth.php';
 
-    // Check if user is logged in
-    if (!is_logged_in()) {
-        // Check if IP is blocked
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        if ($web_logger->is_ip_blocked($ip)) {
-            http_response_code(403);
-            ?>
-            </head>
-            <body>
-                <div class="container mt-5">
-                    <div class="alert alert-danger">
-                        <h4>Access Denied</h4>
-                        <p>Your IP address has been blocked due to security policy.</p>
-                    </div>
-            </body>
-            </html>
-            <?php
+        // Include version information
+        require_once 'version.php';
+
+        // Check if user is logged in
+        if (!is_logged_in()) {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            if (isset($web_logger) && $web_logger->is_ip_blocked($ip)) {
+                http_response_code(403);
+                echo '<div class="card"><div class="alert alert-danger"><h4>Access Denied</h4><p>Your IP address has been blocked due to security policy.</p></div></div>';
+                exit;
+            }
+            // Redirect to login page if not logged in
+            header('Location: login.php');
             exit;
         }
-
-        // Show login form
         ?>
-    </head>
-    <body>
-        <div class="container mt-5">
-            <div class="row justify-content-center">                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="mb-0"><i class="fas fa-lock"></i> Login Required</h4>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted">Please log in to access the Google Analytics Reports.</p>
-                            <?php if (isset($_GET['error'])): ?>
-                                <div class="alert alert-danger">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <?php
-                                    switch ($_GET['error']) {
-                                        case 'invalid':
-                                            echo 'Invalid username or password.';
-                                            break;
-                                        case 'locked':
-                                            echo 'Account is temporarily locked due to too many failed attempts.';
-                                            break;
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Welcome to Google Stats</h1>
+            <span class="badge bg-primary-soft text-primary">Version: <?php echo htmlspecialchars($version_info['tag']); ?></span>
+        </div>
+
+        <div class="card">
+            <h2>Run a New Report</h2>
+            <form action="run_report.php" method="post" target="report_output" class="form-container">
+                <div class="form-group">
+                    <label for="report_type">Select Report</label>
+                    <select name="report_type" id="report_type" class="form-control" required>
+                        <option value="">-- Please select a report --</option>
+                        <?php
+                        $reports = [
+                            'yesterday' => 'Yesterday Report',
+                            'weekly' => 'Weekly Report',
+                            'monthly' => 'Monthly Report',
+                            'yearly' => 'Yearly Report',
+                            'comprehensive_page_source' => 'Comprehensive Page Source Report',
+                            'campaign_performance' => 'Campaign Performance Report',
+                            'content_performance' => 'Content Performance Report',
+                            'social_media_timing' => 'Social Media Timing Report',
+                            'property_channel_performance' => 'Property Channel Performance',
+                            'catalog_analytics_report' => 'Catalog Analytics Report',
+                            'viewing_requests_manager' => 'Viewing Requests Manager',
+                            'audience_management' => 'Audience Management',
+                        ];
+                        foreach ($reports as $value => $label) {
+                            echo "<option value=\"$value\">$label</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_date">Start Date (Optional)</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date (Optional)</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary w-100">Run Report</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Report Output</h2>
+            <iframe name="report_output" style="width: 100%; height: 400px; border: 1px solid #ccc; border-radius: 8px;"></iframe>
+        </div>
+
+    </div>
+</body>
+</html>
                                         default:
                                             echo 'Login failed.';
                                     }

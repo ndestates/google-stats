@@ -21,7 +21,7 @@ class Database {
 
     private function connect() {
         $host = getenv('DB_HOST') ?: 'db';
-        $dbname = getenv('DB_NAME') ?: 'google-stats';
+        $dbname = getenv('DB_NAME') ?: 'google_stats';
         $username = getenv('DB_USERNAME') ?: 'db';
         $password = getenv('DB_PASSWORD') ?: 'db';
         $charset = 'utf8mb4';

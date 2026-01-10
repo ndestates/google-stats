@@ -11,7 +11,7 @@ database:
 use_dns_when_possible: true
 web_environment:
     - DB_HOST=db
-    - DB_NAME=google-stats
+    - DB_NAME=google_stats
     - DB_USERNAME=db
     - DB_PASSWORD=db
     # Legacy file-based credential (migrated to encrypted database storage on 2026-01-09)
@@ -21,12 +21,11 @@ corepack_enable: false
 
 hooks:
   pre-stop:
-    # - exec-host: "ddev snapshot"
-    - exec-host: "ddev export-db -f backup/latest-google-stats-db.sql.gz --database=google-stats"
-    - exec-host: "ddev export-db -f backup/$(date +%Y%m%d%H%M%S)-google-stats-db.sql.gz --database=google-stats"
+    - exec-host: "ddev export-db -f backup/latest-google_stats-db.sql.gz --database=google_stats"
+    - exec-host: "ddev export-db -f backup/$(date +%Y%m%d%H%M%S)-google_stats-db.sql.gz --database=google_stats"
 
   post-start:
-    - exec-host: "ddev import-db --database=google-stats --file=backup/20260108170706-google-stats-db.sql.gz"  
+    - exec-host: "ddev import-db --database=google_stats --file=backup/latest-google_stats-db.sql.gz"
          
 # Key features of DDEV's config.yaml:
 

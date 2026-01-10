@@ -58,6 +58,12 @@ DDEV Usage:
     
     # Analyze audience performance
     ddev exec python3 scripts/audience_management.py --action analyze
+    
+    # Find listings without audiences
+    ddev exec python3 scripts/audience_management.py --action find-missing
+    
+    # Interactively create audiences for missing listings
+    ddev exec python3 scripts/audience_management.py --action create-missing-interactive
 
 Direct Usage:
     python3 scripts/audience_management.py --action generate-from-feed --dry-run
@@ -374,6 +380,7 @@ def create_basic_audience(display_name: str, description: str = "", membership_d
 
 def create_page_view_audience(display_name: str, page_path: str, membership_duration_days: int = 30):
     """Create an audience based on page views"""
+    from googleapiclient.errors import HttpError
 
     service = get_admin_service()
     
@@ -412,13 +419,20 @@ def create_page_view_audience(display_name: str, page_path: str, membership_dura
         }]
     }
 
-    request = service.properties().audiences().create(
-        parent=f'properties/{GA4_PROPERTY_ID}',
-        body=audience
-    ).execute()
+    try:
+        request = service.properties().audiences().create(
+            parent=f'properties/{GA4_PROPERTY_ID}',
+            body=audience
+        ).execute()
 
-    print(f"✅ Created page view audience: {request['displayName']} (ID: {request['name'].split('/')[-1]})")
-    return request
+        print(f"✅ Created page view audience: {request['displayName']} (ID: {request['name'].split('/')[-1]})")
+        return request
+    except HttpError as e:
+        if 'already exists' in str(e):
+            print(f"⏭️  Skipped (already exists): {display_name}")
+            return None
+        else:
+            raise
 
 
 def create_event_audience(display_name: str, event_name: str, membership_duration_days: int = 30):
@@ -1188,6 +1202,152 @@ def bulk_delete_audiences(
     print(f"   Failed: {failed_count}")
 
 
+def find_missing_listing_audiences(feed_url: str, include_rent: bool = False):
+    """Find listings from feed that don't have corresponding audiences."""
+    xml_text = fetch_feed(feed_url)
+    listings = parse_feed(xml_text)
+    
+    # Filter available listings
+    available = [
+        l for l in listings
+        if (l.get("status") == "available") and (include_rent or l.get("type") == "buy")
+    ]
+    
+    # Get existing audience names
+    existing_names = list_existing_audience_names()
+    
+    # Find listings without audiences
+    missing = []
+    for l in available:
+        url = l.get("url") or ""
+        if not url:
+            continue
+        
+        property_name = l.get("name") or ""
+        ref = l.get("reference") or ""
+        base_name = property_name if property_name else ref
+        display_name = f"[Listing] - {base_name}" if base_name else f"[Listing] - {extract_url_path(url)[:80]}"
+        
+        if display_name not in existing_names:
+            missing.append({
+                'display_name': display_name,
+                'url': url,
+                'url_path': extract_url_path(url),
+                'property_name': property_name,
+                'reference': ref,
+                'price': l.get('price'),
+                'type': l.get('type')
+            })
+    
+    return missing
+
+
+def create_missing_audiences_interactive(feed_url: str, include_rent: bool = False, duration: int = 30):
+    """Interactively select and create audiences for listings that don't have them."""
+    
+    missing = find_missing_listing_audiences(feed_url, include_rent)
+    
+    if not missing:
+        print("✅ All available listings already have audiences!")
+        return
+    
+    print(f"\n📋 Found {len(missing)} listing(s) without audiences:")
+    print("=" * 100)
+    
+    for idx, item in enumerate(missing, 1):
+        price_str = f"£{item['price']:,}" if item['price'] else "N/A"
+        print(f"{idx}. {item['display_name']}")
+        print(f"    URL: {item['url_path']}")
+        print(f"    Price: {price_str} | Type: {item['type']}")
+        print("-" * 80)
+    
+    print("\n" + "=" * 100)
+    
+    # Get user input
+    selection = input(
+        "\nEnter listing numbers to create audiences for (comma-separated, ranges, or 'all')\n"
+        "Examples: 1,3,5 or 1-10 or all\n"
+        "Or press Enter to exit: "
+    ).strip()
+    
+    if not selection:
+        print("❌ Exiting without making changes.")
+        return
+    
+    if selection.lower() in ('quit', 'exit', 'q'):
+        print("❌ Exiting without making changes.")
+        return
+    
+    # Parse selection
+    selected_items = []
+    
+    if selection.lower() == 'all':
+        selected_items = missing
+    else:
+        try:
+            indices = []
+            for part in selection.split(','):
+                part = part.strip()
+                if '-' in part:
+                    start, end = part.split('-')
+                    start_idx = int(start.strip()) - 1
+                    end_idx = int(end.strip()) - 1
+                    indices.extend(range(start_idx, end_idx + 1))
+                else:
+                    indices.append(int(part) - 1)
+            
+            indices = sorted(set(indices))
+            
+            # Validate indices
+            invalid = [i+1 for i in indices if i < 0 or i >= len(missing)]
+            if invalid:
+                print(f"❌ Invalid selections: {invalid}. Please try again.")
+                return
+            
+            selected_items = [missing[i] for i in indices]
+            
+        except ValueError:
+            print("❌ Invalid input. Please enter numbers separated by commas.")
+            return
+    
+    # Show what will be created
+    print(f"\n🎯 Will create {len(selected_items)} audience(s):")
+    for item in selected_items:
+        print(f"   - {item['display_name']}")
+    
+    confirm = input("\nProceed with creation? Type 'yes' to confirm: ").strip().lower()
+    
+    if confirm != 'yes':
+        print("❌ Creation cancelled.")
+        return
+    
+    # Create audiences
+    created_count = 0
+    skipped_count = 0
+    failed_count = 0
+    
+    print(f"\n🚀 Creating audiences (membership duration: {duration} days)...")
+    for item in selected_items:
+        try:
+            result = create_page_view_audience(
+                item['display_name'],
+                item['url_path'],
+                membership_duration_days=duration
+            )
+            if result:
+                created_count += 1
+            else:
+                skipped_count += 1
+        except Exception as e:
+            print(f"❌ Failed to create audience for {item['display_name']}: {e}")
+            failed_count += 1
+    
+    print(f"\n✅ Creation complete:")
+    print(f"   Created: {created_count}")
+    print(f"   Skipped (already exist): {skipped_count}")
+    print(f"   Failed: {failed_count}")
+
+
 def generate_audiences_from_feed(
     feed_url: str,
     scope: str = "both",
@@ -1273,7 +1433,7 @@ def generate_audiences_from_feed(
 
 def main():
     parser = argparse.ArgumentParser(description='Google Analytics 4 Audience Management')
-    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'bulk-delete', 'get-details', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'show-segment-usage', 'show-all-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed'], required=True,
+    parser.add_argument('--action', choices=['create', 'list', 'delete', 'delete-interactive', 'bulk-delete', 'get-details', 'analyze', 'list-segments', 'create-segment', 'show-usage', 'show-segment-usage', 'show-all-usage', 'find-in-campaigns', 'list-with-segments', 'generate-from-feed', 'find-missing', 'create-missing-interactive'], required=True,
                        help='Action to perform')
     parser.add_argument('--type', choices=['basic', 'page', 'event', 'cart-abandoners'],
                        help='Type of audience to create (required for create action)')
@@ -1407,6 +1567,27 @@ def main():
                 limit=args.limit,
                 duration=args.duration,
                 dry_run=args.dry_run or False,
+            )
+
+        elif args.action == 'find-missing':
+            missing = find_missing_listing_audiences(args.feed_url, args.include_rent)
+            if not missing:
+                print("✅ All available listings already have audiences!")
+            else:
+                print(f"\n📋 Found {len(missing)} listing(s) without audiences:")
+                print("=" * 100)
+                for idx, item in enumerate(missing, 1):
+                    price_str = f"£{item['price']:,}" if item['price'] else "N/A"
+                    print(f"{idx}. {item['display_name']}")
+                    print(f"    URL: {item['url_path']}")
+                    print(f"    Price: {price_str} | Type: {item['type']}")
+                    print("-" * 80)
+
+        elif args.action == 'create-missing-interactive':
+            create_missing_audiences_interactive(
+                feed_url=args.feed_url,
+                include_rent=args.include_rent,
+                duration=args.duration
             )
 
     except Exception as e:

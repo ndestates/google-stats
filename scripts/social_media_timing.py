@@ -3,12 +3,12 @@ Social Media Timing Analysis Script
 Analyze the best times to post on social media platforms based on organic traffic patterns
 
 Usage:
-    python social_media_timing.py [days]
+    ddev exec python social_media_timing.py [days]
 
 Examples:
-    python social_media_timing.py 30    # Last 30 days
-    python social_media_timing.py 90    # Last 90 days
-    python social_media_timing.py       # Default 30 days
+    ddev exec python social_media_timing.py 30    # Last 30 days
+    ddev exec python social_media_timing.py 90    # Last 90 days
+    ddev exec python social_media_timing.py       # Default 30 days
 """
 
 import os

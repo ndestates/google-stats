@@ -250,5 +250,8 @@ data/
 google_ads.yaml
 /google_ads.yaml
 
+# Backup files
+backup/*.sql.gz
+
 
 

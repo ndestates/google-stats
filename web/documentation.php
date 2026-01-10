@@ -3,101 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Analytics Documentation</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .doc-section { margin-bottom: 2rem; }
-        .code-block { background-color: #f8f9fa; padding: 1rem; border-radius: 5px; border-left: 4px solid #007bff; }
-        .metric-badge { background-color: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.875rem; margin: 0.125rem; }
-        .tool-card { border: 1px solid #dee2e6; border-radius: 0.5rem; margin-bottom: 1rem; }
-        .tool-header { background-color: #f8f9fa; padding: 1rem; border-bottom: 1px solid #dee2e6; border-radius: 0.5rem 0.5rem 0 0; }
-        .tool-body { padding: 1rem; }
-        .nav-link { color: #007bff !important; }
-        .nav-link:hover { color: #0056b3 !important; }
-    </style>
+    <title>Documentation - Google Analytics Reports</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/design-system/nd-estates-design-system/logos/stacked-colour.svg" type="image/svg+xml">
 </head>
 <body>
-    <div class="container-fluid mt-4">
-        <div class="row">
-            <!-- Sidebar Navigation -->
-            <div class="col-md-3">
-                <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-book"></i> Documentation</h5>
-                    </div>
-                    <div class="card-body">
-                        <nav class="nav flex-column">
-                            <a class="nav-link" href="#overview"><i class="fas fa-home"></i> Overview</a>
-                            <a class="nav-link" href="#getting-started"><i class="fas fa-play"></i> Getting Started</a>
-                            <a class="nav-link" href="#web-interface"><i class="fas fa-globe"></i> Web Interface</a>
-                            <a class="nav-link" href="#hourly-analysis"><i class="fas fa-clock"></i> Hourly Traffic Analysis</a>
-                            <a class="nav-link" href="#page-analysis"><i class="fas fa-file-alt"></i> Page Traffic Analysis</a>
-                            <a class="nav-link" href="#google-ads"><i class="fas fa-ad"></i> Google Ads Performance</a>
-                            <a class="nav-link" href="#google-ads-creative"><i class="fas fa-bullseye"></i> Google Ads Creative Performance</a>
-                            <a class="nav-link" href="#mailchimp"><i class="fas fa-envelope"></i> Mailchimp Performance</a>
-                            <a class="nav-link" href="#keywords"><i class="fas fa-search"></i> Keywords Analysis</a>
-                            <a class="nav-link" href="#top-pages"><i class="fas fa-chart-line"></i> Top Pages Report</a>
-                            <a class="nav-link" href="#audience"><i class="fas fa-users"></i> Audience Management</a>
-                            <a class="nav-link" href="#audience-stats"><i class="fas fa-users-cog"></i> Audience Statistics</a>
-                            <a class="nav-link" href="#conversion-funnel"><i class="fas fa-filter"></i> Conversion Funnel</a>
-                            <a class="nav-link" href="#bounce-rate"><i class="fas fa-door-open"></i> Bounce Rate Analysis</a>
-                            <a class="nav-link" href="#device-geo"><i class="fas fa-mobile-alt"></i> Device & Geo Analysis</a>
-                            <a class="nav-link" href="#technical-performance"><i class="fas fa-cogs"></i> Technical Performance</a>
-                            <a class="nav-link" href="#user-behavior"><i class="fas fa-route"></i> User Behavior</a>
-                            <a class="nav-link" href="#content-performance"><i class="fas fa-file-alt"></i> Content Performance</a>
-                            <a class="nav-link" href="#seo-analysis"><i class="fas fa-search"></i> SEO Analysis</a>
-                            <a class="nav-link" href="#credentials-setup"><i class="fas fa-key"></i> Google Credentials Setup</a>
-                            <a class="nav-link" href="#security"><i class="fas fa-shield-alt"></i> Security & Best Practices</a>
-                            <a class="nav-link" href="#command-line"><i class="fas fa-terminal"></i> Command Line Usage</a>
-                            <a class="nav-link" href="#data-export"><i class="fas fa-download"></i> Data Export</a>
-                            <a class="nav-link" href="#api-reference"><i class="fas fa-code"></i> API Reference</a>
-                        </nav>
-                    </div>
+    <header>
+        <div class="logo">
+            <img src="assets/design-system/nd-estates-design-system/logos/row-colour.svg" alt="ND Estates Logo">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.php">Dashboard</a></li>
+                <li><a href="documentation.php" class="active">Documentation</a></li>
+                <li><a href="logout.php" class="logout-link">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Documentation</h1>
+        <p class="lead">Comprehensive guide to the Google Analytics Platform.</p>
+
+        <div class="card">
+            <h2><i class="fas fa-book"></i> Available Reports</h2>
+            <p>This section details all the available reports you can run from the dashboard.</p>
+            
+            <div class="tool-card">
+                <div class="tool-header">
+                    <h5 class="mb-0">Standard Reports (Yesterday, Weekly, Monthly, Yearly)</h5>
+                </div>
+                <div class="tool-body">
+                    <p>Provides a summary of website traffic over standard time periods.</p>
+                    <ul>
+                        <li><strong>Metrics:</strong> Sessions, Pageviews, Users, Bounce Rate, Average Session Duration.</li>
+                        <li><strong>Dimensions:</strong> Source, Medium, Campaign.</li>
+                    </ul>
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-md-9">
-                <!-- Header -->
-                <div class="doc-section">
-                    <h1 class="display-4"><i class="fas fa-chart-bar text-primary"></i> Google Analytics Platform</h1>
-                    <p class="lead">Comprehensive analytics tools for Google Analytics 4, Google Ads, Mailchimp, and Google Search Console data.</p>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> <strong>Version:</strong> 2.0 | <strong>Last Updated:</strong> November 7, 2025
-                    </div>
+            <div class="tool-card">
+                <div class="tool-header">
+                    <h5 class="mb-0">Comprehensive Page Source Report</h5>
                 </div>
-
-                <!-- Overview -->
-                <div id="overview" class="doc-section">
-                    <h2><i class="fas fa-home"></i> Overview</h2>
-                    <p>This analytics platform provides comprehensive insights into your website and marketing performance across multiple channels:</p>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-chart-line"></i> Analytics Tools</h5>
-                            <ul>
-                                <li><strong>Hourly Traffic Analysis</strong> - Time-of-day traffic patterns</li>
-                                <li><strong>Page Traffic Analysis</strong> - Individual page performance</li>
-                                <li><strong>Top Pages Report</strong> - Best performing content</li>
-                                <li><strong>Keywords Analysis</strong> - Search performance insights</li>
-                                <li><strong>Conversion Funnel</strong> - User conversion paths</li>
-                                <li><strong>Bounce Rate Analysis</strong> - Exit page optimization</li>
-                                <li><strong>Device & Geo Analysis</strong> - Platform and location insights</li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-bullhorn"></i> Marketing & Technical Tools</h5>
-                            <ul>
-                                <li><strong>Google Ads Performance</strong> - Campaign effectiveness</li>
-                                <li><strong>Google Ads Creative Performance</strong> - Individual ad creative analysis</li>
-                                <li><strong>Mailchimp Performance</strong> - Email marketing analytics</li>
-                                <li><strong>Audience Management</strong> - GA4 audience creation</li>
-                                <li><strong>Audience Statistics</strong> - GA4 audience performance metrics</li>
-                                <li><strong>Technical Performance</strong> - Site performance analysis</li>
-                                <li><strong>User Behavior Analysis</strong> - Navigation patterns</li>
-                                <li><strong>Content Performance</strong> - Content engagement metrics</li>
-                                <li><strong>SEO Analysis</strong> - Search optimization insights</li>
-                            </ul>
+                <div class="tool-body">
+                    <p>In-depth analysis of traffic sources for each page on your site.</p>
+                </div>
+            </div>
+            
+            </div>
+        </div>
+    </div>
+</body>
+</html>
                         </div>
                     </div>
                 </div>
